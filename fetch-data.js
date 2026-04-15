@@ -158,6 +158,13 @@ async function batch(items, fn) {
 
   const departamentos = deptResults.filter(Boolean);
 
+  // Safety: don't save partial data
+  if (departamentos.length < 20) {
+    console.error(`FAIL: Only ${departamentos.length} departments fetched (expected 25+). Not saving.`);
+    await browser.close();
+    process.exit(1);
+  }
+
   // Add extranjero
   if (extTotals?.data) {
     const ac = extTotals.data.contabilizadas, af = extTotals.data.totalActas - ac;
