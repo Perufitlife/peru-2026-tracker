@@ -2,7 +2,7 @@ name: Sync ONPE Data
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # cada 15 minutos
+    - cron: '*/7 * * * *'  # cada 7 minutos
   workflow_dispatch: # manual trigger
 
 jobs:
