@@ -1,9 +1,8 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 
-const BATCH_SIZE = 8;
+const BATCH_SIZE = 6;
 const BASE = 'https://resultadoelectoral.onpe.gob.pe/presentacion-backend';
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36';
 
 async function batch(items, fn) {
   const results = [];
@@ -16,76 +15,92 @@ async function batch(items, fn) {
 
 (async () => {
   const t0 = Date.now();
-
-  // Step 1: Use browser to visit page and capture cookies + working session
-  console.log('Opening browser to get session...');
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ userAgent: UA });
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
+  });
   const page = await context.newPage();
 
-  // Capture API responses as they happen during page load
-  const capturedCookies = [];
-  const capturedHeaders = {};
-
-  page.on('request', req => {
-    if (req.url().includes('presentacion-backend') && req.resourceType() === 'fetch') {
-      const h = req.headers();
-      Object.assign(capturedHeaders, h);
-    }
-  });
-
+  // Step 1: Navigate and wait for Angular to boot
+  console.log('Loading ONPE page...');
   await page.goto('https://resultadoelectoral.onpe.gob.pe/main/resumen', {
     waitUntil: 'domcontentloaded',
     timeout: 30000
   });
 
-  // Wait for Angular to make at least one API call
+  // Wait for Angular to make its first API call — this proves the app booted
+  console.log('Waiting for Angular to boot...');
   try {
     await page.waitForResponse(
       res => res.url().includes('presentacion-backend') && res.status() === 200,
-      { timeout: 15000 }
+      { timeout: 20000 }
     );
-    console.log('Angular API call detected — session is valid');
+    console.log('Angular booted OK');
   } catch {
-    console.log('Warning: no API call detected, proceeding anyway');
+    // If Angular didn't boot, try navigating directly to a simple page first
+    console.log('Angular did not boot, trying alternative...');
+    await page.goto('https://resultadoelectoral.onpe.gob.pe/', {
+      waitUntil: 'networkidle',
+      timeout: 30000
+    });
+    // Then navigate to resumen
+    await page.goto('https://resultadoelectoral.onpe.gob.pe/main/resumen', {
+      waitUntil: 'networkidle',
+      timeout: 30000
+    });
   }
 
-  // Get cookies from browser
-  const cookies = await context.cookies();
-  const cookieStr = cookies.map(c => `${c.name}=${c.value}`).join('; ');
-  console.log(`Cookies captured: ${cookies.length}`);
+  // Step 2: Health check via browser context
+  console.log('Health check...');
+  const health = await page.evaluate(async (base) => {
+    try {
+      const r = await fetch(`${base}/proceso/proceso-electoral-activo`);
+      return await r.json();
+    } catch(e) {
+      return { error: e.message };
+    }
+  }, BASE);
 
-  await browser.close();
-  console.log('Browser closed, switching to direct fetch\n');
+  if (!health?.success) {
+    console.error('FAIL: Cannot reach ONPE API from browser context.');
+    console.error('Response:', JSON.stringify(health));
+    // Last resort: try a page reload and wait longer
+    console.log('Retrying with full page reload...');
+    await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
+    await new Promise(r => setTimeout(r, 5000));
 
-  // Step 2: Direct fetch using Node.js native fetch with captured cookies
+    const health2 = await page.evaluate(async (base) => {
+      try {
+        const r = await fetch(`${base}/proceso/proceso-electoral-activo`);
+        return await r.json();
+      } catch(e) {
+        return { error: e.message };
+      }
+    }, BASE);
+
+    if (!health2?.success) {
+      console.error('FAIL after retry:', JSON.stringify(health2));
+      await browser.close();
+      process.exit(1);
+    }
+    console.log('Retry succeeded!');
+  }
+  console.log(`OK: ${health.data?.nombre || 'connected'}\n`);
+
+  // API helper — runs fetch inside browser context
   async function api(url) {
     try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': UA,
-          'Accept': 'application/json',
-          'Referer': 'https://resultadoelectoral.onpe.gob.pe/main/resumen',
-          'Cookie': cookieStr,
-        }
-      });
-      if (!res.ok) return null;
-      return await res.json();
+      const text = await page.evaluate(async (u) => {
+        const r = await fetch(u);
+        return await r.text();
+      }, url);
+      return JSON.parse(text);
     } catch {
       return null;
     }
   }
 
-  // Health check — verify API is reachable
-  console.log('Health check...');
-  const health = await api(`${BASE}/proceso/proceso-electoral-activo`);
-  if (!health?.success) {
-    console.error('FAIL: Cannot reach ONPE API. Response:', JSON.stringify(health));
-    process.exit(1);
-  }
-  console.log(`OK: ${health.data.nombre}\n`);
-
-  // 1. Parallel: national totals + candidates + departments list + extranjero
+  // 1. National data in parallel
   console.log('Fetching national data...');
   const [totals, cands, depts, extTotals, extCands] = await Promise.all([
     api(`${BASE}/resumen-general/totales?idEleccion=10&tipoFiltro=eleccion`),
@@ -98,11 +113,12 @@ async function batch(items, fn) {
   if (!depts?.data || !totals?.data || !cands?.data) {
     console.error('FAIL: Base data missing.');
     console.error('  totals:', !!totals?.data, 'cands:', !!cands?.data, 'depts:', !!depts?.data);
+    await browser.close();
     process.exit(1);
   }
   console.log(`National OK — ${depts.data.length} departments\n`);
 
-  // 2. Parallel: all department totals + candidates + province lists
+  // 2. Departments in parallel
   console.log('Fetching departments...');
   const deptResults = await batch(depts.data, async (dept) => {
     const ub = dept.ubigeo;
@@ -112,7 +128,7 @@ async function batch(items, fn) {
       api(`${BASE}/ubigeos/provincias?idEleccion=10&idAmbitoGeografico=1&idUbigeoDepartamento=${ub}`),
     ]);
     if (!dt?.data || !dc?.data) {
-      console.log(`  ${dept.nombre} SKIP (no data)`);
+      console.log(`  ${dept.nombre} SKIP`);
       return null;
     }
 
@@ -161,4 +177,5 @@ async function batch(items, fn) {
 
   fs.writeFileSync(__dirname + '/data.json', JSON.stringify(data, null, 2));
   console.log(`\nDone in ${((Date.now() - t0) / 1000).toFixed(1)}s — ${departamentos.length} departments — ${data.timestamp}`);
+  await browser.close();
 })();
