@@ -1,9 +1,9 @@
 name: Sync ONPE Data
 
+# DISABLED: ONPE CloudFront blocks GitHub Actions IPs
+# Sync runs from local machine via server.js button, which auto-pushes
 on:
-  schedule:
-    - cron: '*/7 * * * *'  # cada 7 minutos
-  workflow_dispatch: # manual trigger
+  workflow_dispatch: # manual trigger only for testing
 
 permissions:
   contents: write
