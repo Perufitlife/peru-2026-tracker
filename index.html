@@ -213,7 +213,7 @@ function render(data) {
   `;
 
   // Table with expandable provinces
-  function buildRow(item, isChild) {
+  function buildRow(item, isChild, isGrandChild) {
     const pct = item.totales.actasContabilizadas;
     const ve = item.totales.totalVotosEmitidos;
     const ac = item.totales.contabilizadas;
@@ -226,8 +226,10 @@ function render(data) {
     const lP = lD ? lD.porcentajeVotosValidos : 0;
     const delta = sP - lP;
     const impacto = Math.round(vf * delta / 100);
-    const indent = isChild ? 'padding-left:24px;font-weight:400;font-size:0.9em;color:#555;' : '';
-    const arrow = !isChild && item.provincias?.length ? ' ▸' : '';
+    const indent = isGrandChild ? 'padding-left:44px;font-weight:400;font-size:0.85em;color:#888;' :
+                   isChild ? 'padding-left:24px;font-weight:400;font-size:0.9em;color:#555;' : '';
+    const hasChildren = item.provincias?.length || item.distritos?.length;
+    const arrow = hasChildren && !isGrandChild ? ' ▸' : '';
     return `
       <td class="region-name" style="${indent}">${titleCase(item.nombre)}${arrow}</td>
       <td class="r"><span class="badge ${badgeClass(pct)}">${pct.toFixed(1)}</span></td>
@@ -256,8 +258,16 @@ function render(data) {
     rows += `<tr class="dept-row" ${hasProvs ? `onclick="toggleProvs('${deptId}')" style="cursor:pointer"` : ''}>${buildRow(dept, false)}</tr>`;
     if (hasProvs) {
       const provsSorted = [...dept.provincias].sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
-      provsSorted.forEach(prov => {
-        rows += `<tr class="prov-row ${deptId}" style="display:none;background:#fafafa">${buildRow(prov, true)}</tr>`;
+      provsSorted.forEach((prov, j) => {
+        const provId = `${deptId}-prov-${j}`;
+        const hasDists = prov.distritos?.length > 0;
+        rows += `<tr class="prov-row ${deptId}" style="display:none;background:#fafafa" ${hasDists ? `onclick="event.stopPropagation();toggleProvs('${provId}')" style="display:none;background:#fafafa;cursor:pointer"` : ''}>${buildRow(prov, true)}</tr>`;
+        if (hasDists) {
+          const distsSorted = [...prov.distritos].sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
+          distsSorted.forEach(dist => {
+            rows += `<tr class="dist-row ${provId}" style="display:none;background:#f2f2f7">${buildRow(dist, true, true)}</tr>`;
+          });
+        }
       });
     }
   });

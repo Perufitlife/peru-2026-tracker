@@ -137,11 +137,34 @@ async function batch(items, fn) {
     const provincias = [];
     if (provList?.data?.length) {
       const provResults = await batch(provList.data, async (prov) => {
-        const [pt, pc] = await Promise.all([
+        const [pt, pc, distList] = await Promise.all([
           api(`${BASE}/resumen-general/totales?idAmbitoGeografico=1&idEleccion=10&tipoFiltro=ubigeo_nivel_02&idUbigeoDepartamento=${ub}&idUbigeoProvincia=${prov.ubigeo}`),
           api(`${BASE}/resumen-general/participantes?idAmbitoGeografico=1&idEleccion=10&tipoFiltro=ubigeo_nivel_02&idUbigeoDepartamento=${ub}&idUbigeoProvincia=${prov.ubigeo}`),
+          api(`${BASE}/ubigeos/distritos?idEleccion=10&idAmbitoGeografico=1&idUbigeoProvincia=${prov.ubigeo}`),
         ]);
-        return { nombre: prov.nombre, ubigeo: prov.ubigeo, totales: pt?.data, candidatos: pc?.data };
+        // Fetch districts
+        let distritos = [];
+        if (distList?.data?.length) {
+          const distResults = await batch(distList.data, async (dist) => {
+            const [dtt, dtc] = await Promise.all([
+              api(`${BASE}/resumen-general/totales?idAmbitoGeografico=1&idEleccion=10&tipoFiltro=ubigeo_nivel_03&idUbigeoDepartamento=${ub}&idUbigeoProvincia=${prov.ubigeo}&idUbigeoDistrito=${dist.ubigeo}`),
+              api(`${BASE}/resumen-general/participantes?idAmbitoGeografico=1&idEleccion=10&tipoFiltro=ubigeo_nivel_03&idUbigeoDepartamento=${ub}&idUbigeoProvincia=${prov.ubigeo}&idUbigeoDistrito=${dist.ubigeo}`),
+            ]);
+            return { nombre: dist.nombre, ubigeo: dist.ubigeo, totales: dtt?.data, candidatos: dtc?.data };
+          });
+          for (const d of distResults) {
+            if (!d.totales) continue;
+            const dac = d.totales.contabilizadas, dat = d.totales.totalActas, daf = dat - dac;
+            const dVpa = dac > 0 ? d.totales.totalVotosEmitidos / dac : 0;
+            distritos.push({
+              nombre: d.nombre, ubigeo: d.ubigeo,
+              totales: d.totales,
+              candidatos: (d.candidatos || []).sort((a, b) => b.totalVotosValidos - a.totalVotosValidos),
+              votosFaltanPreciso: Math.round(dVpa * daf)
+            });
+          }
+        }
+        return { nombre: prov.nombre, ubigeo: prov.ubigeo, totales: pt?.data, candidatos: pc?.data, distritos };
       });
       const deptVpa = dt.data.contabilizadas > 0 ? dt.data.totalVotosEmitidos / dt.data.contabilizadas : 0;
       for (const prov of provResults) {
@@ -154,6 +177,7 @@ async function batch(items, fn) {
           nombre: prov.nombre, ubigeo: prov.ubigeo,
           totales: prov.totales,
           candidatos: (prov.candidatos || []).sort((a, b) => b.totalVotosValidos - a.totalVotosValidos),
+          distritos: prov.distritos,
           votosFaltanPreciso: vf
         });
       }
