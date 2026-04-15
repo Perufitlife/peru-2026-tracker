@@ -168,15 +168,41 @@ function render(data) {
   let totalImpacto = 0; // positivo = favorece a Sánchez
   const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
 
+  // Calcular impacto desde el nivel más granular: distrito (o país para extranjero)
+  function calcImpactoGranular(dept) {
+    let imp = 0;
+    const provs = dept.provincias || [];
+    if (provs.length === 0) {
+      // Sin sub-data, usar nivel departamento
+      const vf = dept.votosFaltanPreciso || 0;
+      const sP = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+      const lP = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+      return Math.round(vf * (sP - lP) / 100);
+    }
+    for (const prov of provs) {
+      const dists = prov.distritos || [];
+      if (dists.length > 0) {
+        // Sumar desde distritos
+        for (const dist of dists) {
+          const vf = dist.votosFaltanPreciso || 0;
+          const sP = (findCand(dist.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+          const lP = (findCand(dist.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+          imp += Math.round(vf * (sP - lP) / 100);
+        }
+      } else {
+        // Provincias sin distritos (extranjero = países)
+        const vf = prov.votosFaltanPreciso || 0;
+        const sP = (findCand(prov.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+        const lP = (findCand(prov.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+        imp += Math.round(vf * (sP - lP) / 100);
+      }
+    }
+    return imp;
+  }
+
   depts.forEach(dept => {
-    const ac = dept.totales.contabilizadas;
-    const at = dept.totales.totalActas;
-    const ve = dept.totales.totalVotosEmitidos;
-    const vf = dept.votosFaltanPreciso != null ? dept.votosFaltanPreciso
-      : (ac > 0 ? Math.round((ve / ac) * (at - ac)) : 0);
-    const sP = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
-    const lP = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
-    totalImpacto += Math.round(vf * (sP - lP) / 100);
+    dept._impactoGranular = calcImpactoGranular(dept);
+    totalImpacto += dept._impactoGranular;
   });
 
   // Proyección final: diferencia actual + impacto pendiente (ambos con signo Sánchez-positivo)
@@ -225,7 +251,8 @@ function render(data) {
     const sP = sD ? sD.porcentajeVotosValidos : 0;
     const lP = lD ? lD.porcentajeVotosValidos : 0;
     const delta = sP - lP;
-    const impacto = Math.round(vf * delta / 100);
+    // Use granular impacto for departments, otherwise local calculation
+    const impacto = item._impactoGranular != null ? item._impactoGranular : Math.round(vf * delta / 100);
     const indent = isGrandChild ? 'padding-left:44px;font-weight:400;font-size:0.85em;color:#888;' :
                    isChild ? 'padding-left:24px;font-weight:400;font-size:0.9em;color:#555;' : '';
     const hasChildren = item.provincias?.length || item.distritos?.length;
