@@ -169,16 +169,22 @@ async function batch(items, fn) {
       const deptVpa = dt.data.contabilizadas > 0 ? dt.data.totalVotosEmitidos / dt.data.contabilizadas : 0;
       for (const prov of provResults) {
         if (!prov.totales) continue;
-        const ac = prov.totales.contabilizadas, at = prov.totales.totalActas, af = at - ac;
-        const provVpa = ac > 0 ? prov.totales.totalVotosEmitidos / ac : deptVpa;
-        const vf = Math.round(provVpa * af);
-        votosFaltanPreciso += vf;
+        const provVpa = prov.totales.contabilizadas > 0 ? prov.totales.totalVotosEmitidos / prov.totales.contabilizadas : deptVpa;
+        // Calculate province votosFaltan from district-level sums (most precise)
+        let provVotosFaltan;
+        if (prov.distritos?.length > 0) {
+          provVotosFaltan = prov.distritos.reduce((sum, d) => sum + (d.votosFaltanPreciso || 0), 0);
+        } else {
+          const af = prov.totales.totalActas - prov.totales.contabilizadas;
+          provVotosFaltan = Math.round(provVpa * af);
+        }
+        votosFaltanPreciso += provVotosFaltan;
         provincias.push({
           nombre: prov.nombre, ubigeo: prov.ubigeo,
           totales: prov.totales,
           candidatos: (prov.candidatos || []).sort((a, b) => b.totalVotosValidos - a.totalVotosValidos),
           distritos: prov.distritos,
-          votosFaltanPreciso: vf
+          votosFaltanPreciso: provVotosFaltan
         });
       }
     }
