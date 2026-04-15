@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-15T11:08:26.951Z",
+  "timestamp": "2026-04-15T11:10:05.490Z",
   "nacional": {
     "totales": {
       "actasContabilizadas": 89.685,
@@ -1052,21 +1052,21 @@
       "nombre": "APURÍMAC",
       "ubigeo": "030000",
       "totales": {
-        "actasContabilizadas": 93.47,
-        "contabilizadas": 1231,
+        "actasContabilizadas": 93.622,
+        "contabilizadas": 1233,
         "totalActas": 1317,
-        "participacionCiudadana": 66.089,
+        "participacionCiudadana": 66.199,
         "actasEnviadasJee": 3.341,
         "enviadasJee": 44,
-        "actasPendientesJee": 3.189,
-        "pendientesJee": 42,
-        "fechaActualizacion": 1776250231799,
+        "actasPendientesJee": 3.037,
+        "pendientesJee": 40,
+        "fechaActualizacion": 1776251141132,
         "idUbigeoDepartamento": 140000,
         "idUbigeoProvincia": 140100,
         "idUbigeoDistrito": 140101,
         "idUbigeoDistritoElectoral": 15,
-        "totalVotosEmitidos": 238806,
-        "totalVotosValidos": 188140,
+        "totalVotosEmitidos": 239203,
+        "totalVotosValidos": 188469,
         "porcentajeVotosEmitidos": 100,
         "porcentajeVotosValidos": 100
       },
