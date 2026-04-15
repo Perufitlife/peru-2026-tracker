@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peru 2026 — Segunda Vuelta Tracker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    background: #f5f5f7; color: #1d1d1f; padding: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container { max-width: 720px; margin: 0 auto; }
+
+  /* Header */
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .header h1 { font-size: 1.2em; font-weight: 700; color: #1d1d1f; }
+  .header .sub { font-size: 0.7em; color: #86868b; margin-top: 2px; }
+  .sync-btn {
+    background: #007aff; color: #fff; border: none; border-radius: 20px;
+    padding: 8px 18px; font-size: 0.8em; font-weight: 600; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sync-btn:hover { background: #0066d6; }
+  .sync-btn:active { transform: scale(0.96); }
+  .sync-btn:disabled { background: #86868b; cursor: default; }
+
+  /* Progress nacional */
+  .nacional {
+    background: #fff; border-radius: 16px; padding: 20px;
+    margin-bottom: 12px; text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .nacional .label { font-size: 0.7em; color: #86868b; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
+  .nacional .value { font-size: 2.8em; font-weight: 700; color: #1d1d1f; margin: 2px 0; letter-spacing: -1px; }
+  .nacional .detail { font-size: 0.8em; color: #86868b; }
+  .progress { width: 100%; height: 6px; background: #e8e8ed; border-radius: 3px; margin-top: 12px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; background: #007aff; transition: width 0.4s ease; }
+
+  /* Resumen cards */
+  .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .res-card {
+    background: #fff; border-radius: 14px; padding: 14px;
+    text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .res-card .rl { font-size: 0.65em; color: #86868b; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .res-card .rv { font-size: 1.5em; font-weight: 700; margin: 3px 0; font-variant-numeric: tabular-nums; }
+  .res-card .rs { font-size: 0.72em; color: #86868b; }
+  .res-card.full { grid-column: 1 / -1; }
+  .res-card.full .rv { font-size: 1.8em; }
+  .c-sanchez { color: #ff9500; }
+  .c-lopez { color: #007aff; }
+
+  /* Table */
+  .table-wrap {
+    background: #fff; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.78em; }
+  th {
+    text-align: left; padding: 10px 8px; font-size: 0.7em;
+    color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;
+    font-weight: 600; border-bottom: 1px solid #e8e8ed;
+    position: sticky; top: 0; background: #fff; z-index: 1;
+  }
+  th.r { text-align: right; }
+  td { padding: 9px 8px; border-bottom: 1px solid #f2f2f7; font-variant-numeric: tabular-nums; }
+  td.r { text-align: right; }
+  tr:last-child td { border-bottom: none; }
+  tr:active { background: #f2f2f7; }
+
+  .region-name { font-weight: 600; color: #1d1d1f; }
+
+  /* Avance badge */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-weight: 700; font-size: 0.9em; min-width: 48px; text-align: center;
+  }
+  .badge-green { background: #e8f5e9; color: #2e7d32; }
+  .badge-blue { background: #e3f2fd; color: #1565c0; }
+  .badge-yellow { background: #fff8e1; color: #f57f17; }
+  .badge-red { background: #ffebee; color: #c62828; }
+
+  /* Mini progress */
+  .mini-p { width: 50px; height: 4px; background: #e8e8ed; border-radius: 2px; display: inline-block; vertical-align: middle; overflow: hidden; }
+  .mini-f { height: 100%; border-radius: 2px; }
+  .mini-f.g { background: #34c759; }
+  .mini-f.b { background: #007aff; }
+  .mini-f.y { background: #ff9500; }
+  .mini-f.rd { background: #ff3b30; }
+
+  .val-s { color: #ff9500; font-weight: 600; }
+  .val-l { color: #007aff; font-weight: 600; }
+  .val-dp { color: #ff9500; font-weight: 700; }
+  .val-dn { color: #007aff; font-weight: 700; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .nacional .value { font-size: 2.2em; }
+    .res-card .rv { font-size: 1.2em; }
+    .res-card.full .rv { font-size: 1.4em; }
+    table { font-size: 0.72em; }
+    th, td { padding: 8px 5px; }
+    .mini-p { width: 36px; }
+    .badge { font-size: 0.8em; padding: 2px 6px; }
+    .hide-mobile { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div>
+    <h1>Peru 2026 — Segunda Vuelta</h1>
+    <div class="sub" id="meta">Cargando...</div>
+  </div>
+  <button class="sync-btn" id="syncBtn" onclick="sync()">Actualizar</button>
+</div>
+
+<div class="nacional" id="nacional"></div>
+<div class="resumen" id="resumen"></div>
+<div class="table-wrap"><table id="tabla"></table></div>
+
+</div>
+
+<script>
+const fmt = n => n.toLocaleString('es-PE');
+const titleCase = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const badgeClass = p => p >= 90 ? 'badge-green' : p >= 80 ? 'badge-blue' : p >= 70 ? 'badge-yellow' : 'badge-red';
+const miniClass = p => p >= 90 ? 'g' : p >= 80 ? 'b' : p >= 70 ? 'y' : 'rd';
+
+function findCand(list, needle) {
+  return (list || []).find(c => c.nombreCandidato && c.nombreCandidato.includes(needle));
+}
+
+async function load() {
+  const res = await fetch('data.json?t=' + Date.now());
+  render(await res.json());
+}
+
+function render(data) {
+  const t = data.nacional.totales;
+  const ts = new Date(data.timestamp);
+  document.getElementById('meta').textContent = `Actualizado: ${ts.toLocaleString('es-PE')}`;
+
+  // Nacional
+  document.getElementById('nacional').innerHTML = `
+    <div class="label">Actas procesadas</div>
+    <div class="value">${t.actasContabilizadas.toFixed(2)}%</div>
+    <div class="detail">${fmt(t.contabilizadas)} de ${fmt(t.totalActas)} actas — ${fmt(t.totalVotosEmitidos)} votos</div>
+    <div class="progress"><div class="progress-fill" style="width:${t.actasContabilizadas}%"></div></div>
+  `;
+
+  // Resumen Sanchez vs Lopez Aliaga
+  const nacS = findCand(data.nacional.candidatos, 'SANCHEZ PALOMINO');
+  const nacL = findCand(data.nacional.candidatos, 'LÓPEZ ALIAGA');
+  const vS = nacS ? nacS.totalVotosValidos : 0;
+  const vL = nacL ? nacL.totalVotosValidos : 0;
+  const diffActual = vL - vS;
+
+  let totalImpacto = 0;
+  const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
+
+  depts.forEach(dept => {
+    const ac = dept.totales.contabilizadas;
+    const at = dept.totales.totalActas;
+    const ve = dept.totales.totalVotosEmitidos;
+    const vf = dept.votosFaltanPreciso != null ? dept.votosFaltanPreciso
+      : (ac > 0 ? Math.round((ve / ac) * (at - ac)) : 0);
+    const sP = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+    const lP = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+    totalImpacto += Math.round(vf * (sP - lP) / 100);
+  });
+
+  const proy = diffActual - totalImpacto;
+  const ganador = proy > 0 ? 'Lopez Aliaga' : 'Roberto Sanchez';
+  const ganadorC = proy > 0 ? 'c-lopez' : 'c-sanchez';
+
+  document.getElementById('resumen').innerHTML = `
+    <div class="res-card">
+      <div class="rl">Sanchez</div>
+      <div class="rv c-sanchez">${fmt(vS)}</div>
+      <div class="rs">${nacS ? nacS.porcentajeVotosValidos.toFixed(2) : 0}%</div>
+    </div>
+    <div class="res-card">
+      <div class="rl">Lopez Aliaga</div>
+      <div class="rv c-lopez">${fmt(vL)}</div>
+      <div class="rs">${nacL ? nacL.porcentajeVotosValidos.toFixed(2) : 0}%</div>
+    </div>
+    <div class="res-card">
+      <div class="rl">Diferencia actual</div>
+      <div class="rv c-lopez">+${fmt(diffActual)}</div>
+      <div class="rs">a favor Lopez Aliaga</div>
+    </div>
+    <div class="res-card">
+      <div class="rl">Pendientes neto</div>
+      <div class="rv ${totalImpacto >= 0 ? 'c-sanchez' : 'c-lopez'}">${totalImpacto >= 0 ? '+' : ''}${fmt(totalImpacto)}</div>
+      <div class="rs">proyectado ${totalImpacto >= 0 ? 'Sanchez' : 'Lopez Aliaga'}</div>
+    </div>
+    <div class="res-card full">
+      <div class="rl">Posible segunda vuelta</div>
+      <div class="rv ${ganadorC}">${ganador}</div>
+      <div class="rs">por ~${fmt(Math.abs(Math.round(proy)))} votos</div>
+    </div>
+  `;
+
+  // Table
+  let rows = `<tr>
+    <th>Region</th>
+    <th class="r">Avance</th>
+    <th class="r hide-mobile">Votos</th>
+    <th class="r">~Faltan</th>
+    <th class="r">S</th>
+    <th class="r">LA</th>
+    <th class="r">D</th>
+    <th class="r">Impacto</th>
+  </tr>`;
+
+  depts.forEach(dept => {
+    const pct = dept.totales.actasContabilizadas;
+    const ve = dept.totales.totalVotosEmitidos;
+    const ac = dept.totales.contabilizadas;
+    const at = dept.totales.totalActas;
+    const vf = dept.votosFaltanPreciso != null ? dept.votosFaltanPreciso
+      : (ac > 0 ? Math.round((ve / ac) * (at - ac)) : 0);
+
+    const sD = findCand(dept.candidatos, 'SANCHEZ PALOMINO');
+    const lD = findCand(dept.candidatos, 'LÓPEZ ALIAGA');
+    const sP = sD ? sD.porcentajeVotosValidos : 0;
+    const lP = lD ? lD.porcentajeVotosValidos : 0;
+    const delta = sP - lP;
+    const impacto = Math.round(vf * delta / 100);
+
+    rows += `<tr>
+      <td class="region-name">${titleCase(dept.nombre)}</td>
+      <td class="r"><span class="badge ${badgeClass(pct)}">${pct.toFixed(1)}</span></td>
+      <td class="r hide-mobile">${fmt(ve)}</td>
+      <td class="r" style="color:#86868b">${fmt(vf)}</td>
+      <td class="r val-s">${sP.toFixed(1)}</td>
+      <td class="r val-l">${lP.toFixed(1)}</td>
+      <td class="r ${delta >= 0 ? 'val-dp' : 'val-dn'}">${delta >= 0 ? '+' : ''}${delta.toFixed(1)}</td>
+      <td class="r ${impacto >= 0 ? 'val-dp' : 'val-dn'}">${impacto >= 0 ? '+' : ''}${fmt(impacto)}</td>
+    </tr>`;
+  });
+
+  document.getElementById('tabla').innerHTML = rows;
+}
+
+async function sync() {
+  const btn = document.getElementById('syncBtn');
+  btn.disabled = true;
+  btn.textContent = 'Syncing...';
+  try {
+    const res = await fetch('/api/sync');
+    const d = await res.json();
+    if (d.status === 'ok') {
+      btn.textContent = 'Listo!';
+      await load();
+      setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 1200);
+    } else {
+      btn.textContent = d.status === 'already_running' ? 'En proceso...' : 'Error';
+      setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 3000);
+    }
+  } catch {
+    btn.textContent = 'Error';
+    setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 3000);
+  }
+}
+
+load();
+</script>
+</body>
+</html>
