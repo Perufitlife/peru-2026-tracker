@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-15T08:06:59.981Z",
+  "timestamp": "2026-04-15T08:07:44.531Z",
   "nacional": {
     "totales": {
       "actasContabilizadas": 88.358,
@@ -352,21 +352,21 @@
       "nombre": "AMAZONAS",
       "ubigeo": "010000",
       "totales": {
-        "actasContabilizadas": 82.551,
-        "contabilizadas": 1055,
+        "actasContabilizadas": 82.942,
+        "contabilizadas": 1060,
         "totalActas": 1278,
-        "participacionCiudadana": 52.69,
+        "participacionCiudadana": 52.933,
         "actasEnviadasJee": 4.46,
         "enviadasJee": 57,
-        "actasPendientesJee": 12.989,
-        "pendientesJee": 166,
-        "fechaActualizacion": 1776239277833,
+        "actasPendientesJee": 12.598,
+        "pendientesJee": 161,
+        "fechaActualizacion": 1776239455075,
         "idUbigeoDepartamento": 140000,
         "idUbigeoProvincia": 140100,
         "idUbigeoDistrito": 140101,
         "idUbigeoDistritoElectoral": 15,
-        "totalVotosEmitidos": 181911,
-        "totalVotosValidos": 138437,
+        "totalVotosEmitidos": 182750,
+        "totalVotosValidos": 139046,
         "porcentajeVotosEmitidos": 100,
         "porcentajeVotosValidos": 100
       },
