@@ -250,8 +250,19 @@ function render(data) {
   document.getElementById('tabla').innerHTML = rows;
 }
 
+const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
 async function sync() {
   const btn = document.getElementById('syncBtn');
+  if (!isLocal) {
+    // On GitHub Pages just reload data
+    btn.disabled = true;
+    btn.textContent = 'Recargando...';
+    await load();
+    btn.textContent = 'Listo!';
+    setTimeout(() => { btn.textContent = 'Recargar'; btn.disabled = false; }, 1200);
+    return;
+  }
   btn.disabled = true;
   btn.textContent = 'Syncing...';
   try {
@@ -270,6 +281,11 @@ async function sync() {
     setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 3000);
   }
 }
+
+// Set button text based on environment
+document.addEventListener('DOMContentLoaded', () => {
+  if (!isLocal) document.getElementById('syncBtn').textContent = 'Recargar';
+});
 
 load();
 </script>
