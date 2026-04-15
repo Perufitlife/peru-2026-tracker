@@ -212,7 +212,33 @@ function render(data) {
     </div>
   `;
 
-  // Table
+  // Table with expandable provinces
+  function buildRow(item, isChild) {
+    const pct = item.totales.actasContabilizadas;
+    const ve = item.totales.totalVotosEmitidos;
+    const ac = item.totales.contabilizadas;
+    const at = item.totales.totalActas;
+    const vf = item.votosFaltanPreciso != null ? item.votosFaltanPreciso
+      : (ac > 0 ? Math.round((ve / ac) * (at - ac)) : 0);
+    const sD = findCand(item.candidatos, 'SANCHEZ PALOMINO');
+    const lD = findCand(item.candidatos, 'LÓPEZ ALIAGA');
+    const sP = sD ? sD.porcentajeVotosValidos : 0;
+    const lP = lD ? lD.porcentajeVotosValidos : 0;
+    const delta = sP - lP;
+    const impacto = Math.round(vf * delta / 100);
+    const indent = isChild ? 'padding-left:24px;font-weight:400;font-size:0.9em;color:#555;' : '';
+    const arrow = !isChild && item.provincias?.length ? ' ▸' : '';
+    return `
+      <td class="region-name" style="${indent}">${titleCase(item.nombre)}${arrow}</td>
+      <td class="r"><span class="badge ${badgeClass(pct)}">${pct.toFixed(1)}</span></td>
+      <td class="r hide-mobile">${fmt(ve)}</td>
+      <td class="r" style="color:#86868b">${fmt(vf)}</td>
+      <td class="r val-s">${sP.toFixed(1)}</td>
+      <td class="r val-l">${lP.toFixed(1)}</td>
+      <td class="r ${delta >= 0 ? 'val-dp' : 'val-dn'}">${Math.abs(delta).toFixed(1)}</td>
+      <td class="r ${impacto >= 0 ? 'val-dp' : 'val-dn'}">${fmt(Math.abs(impacto))}</td>`;
+  }
+
   let rows = `<tr>
     <th>Region</th>
     <th class="r">Avance</th>
@@ -224,34 +250,31 @@ function render(data) {
     <th class="r">Impacto</th>
   </tr>`;
 
-  depts.forEach(dept => {
-    const pct = dept.totales.actasContabilizadas;
-    const ve = dept.totales.totalVotosEmitidos;
-    const ac = dept.totales.contabilizadas;
-    const at = dept.totales.totalActas;
-    const vf = dept.votosFaltanPreciso != null ? dept.votosFaltanPreciso
-      : (ac > 0 ? Math.round((ve / ac) * (at - ac)) : 0);
-
-    const sD = findCand(dept.candidatos, 'SANCHEZ PALOMINO');
-    const lD = findCand(dept.candidatos, 'LÓPEZ ALIAGA');
-    const sP = sD ? sD.porcentajeVotosValidos : 0;
-    const lP = lD ? lD.porcentajeVotosValidos : 0;
-    const delta = sP - lP;
-    const impacto = Math.round(vf * delta / 100);
-
-    rows += `<tr>
-      <td class="region-name">${titleCase(dept.nombre)}</td>
-      <td class="r"><span class="badge ${badgeClass(pct)}">${pct.toFixed(1)}</span></td>
-      <td class="r hide-mobile">${fmt(ve)}</td>
-      <td class="r" style="color:#86868b">${fmt(vf)}</td>
-      <td class="r val-s">${sP.toFixed(1)}</td>
-      <td class="r val-l">${lP.toFixed(1)}</td>
-      <td class="r ${delta >= 0 ? 'val-dp' : 'val-dn'}">${Math.abs(delta).toFixed(1)}</td>
-      <td class="r ${impacto >= 0 ? 'val-dp' : 'val-dn'}">${fmt(Math.abs(impacto))}</td>
-    </tr>`;
+  depts.forEach((dept, i) => {
+    const hasProvs = dept.provincias?.length > 0;
+    const deptId = 'dept-' + i;
+    rows += `<tr class="dept-row" ${hasProvs ? `onclick="toggleProvs('${deptId}')" style="cursor:pointer"` : ''}>${buildRow(dept, false)}</tr>`;
+    if (hasProvs) {
+      const provsSorted = [...dept.provincias].sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
+      provsSorted.forEach(prov => {
+        rows += `<tr class="prov-row ${deptId}" style="display:none;background:#fafafa">${buildRow(prov, true)}</tr>`;
+      });
+    }
   });
 
   document.getElementById('tabla').innerHTML = rows;
+}
+
+function toggleProvs(id) {
+  const rows = document.querySelectorAll('.' + id);
+  const visible = rows[0]?.style.display !== 'none';
+  rows.forEach(r => r.style.display = visible ? 'none' : '');
+  // Toggle arrow
+  const parent = document.querySelector(`[onclick*="${id}"]`);
+  if (parent) {
+    const nameCell = parent.querySelector('.region-name');
+    if (nameCell) nameCell.innerHTML = nameCell.innerHTML.replace(visible ? ' ▾' : ' ▸', visible ? ' ▸' : ' ▾');
+  }
 }
 
 const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';

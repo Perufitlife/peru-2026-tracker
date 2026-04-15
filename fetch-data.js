@@ -132,26 +132,39 @@ async function batch(items, fn) {
       return null;
     }
 
-    // Province-level precision
+    // Province-level: totals + candidates
     let votosFaltanPreciso = 0;
+    const provincias = [];
     if (provList?.data?.length) {
-      const provResults = await batch(provList.data, async (prov) =>
-        api(`${BASE}/resumen-general/totales?idAmbitoGeografico=1&idEleccion=10&tipoFiltro=ubigeo_nivel_02&idUbigeoDepartamento=${ub}&idUbigeoProvincia=${prov.ubigeo}`)
-      );
+      const provResults = await batch(provList.data, async (prov) => {
+        const [pt, pc] = await Promise.all([
+          api(`${BASE}/resumen-general/totales?idAmbitoGeografico=1&idEleccion=10&tipoFiltro=ubigeo_nivel_02&idUbigeoDepartamento=${ub}&idUbigeoProvincia=${prov.ubigeo}`),
+          api(`${BASE}/resumen-general/participantes?idAmbitoGeografico=1&idEleccion=10&tipoFiltro=ubigeo_nivel_02&idUbigeoDepartamento=${ub}&idUbigeoProvincia=${prov.ubigeo}`),
+        ]);
+        return { nombre: prov.nombre, ubigeo: prov.ubigeo, totales: pt?.data, candidatos: pc?.data };
+      });
       const deptVpa = dt.data.contabilizadas > 0 ? dt.data.totalVotosEmitidos / dt.data.contabilizadas : 0;
-      for (const pt of provResults) {
-        if (!pt?.data) continue;
-        const ac = pt.data.contabilizadas, at = pt.data.totalActas, af = at - ac;
-        if (ac > 0 && af > 0) votosFaltanPreciso += Math.round((pt.data.totalVotosEmitidos / ac) * af);
-        else if (ac === 0 && at > 0) votosFaltanPreciso += Math.round(deptVpa * at);
+      for (const prov of provResults) {
+        if (!prov.totales) continue;
+        const ac = prov.totales.contabilizadas, at = prov.totales.totalActas, af = at - ac;
+        const provVpa = ac > 0 ? prov.totales.totalVotosEmitidos / ac : deptVpa;
+        const vf = Math.round(provVpa * af);
+        votosFaltanPreciso += vf;
+        provincias.push({
+          nombre: prov.nombre, ubigeo: prov.ubigeo,
+          totales: prov.totales,
+          candidatos: (prov.candidatos || []).sort((a, b) => b.totalVotosValidos - a.totalVotosValidos),
+          votosFaltanPreciso: vf
+        });
       }
     }
 
-    console.log(`  ${dept.nombre} OK`);
+    console.log(`  ${dept.nombre} OK (${provincias.length} provs)`);
     return {
       nombre: dept.nombre, ubigeo: ub,
       totales: dt.data,
       candidatos: dc.data.sort((a, b) => b.totalVotosValidos - a.totalVotosValidos),
+      provincias,
       votosFaltanPreciso
     };
   });
@@ -165,14 +178,47 @@ async function batch(items, fn) {
     process.exit(1);
   }
 
-  // Add extranjero
+  // Add extranjero with country breakdown
+  console.log('\nFetching extranjero...');
   if (extTotals?.data) {
     const ac = extTotals.data.contabilizadas, af = extTotals.data.totalActas - ac;
+    const extVpa = ac > 0 ? extTotals.data.totalVotosEmitidos / ac : 0;
+
+    // Fetch continents → countries
+    const continents = await api(`${BASE}/ubigeos/departamentos?idEleccion=10&idAmbitoGeografico=2`);
+    const paises = [];
+    if (continents?.data) {
+      for (const cont of continents.data) {
+        const countries = await api(`${BASE}/ubigeos/provincias?idEleccion=10&idAmbitoGeografico=2&idUbigeoDepartamento=${cont.ubigeo}`);
+        if (!countries?.data) continue;
+        const countryResults = await batch(countries.data, async (country) => {
+          const [ct, cc] = await Promise.all([
+            api(`${BASE}/resumen-general/totales?idAmbitoGeografico=2&idEleccion=10&tipoFiltro=ubigeo_nivel_02&idUbigeoDepartamento=${cont.ubigeo}&idUbigeoProvincia=${country.ubigeo}`),
+            api(`${BASE}/resumen-general/participantes?idAmbitoGeografico=2&idEleccion=10&tipoFiltro=ubigeo_nivel_02&idUbigeoDepartamento=${cont.ubigeo}&idUbigeoProvincia=${country.ubigeo}`),
+          ]);
+          return { nombre: country.nombre, ubigeo: country.ubigeo, continente: cont.nombre, totales: ct?.data, candidatos: cc?.data };
+        });
+        for (const p of countryResults) {
+          if (!p.totales) continue;
+          const pac = p.totales.contabilizadas, pat = p.totales.totalActas, paf = pat - pac;
+          const pVpa = pac > 0 ? p.totales.totalVotosEmitidos / pac : extVpa;
+          paises.push({
+            nombre: p.nombre, ubigeo: p.ubigeo, continente: p.continente,
+            totales: p.totales,
+            candidatos: (p.candidatos || []).sort((a, b) => b.totalVotosValidos - a.totalVotosValidos),
+            votosFaltanPreciso: Math.round(pVpa * paf)
+          });
+        }
+      }
+    }
+    console.log(`  EXTRANJERO OK (${paises.length} paises)`);
+
     departamentos.push({
       nombre: 'EXTRANJERO', ubigeo: '999999',
       totales: extTotals.data,
       candidatos: (extCands?.data || []).sort((a, b) => b.totalVotosValidos - a.totalVotosValidos),
-      votosFaltanPreciso: ac > 0 ? Math.round((extTotals.data.totalVotosEmitidos / ac) * af) : 0
+      provincias: paises,
+      votosFaltanPreciso: ac > 0 ? Math.round(extVpa * af) : 0
     });
   }
 
