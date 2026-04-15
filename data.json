@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-04-15T08:09:11.420Z",
+  "timestamp": "2026-04-15T08:15:34.295Z",
   "nacional": {
     "totales": {
-      "actasContabilizadas": 88.358,
-      "contabilizadas": 81966,
+      "actasContabilizadas": 88.523,
+      "contabilizadas": 82119,
       "totalActas": 92766,
-      "participacionCiudadana": 65.773,
-      "actasEnviadasJee": 4.15,
-      "enviadasJee": 3850,
-      "actasPendientesJee": 7.492,
-      "pendientesJee": 6950,
-      "fechaActualizacion": 1776239455075,
+      "participacionCiudadana": 65.877,
+      "actasEnviadasJee": 4.187,
+      "enviadasJee": 3884,
+      "actasPendientesJee": 7.29,
+      "pendientesJee": 6763,
+      "fechaActualizacion": 1776240361717,
       "idUbigeoDepartamento": 140000,
       "idUbigeoProvincia": 140100,
       "idUbigeoDistrito": 140101,
       "idUbigeoDistritoElectoral": 15,
-      "totalVotosEmitidos": 17972659,
-      "totalVotosValidos": 15024974,
+      "totalVotosEmitidos": 18001040,
+      "totalVotosValidos": 15046910,
       "porcentajeVotosEmitidos": 100,
       "porcentajeVotosValidos": 100
     },
@@ -4196,7 +4196,7 @@
           "porcentajeVotosEmitidos": 0.045
         }
       ],
-      "votosFaltanPreciso": 157956
+      "votosFaltanPreciso": 154845
     },
     {
       "nombre": "JUNÍN",
