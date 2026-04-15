@@ -202,7 +202,7 @@ function render(data) {
     </div>
     <div class="res-card">
       <div class="rl">Pendientes neto</div>
-      <div class="rv ${totalImpacto >= 0 ? 'c-sanchez' : 'c-lopez'}">${totalImpacto >= 0 ? '+' : ''}${fmt(totalImpacto)}</div>
+      <div class="rv ${totalImpacto >= 0 ? 'c-sanchez' : 'c-lopez'}">${fmt(Math.abs(totalImpacto))}</div>
       <div class="rs">proyectado ${totalImpacto >= 0 ? 'Sanchez' : 'Lopez Aliaga'}</div>
     </div>
     <div class="res-card full">
