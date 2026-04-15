@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-15T10:40:00.476Z",
+  "timestamp": "2026-04-15T10:43:47.029Z",
   "nacional": {
     "totales": {
       "actasContabilizadas": 89.509,
@@ -9102,21 +9102,21 @@
       "nombre": "EXTRANJERO",
       "ubigeo": "999999",
       "totales": {
-        "actasContabilizadas": 41.565,
-        "contabilizadas": 1057,
+        "actasContabilizadas": 41.88,
+        "contabilizadas": 1065,
         "totalActas": 2543,
-        "participacionCiudadana": 12.881,
-        "actasEnviadasJee": 3.264,
-        "enviadasJee": 83,
-        "actasPendientesJee": 55.171,
-        "pendientesJee": 1403,
-        "fechaActualizacion": 1776248452028,
+        "participacionCiudadana": 12.997,
+        "actasEnviadasJee": 3.618,
+        "enviadasJee": 92,
+        "actasPendientesJee": 54.502,
+        "pendientesJee": 1386,
+        "fechaActualizacion": 1776249328212,
         "idUbigeoDepartamento": 140000,
         "idUbigeoProvincia": 140100,
         "idUbigeoDistrito": 140101,
         "idUbigeoDistritoElectoral": 15,
-        "totalVotosEmitidos": 155963,
-        "totalVotosValidos": 122574,
+        "totalVotosEmitidos": 157369,
+        "totalVotosValidos": 123769,
         "porcentajeVotosEmitidos": 100,
         "porcentajeVotosValidos": 100
       },
@@ -9446,7 +9446,7 @@
           "porcentajeVotosEmitidos": 0.041
         }
       ],
-      "votosFaltanPreciso": 219263
+      "votosFaltanPreciso": 218396
     }
   ]
 }
