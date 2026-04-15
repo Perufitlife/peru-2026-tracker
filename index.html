@@ -246,8 +246,8 @@ function render(data) {
       <td class="r" style="color:#86868b">${fmt(vf)}</td>
       <td class="r val-s">${sP.toFixed(1)}</td>
       <td class="r val-l">${lP.toFixed(1)}</td>
-      <td class="r ${delta >= 0 ? 'val-dp' : 'val-dn'}">${delta >= 0 ? '+' : ''}${delta.toFixed(1)}</td>
-      <td class="r ${impacto >= 0 ? 'val-dp' : 'val-dn'}">${impacto >= 0 ? '+' : ''}${fmt(impacto)}</td>
+      <td class="r ${delta >= 0 ? 'val-dp' : 'val-dn'}">${Math.abs(delta).toFixed(1)}</td>
+      <td class="r ${impacto >= 0 ? 'val-dp' : 'val-dn'}">${fmt(Math.abs(impacto))}</td>
     </tr>`;
   });
 
