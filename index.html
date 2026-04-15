@@ -44,6 +44,7 @@
   .res-card {
     background: #fff; border-radius: 14px; padding: 14px;
     text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    position: relative;
   }
   .res-card .rl { font-size: 0.65em; color: #86868b; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
   .res-card .rv { font-size: 1.5em; font-weight: 700; margin: 3px 0; font-variant-numeric: tabular-nums; }
@@ -52,6 +53,42 @@
   .res-card.full .rv { font-size: 1.8em; }
   .c-sanchez { color: #ff9500; }
   .c-lopez { color: #007aff; }
+
+  /* Info tooltip */
+  .info-btn {
+    position: absolute; top: 8px; right: 10px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #e8e8ed; color: #86868b; border: none;
+    font-size: 0.65em; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .info-btn:hover { background: #d1d1d6; color: #555; }
+  .tooltip {
+    display: none; position: absolute; top: 32px; right: 4px; left: 4px;
+    background: #1d1d1f; color: #fff; padding: 10px 12px;
+    border-radius: 10px; font-size: 0.72em; font-weight: 400;
+    text-align: left; z-index: 10; line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .tooltip.show { display: block; }
+
+  /* Leyenda */
+  .leyenda {
+    background: #fff; border-radius: 14px; padding: 14px 16px;
+    margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .leyenda-title {
+    font-size: 0.7em; color: #86868b; text-transform: uppercase;
+    letter-spacing: 1px; font-weight: 600; margin-bottom: 8px;
+  }
+  .leyenda-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+  .leyenda-item { display: flex; align-items: center; gap: 6px; font-size: 0.75em; color: #555; }
+  .leyenda-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .leyenda-cols { margin-top: 10px; padding-top: 8px; border-top: 1px solid #f2f2f7; }
+  .leyenda-cols-title { font-size: 0.68em; color: #86868b; margin-bottom: 4px; font-weight: 600; }
+  .leyenda-col-item { font-size: 0.72em; color: #555; padding: 2px 0; }
+  .leyenda-col-item b { color: #1d1d1f; }
 
   /* Table */
   .table-wrap {
@@ -66,6 +103,7 @@
     position: sticky; top: 0; background: #fff; z-index: 1;
   }
   th.r { text-align: right; }
+  th .th-info { font-weight: 400; text-transform: none; letter-spacing: 0; display: block; font-size: 0.85em; color: #aaa; }
   td { padding: 9px 8px; border-bottom: 1px solid #f2f2f7; font-variant-numeric: tabular-nums; }
   td.r { text-align: right; }
   tr:last-child td { border-bottom: none; }
@@ -83,18 +121,14 @@
   .badge-yellow { background: #fff8e1; color: #f57f17; }
   .badge-red { background: #ffebee; color: #c62828; }
 
-  /* Mini progress */
-  .mini-p { width: 50px; height: 4px; background: #e8e8ed; border-radius: 2px; display: inline-block; vertical-align: middle; overflow: hidden; }
-  .mini-f { height: 100%; border-radius: 2px; }
-  .mini-f.g { background: #34c759; }
-  .mini-f.b { background: #007aff; }
-  .mini-f.y { background: #ff9500; }
-  .mini-f.rd { background: #ff3b30; }
-
   .val-s { color: #ff9500; font-weight: 600; }
   .val-l { color: #007aff; font-weight: 600; }
   .val-dp { color: #ff9500; font-weight: 700; }
   .val-dn { color: #007aff; font-weight: 700; }
+
+  /* Footer */
+  .footer { margin-top: 20px; padding: 16px; text-align: center; font-size: 0.7em; color: #aaa; line-height: 1.6; }
+  .footer a { color: #007aff; text-decoration: none; }
 
   /* Responsive */
   @media (max-width: 600px) {
@@ -104,9 +138,9 @@
     .res-card.full .rv { font-size: 1.4em; }
     table { font-size: 0.72em; }
     th, td { padding: 8px 5px; }
-    .mini-p { width: 36px; }
     .badge { font-size: 0.8em; padding: 2px 6px; }
     .hide-mobile { display: none; }
+    .leyenda-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -124,7 +158,36 @@
 
 <div class="nacional" id="nacional"></div>
 <div class="resumen" id="resumen"></div>
+
+<div class="leyenda" id="leyenda">
+  <div class="leyenda-title">Leyenda</div>
+  <div class="leyenda-grid">
+    <div class="leyenda-item"><span class="leyenda-dot" style="background:#2e7d32"></span> +90% actas contadas</div>
+    <div class="leyenda-item"><span class="leyenda-dot" style="background:#1565c0"></span> 80–90% actas contadas</div>
+    <div class="leyenda-item"><span class="leyenda-dot" style="background:#f57f17"></span> 70–80% actas contadas</div>
+    <div class="leyenda-item"><span class="leyenda-dot" style="background:#c62828"></span> Menos de 70% — alto pendiente</div>
+    <div class="leyenda-item"><span class="leyenda-dot" style="background:#ff9500"></span> Favorece a Sanchez</div>
+    <div class="leyenda-item"><span class="leyenda-dot" style="background:#007aff"></span> Favorece a Lopez Aliaga</div>
+  </div>
+  <div class="leyenda-cols">
+    <div class="leyenda-cols-title">Columnas de la tabla</div>
+    <div class="leyenda-col-item"><b>Avance</b> — % de actas procesadas por ONPE</div>
+    <div class="leyenda-col-item"><b>Votos</b> — votos ya contabilizados en esa region</div>
+    <div class="leyenda-col-item"><b>~Faltan</b> — estimado de votos pendientes (promedio votos/acta × actas faltantes)</div>
+    <div class="leyenda-col-item"><b>S</b> — % de votos validos de Roberto Sanchez en esa region</div>
+    <div class="leyenda-col-item"><b>LA</b> — % de votos validos de Lopez Aliaga en esa region</div>
+    <div class="leyenda-col-item"><b>D</b> — diferencia en puntos porcentuales entre ambos candidatos</div>
+    <div class="leyenda-col-item"><b>Impacto</b> — votos netos estimados que aportan las actas pendientes de esa region. El color indica a quien favorece</div>
+  </div>
+</div>
+
 <div class="table-wrap"><table id="tabla"></table></div>
+
+<div class="footer">
+  Datos oficiales de la <a href="https://resultadoelectoral.onpe.gob.pe" target="_blank">ONPE</a> via su API publica.<br>
+  Las proyecciones son estimaciones basadas en los porcentajes actuales de cada departamento aplicados a las actas pendientes. No constituyen resultados oficiales.<br>
+  Toca cualquier departamento para ver el desglose por provincia, y cualquier provincia para ver distritos.
+</div>
 
 </div>
 
@@ -132,10 +195,22 @@
 const fmt = n => n.toLocaleString('es-PE');
 const titleCase = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 const badgeClass = p => p >= 90 ? 'badge-green' : p >= 80 ? 'badge-blue' : p >= 70 ? 'badge-yellow' : 'badge-red';
-const miniClass = p => p >= 90 ? 'g' : p >= 80 ? 'b' : p >= 70 ? 'y' : 'rd';
 
 function findCand(list, needle) {
   return (list || []).find(c => c.nombreCandidato && c.nombreCandidato.includes(needle));
+}
+
+function toggleTip(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('show');
+  // Close on outside click
+  if (el.classList.contains('show')) {
+    setTimeout(() => {
+      document.addEventListener('click', function close(e) {
+        if (!el.contains(e.target)) { el.classList.remove('show'); document.removeEventListener('click', close); }
+      });
+    }, 10);
+  }
 }
 
 async function load() {
@@ -152,7 +227,7 @@ function render(data) {
   document.getElementById('nacional').innerHTML = `
     <div class="label">Actas procesadas</div>
     <div class="value">${t.actasContabilizadas.toFixed(2)}%</div>
-    <div class="detail">${fmt(t.contabilizadas)} de ${fmt(t.totalActas)} actas — ${fmt(t.totalVotosEmitidos)} votos</div>
+    <div class="detail">${fmt(t.contabilizadas)} de ${fmt(t.totalActas)} actas — ${fmt(t.totalVotosEmitidos)} votos contados</div>
     <div class="progress"><div class="progress-fill" style="width:${t.actasContabilizadas}%"></div></div>
   `;
 
@@ -161,17 +236,13 @@ function render(data) {
   const nacL = findCand(data.nacional.candidatos, 'LÓPEZ ALIAGA');
   const vS = nacS ? nacS.totalVotosValidos : 0;
   const vL = nacL ? nacL.totalVotosValidos : 0;
-  // Positivo = Sánchez adelante, negativo = López Aliaga adelante
   const diffActual = vS - vL;
   const liderActual = diffActual >= 0 ? 'Sanchez' : 'Lopez Aliaga';
   const liderActualC = diffActual >= 0 ? 'c-sanchez' : 'c-lopez';
 
-  let totalImpacto = 0; // positivo = favorece a Sánchez
+  let totalImpacto = 0;
   const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
 
-  // Método simple por departamento — cobertura 100%, sin agujeros
-  // votosFaltan = actasFaltantes × promedio votos/acta del departamento
-  // impacto = votosFaltan × (% Sánchez - % López Aliaga) / 100
   depts.forEach(dept => {
     const ac = dept.totales.contabilizadas;
     const at = dept.totales.totalActas;
@@ -185,7 +256,6 @@ function render(data) {
     totalImpacto += dept._impactoSimple;
   });
 
-  // Proyección final: diferencia actual + impacto pendiente (ambos con signo Sánchez-positivo)
   const proyFinal = diffActual + totalImpacto;
   const ganador = proyFinal >= 0 ? 'Roberto Sanchez' : 'Lopez Aliaga';
   const ganadorC = proyFinal >= 0 ? 'c-sanchez' : 'c-lopez';
@@ -194,38 +264,46 @@ function render(data) {
     <div class="res-card">
       <div class="rl">Sanchez</div>
       <div class="rv c-sanchez">${fmt(vS)}</div>
-      <div class="rs">${nacS ? nacS.porcentajeVotosValidos.toFixed(2) : 0}%</div>
+      <div class="rs">${nacS ? nacS.porcentajeVotosValidos.toFixed(2) : 0}% de votos validos</div>
+      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-s')">i</button>
+      <div class="tooltip" id="tip-s">Votos validos obtenidos por Roberto Sanchez Palomino (Juntos por el Peru) en las actas procesadas hasta el momento.</div>
     </div>
     <div class="res-card">
       <div class="rl">Lopez Aliaga</div>
       <div class="rv c-lopez">${fmt(vL)}</div>
-      <div class="rs">${nacL ? nacL.porcentajeVotosValidos.toFixed(2) : 0}%</div>
+      <div class="rs">${nacL ? nacL.porcentajeVotosValidos.toFixed(2) : 0}% de votos validos</div>
+      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-l')">i</button>
+      <div class="tooltip" id="tip-l">Votos validos obtenidos por Rafael Lopez Aliaga Cazorla (Renovacion Popular) en las actas procesadas hasta el momento.</div>
     </div>
     <div class="res-card">
       <div class="rl">Diferencia actual</div>
       <div class="rv ${liderActualC}">${fmt(Math.abs(diffActual))}</div>
       <div class="rs">a favor ${liderActual}</div>
+      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-d')">i</button>
+      <div class="tooltip" id="tip-d">Diferencia en votos validos entre ambos candidatos con las actas contadas hasta ahora. Este numero cambia conforme se procesan mas actas.</div>
     </div>
     <div class="res-card">
       <div class="rl">Pendientes neto</div>
       <div class="rv ${totalImpacto >= 0 ? 'c-sanchez' : 'c-lopez'}">${fmt(Math.abs(totalImpacto))}</div>
       <div class="rs">proyectado ${totalImpacto >= 0 ? 'Sanchez' : 'Lopez Aliaga'}</div>
+      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-p')">i</button>
+      <div class="tooltip" id="tip-p">Estimado de cuantos votos netos aportaran las actas que aun faltan por contar. Se calcula multiplicando los votos pendientes de cada departamento por la diferencia porcentual entre ambos candidatos en ese departamento. No es un resultado oficial — es una proyeccion estadistica.</div>
     </div>
     <div class="res-card full">
       <div class="rl">Posible segunda vuelta</div>
       <div class="rv ${ganadorC}">${ganador}</div>
-      <div class="rs">por ~${fmt(Math.abs(Math.round(proyFinal)))} votos</div>
+      <div class="rs">por ~${fmt(Math.abs(Math.round(proyFinal)))} votos de ventaja proyectada</div>
+      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-g')">i</button>
+      <div class="tooltip" id="tip-g">Suma de la diferencia actual + el impacto estimado de los votos pendientes. Indica quien pasaria a segunda vuelta si los votos pendientes mantienen la misma tendencia que los ya contados en cada departamento. Es una estimacion — el resultado real puede variar.</div>
     </div>
   `;
 
-  // Table with expandable provinces
+  // Table
   function buildRow(item, isChild, isGrandChild) {
     const pct = item.totales.actasContabilizadas;
     const ve = item.totales.totalVotosEmitidos;
     const ac = item.totales.contabilizadas;
     const at = item.totales.totalActas;
-    // Para departamentos: usar cálculo simple (cobertura 100%)
-    // Para provincias/distritos: usar su propia data local
     const vpa = ac > 0 ? ve / ac : 0;
     const vf = item._votosFaltanSimple != null ? item._votosFaltanSimple : Math.round(vpa * (at - ac));
     const sD = findCand(item.candidatos, 'SANCHEZ PALOMINO');
@@ -250,7 +328,7 @@ function render(data) {
   }
 
   let rows = `<tr>
-    <th>Region</th>
+    <th>Region<span class="th-info">toca para expandir</span></th>
     <th class="r">Avance</th>
     <th class="r hide-mobile">Votos</th>
     <th class="r">~Faltan</th>
@@ -287,7 +365,6 @@ function toggleProvs(id) {
   const rows = document.querySelectorAll('.' + id);
   const visible = rows[0]?.style.display !== 'none';
   rows.forEach(r => r.style.display = visible ? 'none' : '');
-  // Toggle arrow
   const parent = document.querySelector(`[onclick*="${id}"]`);
   if (parent) {
     const nameCell = parent.querySelector('.region-name');
@@ -300,7 +377,6 @@ const isLocal = location.hostname === 'localhost' || location.hostname === '127.
 async function sync() {
   const btn = document.getElementById('syncBtn');
   if (!isLocal) {
-    // On GitHub Pages just reload data
     btn.disabled = true;
     btn.textContent = 'Recargando...';
     await load();
@@ -327,7 +403,6 @@ async function sync() {
   }
 }
 
-// Set button text based on environment
 document.addEventListener('DOMContentLoaded', () => {
   if (!isLocal) document.getElementById('syncBtn').textContent = 'Recargar';
 });
