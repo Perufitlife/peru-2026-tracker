@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-15T10:50:15.606Z",
+  "timestamp": "2026-04-15T10:54:17.976Z",
   "nacional": {
     "totales": {
       "actasContabilizadas": 89.601,
@@ -7360,7 +7360,7 @@
         "enviadasJee": 81,
         "actasPendientesJee": 1.708,
         "pendientesJee": 58,
-        "fechaActualizacion": 1776249328212,
+        "fechaActualizacion": 1776250060351,
         "idUbigeoDepartamento": 140000,
         "idUbigeoProvincia": 140100,
         "idUbigeoDistrito": 140101,
@@ -9102,21 +9102,21 @@
       "nombre": "EXTRANJERO",
       "ubigeo": "999999",
       "totales": {
-        "actasContabilizadas": 41.88,
-        "contabilizadas": 1065,
+        "actasContabilizadas": 42.076,
+        "contabilizadas": 1070,
         "totalActas": 2543,
-        "participacionCiudadana": 12.997,
-        "actasEnviadasJee": 3.618,
-        "enviadasJee": 92,
-        "actasPendientesJee": 54.502,
-        "pendientesJee": 1386,
-        "fechaActualizacion": 1776249328212,
+        "participacionCiudadana": 13.059,
+        "actasEnviadasJee": 3.814,
+        "enviadasJee": 97,
+        "actasPendientesJee": 54.11,
+        "pendientesJee": 1376,
+        "fechaActualizacion": 1776250060351,
         "idUbigeoDepartamento": 140000,
         "idUbigeoProvincia": 140100,
         "idUbigeoDistrito": 140101,
         "idUbigeoDistritoElectoral": 15,
-        "totalVotosEmitidos": 157369,
-        "totalVotosValidos": 123769,
+        "totalVotosEmitidos": 158122,
+        "totalVotosValidos": 124347,
         "porcentajeVotosEmitidos": 100,
         "porcentajeVotosValidos": 100
       },
@@ -9446,7 +9446,7 @@
           "porcentajeVotosEmitidos": 0.04
         }
       ],
-      "votosFaltanPreciso": 218396
+      "votosFaltanPreciso": 217676
     }
   ]
 }
