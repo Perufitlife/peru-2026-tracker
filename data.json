@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-04-15T06:41:19.924Z",
+  "timestamp": "2026-04-15T06:44:28.920Z",
   "nacional": {
     "totales": {
-      "actasContabilizadas": 87.15,
-      "contabilizadas": 80846,
+      "actasContabilizadas": 87.368,
+      "contabilizadas": 81048,
       "totalActas": 92766,
-      "participacionCiudadana": 65.004,
-      "actasEnviadasJee": 3.889,
-      "enviadasJee": 3608,
-      "actasPendientesJee": 8.961,
-      "pendientesJee": 8312,
-      "fechaActualizacion": 1776234089125,
+      "participacionCiudadana": 65.142,
+      "actasEnviadasJee": 3.928,
+      "enviadasJee": 3644,
+      "actasPendientesJee": 8.704,
+      "pendientesJee": 8074,
+      "fechaActualizacion": 1776234968124,
       "idUbigeoDepartamento": 140000,
       "idUbigeoProvincia": 140100,
       "idUbigeoDistrito": 140101,
       "idUbigeoDistritoElectoral": 15,
-      "totalVotosEmitidos": 17762709,
-      "totalVotosValidos": 14865044,
+      "totalVotosEmitidos": 17800374,
+      "totalVotosValidos": 14893590,
       "porcentajeVotosEmitidos": 100,
       "porcentajeVotosValidos": 100
     },
@@ -9102,21 +9102,21 @@
       "nombre": "EXTRANJERO",
       "ubigeo": "999999",
       "totales": {
-        "actasContabilizadas": 34.172,
-        "contabilizadas": 869,
+        "actasContabilizadas": 34.723,
+        "contabilizadas": 883,
         "totalActas": 2543,
-        "participacionCiudadana": 11.044,
-        "actasEnviadasJee": 1.337,
-        "enviadasJee": 34,
-        "actasPendientesJee": 64.491,
-        "pendientesJee": 1640,
-        "fechaActualizacion": 1776234089125,
+        "participacionCiudadana": 11.188,
+        "actasEnviadasJee": 1.455,
+        "enviadasJee": 37,
+        "actasPendientesJee": 63.822,
+        "pendientesJee": 1623,
+        "fechaActualizacion": 1776234968124,
         "idUbigeoDepartamento": 140000,
         "idUbigeoProvincia": 140100,
         "idUbigeoDistrito": 140101,
         "idUbigeoDistritoElectoral": 15,
-        "totalVotosEmitidos": 133728,
-        "totalVotosValidos": 104286,
+        "totalVotosEmitidos": 135470,
+        "totalVotosValidos": 105746,
         "porcentajeVotosEmitidos": 100,
         "porcentajeVotosValidos": 100
       },
@@ -9446,7 +9446,7 @@
           "porcentajeVotosEmitidos": 0.041
         }
       ],
-      "votosFaltanPreciso": 257607
+      "votosFaltanPreciso": 254677
     }
   ]
 }
