@@ -160,9 +160,12 @@ function render(data) {
   const nacL = findCand(data.nacional.candidatos, 'LÓPEZ ALIAGA');
   const vS = nacS ? nacS.totalVotosValidos : 0;
   const vL = nacL ? nacL.totalVotosValidos : 0;
-  const diffActual = vL - vS;
+  // Positivo = Sánchez adelante, negativo = López Aliaga adelante
+  const diffActual = vS - vL;
+  const liderActual = diffActual >= 0 ? 'Sanchez' : 'Lopez Aliaga';
+  const liderActualC = diffActual >= 0 ? 'c-sanchez' : 'c-lopez';
 
-  let totalImpacto = 0;
+  let totalImpacto = 0; // positivo = favorece a Sánchez
   const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
 
   depts.forEach(dept => {
@@ -176,9 +179,10 @@ function render(data) {
     totalImpacto += Math.round(vf * (sP - lP) / 100);
   });
 
-  const proy = diffActual - totalImpacto;
-  const ganador = proy > 0 ? 'Lopez Aliaga' : 'Roberto Sanchez';
-  const ganadorC = proy > 0 ? 'c-lopez' : 'c-sanchez';
+  // Proyección final: diferencia actual + impacto pendiente (ambos con signo Sánchez-positivo)
+  const proyFinal = diffActual + totalImpacto;
+  const ganador = proyFinal >= 0 ? 'Roberto Sanchez' : 'Lopez Aliaga';
+  const ganadorC = proyFinal >= 0 ? 'c-sanchez' : 'c-lopez';
 
   document.getElementById('resumen').innerHTML = `
     <div class="res-card">
@@ -193,8 +197,8 @@ function render(data) {
     </div>
     <div class="res-card">
       <div class="rl">Diferencia actual</div>
-      <div class="rv c-lopez">+${fmt(diffActual)}</div>
-      <div class="rs">a favor Lopez Aliaga</div>
+      <div class="rv ${liderActualC}">${fmt(Math.abs(diffActual))}</div>
+      <div class="rs">a favor ${liderActual}</div>
     </div>
     <div class="res-card">
       <div class="rl">Pendientes neto</div>
@@ -204,7 +208,7 @@ function render(data) {
     <div class="res-card full">
       <div class="rl">Posible segunda vuelta</div>
       <div class="rv ${ganadorC}">${ganador}</div>
-      <div class="rs">por ~${fmt(Math.abs(Math.round(proy)))} votos</div>
+      <div class="rs">por ~${fmt(Math.abs(Math.round(proyFinal)))} votos</div>
     </div>
   `;
 
