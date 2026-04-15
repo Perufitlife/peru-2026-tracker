@@ -168,41 +168,20 @@ function render(data) {
   let totalImpacto = 0; // positivo = favorece a Sánchez
   const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
 
-  // Calcular impacto desde el nivel más granular: distrito (o país para extranjero)
-  function calcImpactoGranular(dept) {
-    let imp = 0;
-    const provs = dept.provincias || [];
-    if (provs.length === 0) {
-      // Sin sub-data, usar nivel departamento
-      const vf = dept.votosFaltanPreciso || 0;
-      const sP = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
-      const lP = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
-      return Math.round(vf * (sP - lP) / 100);
-    }
-    for (const prov of provs) {
-      const dists = prov.distritos || [];
-      if (dists.length > 0) {
-        // Sumar desde distritos
-        for (const dist of dists) {
-          const vf = dist.votosFaltanPreciso || 0;
-          const sP = (findCand(dist.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
-          const lP = (findCand(dist.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
-          imp += Math.round(vf * (sP - lP) / 100);
-        }
-      } else {
-        // Provincias sin distritos (extranjero = países)
-        const vf = prov.votosFaltanPreciso || 0;
-        const sP = (findCand(prov.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
-        const lP = (findCand(prov.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
-        imp += Math.round(vf * (sP - lP) / 100);
-      }
-    }
-    return imp;
-  }
-
+  // Método simple por departamento — cobertura 100%, sin agujeros
+  // votosFaltan = actasFaltantes × promedio votos/acta del departamento
+  // impacto = votosFaltan × (% Sánchez - % López Aliaga) / 100
   depts.forEach(dept => {
-    dept._impactoGranular = calcImpactoGranular(dept);
-    totalImpacto += dept._impactoGranular;
+    const ac = dept.totales.contabilizadas;
+    const at = dept.totales.totalActas;
+    const ve = dept.totales.totalVotosEmitidos;
+    const vpa = ac > 0 ? ve / ac : 0;
+    const vf = Math.round(vpa * (at - ac));
+    const sP = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+    const lP = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+    dept._votosFaltanSimple = vf;
+    dept._impactoSimple = Math.round(vf * (sP - lP) / 100);
+    totalImpacto += dept._impactoSimple;
   });
 
   // Proyección final: diferencia actual + impacto pendiente (ambos con signo Sánchez-positivo)
@@ -244,15 +223,16 @@ function render(data) {
     const ve = item.totales.totalVotosEmitidos;
     const ac = item.totales.contabilizadas;
     const at = item.totales.totalActas;
-    const vf = item.votosFaltanPreciso != null ? item.votosFaltanPreciso
-      : (ac > 0 ? Math.round((ve / ac) * (at - ac)) : 0);
+    // Para departamentos: usar cálculo simple (cobertura 100%)
+    // Para provincias/distritos: usar su propia data local
+    const vpa = ac > 0 ? ve / ac : 0;
+    const vf = item._votosFaltanSimple != null ? item._votosFaltanSimple : Math.round(vpa * (at - ac));
     const sD = findCand(item.candidatos, 'SANCHEZ PALOMINO');
     const lD = findCand(item.candidatos, 'LÓPEZ ALIAGA');
     const sP = sD ? sD.porcentajeVotosValidos : 0;
     const lP = lD ? lD.porcentajeVotosValidos : 0;
     const delta = sP - lP;
-    // Use granular impacto for departments, otherwise local calculation
-    const impacto = item._impactoGranular != null ? item._impactoGranular : Math.round(vf * delta / 100);
+    const impacto = item._impactoSimple != null ? item._impactoSimple : Math.round(vf * delta / 100);
     const indent = isGrandChild ? 'padding-left:44px;font-weight:400;font-size:0.85em;color:#888;' :
                    isChild ? 'padding-left:24px;font-weight:400;font-size:0.9em;color:#555;' : '';
     const hasChildren = item.provincias?.length || item.distritos?.length;
