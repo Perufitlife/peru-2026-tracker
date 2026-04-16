@@ -376,20 +376,43 @@ function render(data) {
       totalJeeDep = r.jee;
     }
 
-    // Ajuste por actas "huérfanas": las que reporta el departamento pero
-    // no están asignadas a ningún distrito. Se cuentan con el promedio dept.
-    // Si ONPE actualiza la data correctamente, esta diferencia tiende a 0
-    // y el ajuste se anula automáticamente (sin necesidad de cambiar código).
-    const jeeOrfanas = Math.max(0, (dept.totales.enviadasJee || 0) - totalJeeDep);
-    const actasFaltanDept = dept.totales.totalActas - dept.totales.contabilizadas;
-    const purasOrfanas = Math.max(0, actasFaltanDept - (totalJeeDep + jeeOrfanas) - (totalVfSinJee > 0 ? Math.round(totalVfSinJee / (deptVpa || 1)) : 0));
+    // ===== AJUSTES POR ACTAS "HUÉRFANAS" =====
+    // ONPE reporta totales a nivel agregado (depto/extranjero) que pueden no
+    // coincidir con la suma de los hijos (distritos/países). Hay 2 escenarios:
+    //
+    // (A) JEE huérfanas: depto reporta MÁS JEE que los hijos
+    //     → faltan agregar al cálculo (las añadimos con promedio depto)
+    //
+    // (B) Sobre-conteo de pendientes: hijos reportan MÁS pendientes que el depto
+    //     → ONPE ya contó esas actas a nivel agregado pero no las asignó a hijos
+    //     → debemos REDUCIR pendientes para no inflarlas falsamente
+    //
+    // Ambos ajustes son automáticos: si ONPE actualiza correctamente sus datos,
+    // las discrepancias tienden a 0 y el ajuste se anula solo.
 
+    // (A) JEE huérfanas
+    const jeeOrfanas = Math.max(0, (dept.totales.enviadasJee || 0) - totalJeeDep);
     if (jeeOrfanas > 0 && deptVpa > 0) {
       const votosOrfanasJee = deptVpa * jeeOrfanas;
       totalVfConJee += Math.round(votosOrfanasJee);
       totalImpConJee += Math.round(votosOrfanasJee * deptDelta / 100);
       totalJeeDep += jeeOrfanas;
       dept._jeeOrfanas = jeeOrfanas;
+    }
+
+    // (B) Sobre-conteo de pendientes (suma hijos > agregado)
+    const pendRealAgregado = Math.max(0, dept.totales.totalActas - dept.totales.contabilizadas - (dept.totales.enviadasJee || 0));
+    const pendActasCalculadas = totalVfSinJee > 0 && deptVpa > 0 ? Math.round(totalVfSinJee / deptVpa) : 0;
+    if (pendActasCalculadas > pendRealAgregado && deptVpa > 0) {
+      const factor = pendRealAgregado / pendActasCalculadas;
+      const ajusteVotos = totalVfSinJee * (1 - factor);
+      const ajusteImpacto = totalImpSinJee * (1 - factor);
+      totalVfSinJee = Math.round(totalVfSinJee * factor);
+      totalImpSinJee = Math.round(totalImpSinJee * factor);
+      // También afecta el conjunto con JEE
+      totalVfConJee = Math.round(totalVfConJee - ajusteVotos);
+      totalImpConJee = Math.round(totalImpConJee - ajusteImpacto);
+      dept._pendOrfanas = pendActasCalculadas - pendRealAgregado;
     }
 
     dept._votosFaltanSimple = totalVfConJee;
@@ -754,7 +777,7 @@ function render(data) {
         });
       } else process(item, deptVpa, deptS, deptL);
 
-      // Ajuste actas JEE huérfanas (a nivel departamento sin distrito asignado)
+      // Ajuste (A): actas JEE huérfanas (agregado > suma hijos)
       const jeeReportado = item.totales.enviadasJee || 0;
       const jeeHuerfanas = Math.max(0, jeeReportado - actasJee);
       if (jeeHuerfanas > 0 && deptVpa > 0) {
@@ -763,6 +786,16 @@ function render(data) {
         votosJeeS += vEx * deptS / 100;
         votosJeeL += vEx * deptL / 100;
         actasJee = jeeReportado;
+      }
+
+      // Ajuste (B): sobre-conteo de pendientes (hijos > agregado)
+      const pendReportado = Math.max(0, item.totales.totalActas - item.totales.contabilizadas - jeeReportado);
+      if (actasPend > pendReportado && actasPend > 0) {
+        const factor = pendReportado / actasPend;
+        votosPend *= factor;
+        votosPendS *= factor;
+        votosPendL *= factor;
+        actasPend = pendReportado;
       }
 
       return {
