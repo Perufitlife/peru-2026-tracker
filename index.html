@@ -484,7 +484,7 @@ function render(data) {
             <span style="color:var(--${proy50 >= 0 ? 'sanchez' : 'lopez'});font-weight:700">${proy50 >= 0 ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(Math.round(proy50)))}</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:3px 0">
-            <span><b>Realista (75% acepta) ← actual</b></span>
+            <span><b>Realista (${tasaPromedio.toFixed(0)}% acepta) ← actual</b></span>
             <span style="color:var(--${proyRealista >= 0 ? 'sanchez' : 'lopez'});font-weight:700">${proyRealista >= 0 ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(Math.round(proyRealista)))}</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:3px 0">
@@ -792,7 +792,7 @@ function render(data) {
                 <span class="c-sanchez">Sánchez: ${fmt(desg.votosJeeS)}</span>
                 <span class="c-lopez">López A.: ${fmt(desg.votosJeeL)}</span>
               </div>
-              <div class="desg-note">Solo ~75% se acepta históricamente. Real estimado: <b class="c-sanchez">+${fmt(Math.round(desg.votosJeeS * 0.75))} S</b> / <b class="c-lopez">+${fmt(Math.round(desg.votosJeeL * 0.75))} LA</b></div>
+              <div class="desg-note">Asumimos ${tasaPromedio.toFixed(0)}% de aceptación. Real estimado: <b class="c-sanchez">+${fmt(Math.round(desg.votosJeeS * JEE_ACCEPT_RATE))} S</b> / <b class="c-lopez">+${fmt(Math.round(desg.votosJeeL * JEE_ACCEPT_RATE))} LA</b></div>
             </div>` : ''}
           </div>
 
