@@ -32,9 +32,13 @@
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .header-left .title { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
   .header-left .meta { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px; }
-  .ig-link { color: var(--text-secondary); display: inline-flex; transition: color 0.2s; }
-  .ig-link:hover { color: var(--text-primary); }
-  .ig-link svg { width: 18px; height: 18px; }
+  .ig-link {
+    display: inline-flex; transition: transform 0.2s;
+    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    border-radius: 6px; padding: 3px; color: white;
+  }
+  .ig-link:hover { transform: scale(1.1); }
+  .ig-link svg { width: 16px; height: 16px; display: block; }
   .sync-btn { background: var(--text-primary); color: white; border: none; padding: 8px 16px; border-radius: 99px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
   .sync-btn:active { transform: scale(0.95); }
   .sync-btn:disabled { opacity: 0.5; }
