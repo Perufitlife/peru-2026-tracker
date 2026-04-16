@@ -264,6 +264,25 @@ async function batch(items, fn) {
   };
 
   fs.writeFileSync(__dirname + '/data.json', JSON.stringify(data, null, 2));
+
+  // Save history point for trend tracking
+  const findC = (list, n) => (list || []).find(c => c.nombreCandidato?.includes(n));
+  const nacS = findC(data.nacional.candidatos, 'SANCHEZ PALOMINO');
+  const nacL = findC(data.nacional.candidatos, 'LÓPEZ ALIAGA');
+  const historyFile = __dirname + '/history.json';
+  let history = [];
+  try { history = JSON.parse(fs.readFileSync(historyFile, 'utf8')); } catch {}
+  history.push({
+    t: data.timestamp,
+    pct: data.nacional.totales.actasContabilizadas,
+    vS: nacS?.totalVotosValidos || 0,
+    vL: nacL?.totalVotosValidos || 0,
+    diff: (nacS?.totalVotosValidos || 0) - (nacL?.totalVotosValidos || 0),
+    pctS: nacS?.porcentajeVotosValidos || 0,
+    pctL: nacL?.porcentajeVotosValidos || 0,
+  });
+  fs.writeFileSync(historyFile, JSON.stringify(history, null, 2));
+
   console.log(`\nDone in ${((Date.now() - t0) / 1000).toFixed(1)}s — ${departamentos.length} departments — ${data.timestamp}`);
   await browser.close();
 })();

@@ -73,6 +73,23 @@
   }
   .tooltip.show { display: block; }
 
+  /* Trend */
+  .trend-section {
+    background: #fff; border-radius: 16px; padding: 16px;
+    margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .trend-title {
+    font-size: 0.7em; color: #86868b; text-transform: uppercase;
+    letter-spacing: 1.5px; font-weight: 600; margin-bottom: 10px;
+  }
+  .trend-chart { width: 100%; height: 120px; position: relative; }
+  .trend-chart canvas { width: 100%; height: 100%; }
+  .trend-table { width: 100%; font-size: 0.75em; margin-top: 10px; border-collapse: collapse; }
+  .trend-table th { text-align: left; color: #86868b; font-weight: 600; padding: 4px 6px; font-size: 0.9em; border-bottom: 1px solid #e8e8ed; }
+  .trend-table td { padding: 4px 6px; border-bottom: 1px solid #f2f2f7; font-variant-numeric: tabular-nums; }
+  .trend-table .r { text-align: right; }
+  .trend-crossover { margin-top: 12px; padding: 10px 12px; background: #f5f5f7; border-radius: 10px; font-size: 0.8em; text-align: center; }
+
   /* Leyenda */
   .leyenda {
     background: #fff; border-radius: 14px; padding: 14px 16px;
@@ -182,6 +199,7 @@
   </div>
 </div>
 
+<div class="trend-section" id="trend-section"></div>
 <div class="table-wrap"><table id="tabla"></table></div>
 
 <div class="footer">
@@ -214,9 +232,16 @@ function toggleTip(id) {
   }
 }
 
+let historyData = [];
+
 async function load() {
-  const res = await fetch('data.json?t=' + Date.now());
-  render(await res.json());
+  const [dataRes, histRes] = await Promise.all([
+    fetch('data.json?t=' + Date.now()),
+    fetch('history.json?t=' + Date.now()).catch(() => null)
+  ]);
+  const data = await dataRes.json();
+  try { historyData = await histRes.json(); } catch { historyData = []; }
+  render(data);
 }
 
 function render(data) {
@@ -321,6 +346,99 @@ function render(data) {
       <div class="tooltip" id="tip-jee">El JEE (Jurado Electoral Especial) revisa manualmente actas que tuvieron problemas: numeros que no cuadran, tachaduras, ilegibles, o impugnaciones de personeros. Algunas se validan y suman al conteo, otras se anulan. No se sabe de antemano cuantas se aceptaran. Por eso mostramos 2 escenarios.</div>
     </div>
   `;
+
+  // Trend section
+  if (historyData.length >= 2) {
+    // Deduplicate by pct (keep last per pct)
+    const byPct = {};
+    historyData.forEach(h => { byPct[h.pct.toFixed(2)] = h; });
+    const unique = Object.values(byPct).sort((a, b) => a.pct - b.pct);
+
+    // Chart: simple SVG line chart of diff vs pct
+    const minPct = unique[0].pct;
+    const maxPct = unique[unique.length - 1].pct;
+    const diffs = unique.map(h => h.diff);
+    const minDiff = Math.min(...diffs, 0);
+    const maxDiff = Math.max(...diffs, 0);
+    const range = maxDiff - minDiff || 1;
+    const W = 600, H = 100, PAD = 5;
+
+    let pathPoints = unique.map((h, i) => {
+      const x = PAD + (h.pct - minPct) / (maxPct - minPct || 1) * (W - PAD * 2);
+      const y = H - PAD - ((h.diff - minDiff) / range) * (H - PAD * 2);
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+
+    // Zero line (where diff = 0)
+    const zeroY = H - PAD - ((0 - minDiff) / range) * (H - PAD * 2);
+
+    // Crossover analysis: linear regression on last N points
+    let crossoverHtml = '';
+    if (unique.length >= 3) {
+      const last = unique.slice(-3);
+      // Rate of change: diff per pct point
+      const dDiff = last[last.length - 1].diff - last[0].diff;
+      const dPct = last[last.length - 1].pct - last[0].pct;
+      const rate = dPct > 0 ? dDiff / dPct : 0; // votos de diff ganados por cada % de actas
+
+      const currentDiff = unique[unique.length - 1].diff;
+      const currentPct = unique[unique.length - 1].pct;
+      const pctRemaining = 100 - currentPct;
+
+      if (rate !== 0) {
+        // At what % would diff = proyFinal (considering pending votes)?
+        // Simple: if current trend continues linearly
+        const pctAtZero = currentPct + (-currentDiff / rate);
+
+        crossoverHtml = `
+          <div class="trend-crossover">
+            <b>Tendencia:</b> Por cada 1% de actas procesadas, la diferencia cambia en <b style="color:${rate > 0 ? '#ff9500' : '#007aff'}">${rate > 0 ? '+' : ''}${fmt(Math.round(rate))}</b> votos ${rate > 0 ? '(a favor Sanchez)' : '(a favor L.Aliaga)'}.<br>
+            ${currentDiff > 0 && rate > 0
+              ? 'Con esta tendencia, Sanchez <b>seguiria ampliando</b> su ventaja.'
+              : currentDiff > 0 && rate < 0
+                ? `Si la tendencia se revierte, se cruzarian al ~<b>${pctAtZero.toFixed(1)}%</b> de actas.${pctAtZero > 100 ? ' (fuera de rango — Sanchez mantendria ventaja)' : ''}`
+                : currentDiff < 0 && rate > 0
+                  ? `Se cruzarian al ~<b>${pctAtZero.toFixed(1)}%</b> de actas.${pctAtZero > 100 ? ' (fuera de rango — L.Aliaga mantendria ventaja)' : ''}`
+                  : 'L.Aliaga seguiria ampliando su ventaja.'}
+          </div>`;
+      }
+    }
+
+    // History table (last 6 unique points)
+    const showPoints = unique.slice(-6);
+    let histTable = `<table class="trend-table"><tr><th>Actas %</th><th class="r">Sanchez</th><th class="r">L.Aliaga</th><th class="r">Diferencia</th><th class="r">Hora</th></tr>`;
+    showPoints.forEach(h => {
+      const ts = new Date(h.t);
+      const hora = ts.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      const diffColor = h.diff >= 0 ? 'c-sanchez' : 'c-lopez';
+      histTable += `<tr>
+        <td>${h.pct.toFixed(2)}%</td>
+        <td class="r">${fmt(h.vS)}</td>
+        <td class="r">${fmt(h.vL)}</td>
+        <td class="r ${diffColor}"><b>${h.diff >= 0 ? '+' : ''}${fmt(h.diff)}</b></td>
+        <td class="r" style="color:#86868b">${hora}</td>
+      </tr>`;
+    });
+    histTable += '</table>';
+
+    document.getElementById('trend-section').innerHTML = `
+      <div class="trend-title">Tendencia de la diferencia (Sanchez - L.Aliaga)</div>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:120px">
+        <line x1="${PAD}" y1="${zeroY}" x2="${W - PAD}" y2="${zeroY}" stroke="#e8e8ed" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="${W - PAD}" y="${zeroY - 4}" fill="#aaa" font-size="10" text-anchor="end">0</text>
+        <path d="${pathPoints}" fill="none" stroke="${unique[unique.length-1].diff >= 0 ? '#ff9500' : '#007aff'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${unique.map(h => {
+          const x = PAD + (h.pct - minPct) / (maxPct - minPct || 1) * (W - PAD * 2);
+          const y = H - PAD - ((h.diff - minDiff) / range) * (H - PAD * 2);
+          return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${h.diff >= 0 ? '#ff9500' : '#007aff'}"/>`;
+        }).join('')}
+      </svg>
+      ${histTable}
+      ${crossoverHtml}
+    `;
+  } else {
+    document.getElementById('trend-section').innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;font-size:0.8em">Se necesitan al menos 2 sincronizaciones para ver tendencia</div>';
+  }
 
   // Table
   function buildRow(item, isChild, isGrandChild) {
