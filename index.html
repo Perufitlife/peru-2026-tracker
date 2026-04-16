@@ -172,6 +172,24 @@
   .sub-chev { font-size: 0.55rem; margin-right: 4px; }
 
   .footer { text-align: center; margin-top: 32px; font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
+
+  /* Desglose votos pendientes */
+  .desglose-box { background: var(--bg); border-radius: 12px; padding: 12px; margin-top: 8px; }
+  .desg-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 10px; }
+  .desg-row { background: white; border-radius: 10px; padding: 10px; margin-bottom: 8px; border-left: 3px solid; }
+  .desg-row.pendientes { border-left-color: var(--green); }
+  .desg-row.jee { border-left-color: var(--yellow); }
+  .desg-row:last-child { margin-bottom: 0; }
+  .desg-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .desg-tag { font-size: 0.6rem; font-weight: 800; padding: 3px 6px; border-radius: 6px; letter-spacing: 0.5px; }
+  .tag-pend { background: var(--green-bg); color: var(--green); }
+  .tag-jee { background: var(--yellow-bg); color: var(--yellow); }
+  .desg-actas { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .desg-bar { display: flex; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .desg-bar-s { background: var(--sanchez); }
+  .desg-bar-l { background: var(--lopez); }
+  .desg-detail { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .desg-note { font-size: 0.65rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -210,7 +228,11 @@
 
 <script>
 const fmt = n => n.toLocaleString('es-PE');
-const titleCase = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const titleCase = s => {
+  if (!s) return '';
+  // toLocaleLowerCase para manejar tildes/ñ correctamente
+  return s.toLocaleLowerCase('es-PE').replace(/(^|\s|\(|-|\/|·)([\wáéíóúüñÁÉÍÓÚÜÑ])/g, (m, sep, ch) => sep + ch.toLocaleUpperCase('es-PE'));
+};
 const badgeClass = p => p >= 90 ? 'b-green' : p >= 80 ? 'b-blue' : p >= 70 ? 'b-yellow' : 'b-red';
 
 function findCand(list, needle) {
@@ -532,7 +554,53 @@ function render(data) {
     const lP = lD ? lD.porcentajeVotosValidos : 0;
     const isS = sP >= lP;
     
-    // Helper: calcular votos faltantes con/sin JEE para item
+    // Helper: calcular votos faltantes y desglose Sanchez/Lopez (granular)
+    function calcDesglose(item) {
+      let votosPend = 0, votosJee = 0;
+      let votosPendS = 0, votosPendL = 0, votosJeeS = 0, votosJeeL = 0;
+      let actasPend = 0, actasJee = 0;
+
+      function process(it) {
+        const ac = it.totales.contabilizadas;
+        const at = it.totales.totalActas;
+        const ve = it.totales.totalVotosEmitidos;
+        const jee = it.totales.enviadasJee || 0;
+        const pend = Math.max(0, at - ac - jee);
+        actasPend += pend;
+        actasJee += jee;
+        if (ac === 0) return;
+        const vpa = ve / ac;
+        const vp = vpa * pend;
+        const vj = vpa * jee;
+        votosPend += vp;
+        votosJee += vj;
+        const sP = (findCand(it.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+        const lP = (findCand(it.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+        votosPendS += vp * sP / 100;
+        votosPendL += vp * lP / 100;
+        votosJeeS += vj * sP / 100;
+        votosJeeL += vj * lP / 100;
+      }
+
+      if (item.distritos?.length) item.distritos.forEach(process);
+      else if (item.provincias?.length) {
+        item.provincias.forEach(prov => {
+          if (prov.distritos?.length) prov.distritos.forEach(process);
+          else process(prov);
+        });
+      } else process(item);
+
+      return {
+        actasPend, actasJee,
+        votosPend: Math.round(votosPend),
+        votosJee: Math.round(votosJee),
+        votosPendS: Math.round(votosPendS),
+        votosPendL: Math.round(votosPendL),
+        votosJeeS: Math.round(votosJeeS),
+        votosJeeL: Math.round(votosJeeL),
+      };
+    }
+
     function calcFaltan(item) {
       const ac = item.totales.contabilizadas;
       const at = item.totales.totalActas;
@@ -608,6 +676,7 @@ function render(data) {
 
     // Stats con/sin JEE por departamento
     const deptJeeVotos = dept._votosFaltanSimple - dept._votosFaltanSinJee;
+    const desg = calcDesglose(dept);
 
     listHtml += `
       <div class="r-card" id="r-card-${i}">
@@ -629,8 +698,45 @@ function render(data) {
           </div>
         </div>
         <div class="r-body" id="r-body-${i}">
-          <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); margin-bottom:8px; margin-top:8px; text-transform:uppercase;">Provincias</div>
-          ${provsHtml || '<div style="font-size:0.75rem; color:#888">No hay datos de provincias aún</div>'}
+          <div class="desglose-box">
+            <div class="desg-title">Votos por contar en ${titleCase(dept.nombre)}</div>
+
+            <div class="desg-row pendientes">
+              <div class="desg-row-head">
+                <span class="desg-tag tag-pend">PENDIENTES</span>
+                <span class="desg-actas">${fmt(desg.actasPend)} actas → ~${fmt(desg.votosPend)} votos</span>
+              </div>
+              <div class="desg-bar">
+                <div class="desg-bar-s" style="width:${desg.votosPend > 0 ? (desg.votosPendS / desg.votosPend * 100) : 0}%"></div>
+                <div class="desg-bar-l" style="width:${desg.votosPend > 0 ? (desg.votosPendL / desg.votosPend * 100) : 0}%"></div>
+              </div>
+              <div class="desg-detail">
+                <span class="c-sanchez">Sánchez: ${fmt(desg.votosPendS)}</span>
+                <span class="c-lopez">López A.: ${fmt(desg.votosPendL)}</span>
+              </div>
+              <div class="desg-note">Llegan al 100% — son actas en tránsito.</div>
+            </div>
+
+            ${desg.actasJee > 0 ? `
+            <div class="desg-row jee">
+              <div class="desg-row-head">
+                <span class="desg-tag tag-jee">JEE (impugnadas)</span>
+                <span class="desg-actas">${fmt(desg.actasJee)} actas → ~${fmt(desg.votosJee)} votos</span>
+              </div>
+              <div class="desg-bar">
+                <div class="desg-bar-s" style="width:${desg.votosJee > 0 ? (desg.votosJeeS / desg.votosJee * 100) : 0}%"></div>
+                <div class="desg-bar-l" style="width:${desg.votosJee > 0 ? (desg.votosJeeL / desg.votosJee * 100) : 0}%"></div>
+              </div>
+              <div class="desg-detail">
+                <span class="c-sanchez">Sánchez: ${fmt(desg.votosJeeS)}</span>
+                <span class="c-lopez">López A.: ${fmt(desg.votosJeeL)}</span>
+              </div>
+              <div class="desg-note">Solo ~75% se acepta históricamente. Real estimado: <b class="c-sanchez">+${fmt(Math.round(desg.votosJeeS * 0.75))} S</b> / <b class="c-lopez">+${fmt(Math.round(desg.votosJeeL * 0.75))} LA</b></div>
+            </div>` : ''}
+          </div>
+
+          <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); margin-bottom:8px; margin-top:12px; text-transform:uppercase;">Detalle por ${dept.nombre === 'EXTRANJERO' ? 'país' : 'provincia'}</div>
+          ${provsHtml || '<div style="font-size:0.75rem; color:#888">No hay datos aún</div>'}
         </div>
       </div>
     `;
