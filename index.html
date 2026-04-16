@@ -215,7 +215,7 @@
       </div>
       <div class="meta" id="meta">Cargando...</div>
     </div>
-    <button class="sync-btn" id="syncBtn" onclick="sync()">Actualizar</button>
+    <button class="sync-btn" id="syncBtn" onclick="sync()" style="display:none">Actualizar</button>
   </div>
 
   <div id="hero-container"></div>
@@ -829,6 +829,9 @@ async function sync() {
     setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 2000);
   }
 }
+
+// Mostrar boton Actualizar solo en localhost (donde si sincroniza con ONPE)
+if (isLocal) document.getElementById('syncBtn').style.display = '';
 
 load();
 </script>
