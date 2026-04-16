@@ -240,25 +240,41 @@ function render(data) {
   const liderActual = diffActual >= 0 ? 'Sanchez' : 'Lopez Aliaga';
   const liderActualC = diffActual >= 0 ? 'c-sanchez' : 'c-lopez';
 
-  let totalImpacto = 0;
+  // Calcular 2 escenarios: con JEE y sin JEE
+  let impConJee = 0, impSinJee = 0;
   const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
 
   depts.forEach(dept => {
     const ac = dept.totales.contabilizadas;
     const at = dept.totales.totalActas;
     const ve = dept.totales.totalVotosEmitidos;
+    const jee = dept.totales.enviadasJee || 0;
     const vpa = ac > 0 ? ve / ac : 0;
-    const vf = Math.round(vpa * (at - ac));
+    const faltanTotal = at - ac; // incluye JEE + pendientes
+    const faltanSinJee = at - ac - jee; // solo pendientes puras
     const sP = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
     const lP = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
-    dept._votosFaltanSimple = vf;
-    dept._impactoSimple = Math.round(vf * (sP - lP) / 100);
-    totalImpacto += dept._impactoSimple;
+    const delta = sP - lP;
+
+    dept._votosFaltanSimple = Math.round(vpa * faltanTotal);
+    dept._votosFaltanSinJee = Math.round(vpa * Math.max(0, faltanSinJee));
+    dept._impactoSimple = Math.round(dept._votosFaltanSimple * delta / 100);
+    dept._impactoSinJee = Math.round(dept._votosFaltanSinJee * delta / 100);
+    dept._actasJee = jee;
+
+    impConJee += dept._impactoSimple;
+    impSinJee += dept._impactoSinJee;
   });
 
-  const proyFinal = diffActual + totalImpacto;
-  const ganador = proyFinal >= 0 ? 'Roberto Sanchez' : 'Lopez Aliaga';
-  const ganadorC = proyFinal >= 0 ? 'c-sanchez' : 'c-lopez';
+  const proyConJee = diffActual + impConJee;
+  const proySinJee = diffActual + impSinJee;
+  const ganadorConJee = proyConJee >= 0 ? 'Roberto Sanchez' : 'Lopez Aliaga';
+  const ganadorSinJee = proySinJee >= 0 ? 'Roberto Sanchez' : 'Lopez Aliaga';
+  const ganadorConJeeC = proyConJee >= 0 ? 'c-sanchez' : 'c-lopez';
+  const ganadorSinJeeC = proySinJee >= 0 ? 'c-sanchez' : 'c-lopez';
+
+  // Total actas JEE
+  const totalJee = depts.reduce((s, d) => s + (d._actasJee || 0), 0);
 
   document.getElementById('resumen').innerHTML = `
     <div class="res-card">
@@ -266,35 +282,42 @@ function render(data) {
       <div class="rv c-sanchez">${fmt(vS)}</div>
       <div class="rs">${nacS ? nacS.porcentajeVotosValidos.toFixed(2) : 0}% de votos validos</div>
       <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-s')">i</button>
-      <div class="tooltip" id="tip-s">Votos validos obtenidos por Roberto Sanchez Palomino (Juntos por el Peru) en las actas procesadas hasta el momento.</div>
+      <div class="tooltip" id="tip-s">Votos validos de Roberto Sanchez Palomino (Juntos por el Peru) en las actas contabilizadas.</div>
     </div>
     <div class="res-card">
       <div class="rl">Lopez Aliaga</div>
       <div class="rv c-lopez">${fmt(vL)}</div>
       <div class="rs">${nacL ? nacL.porcentajeVotosValidos.toFixed(2) : 0}% de votos validos</div>
       <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-l')">i</button>
-      <div class="tooltip" id="tip-l">Votos validos obtenidos por Rafael Lopez Aliaga Cazorla (Renovacion Popular) en las actas procesadas hasta el momento.</div>
+      <div class="tooltip" id="tip-l">Votos validos de Rafael Lopez Aliaga Cazorla (Renovacion Popular) en las actas contabilizadas.</div>
     </div>
-    <div class="res-card">
+    <div class="res-card full">
       <div class="rl">Diferencia actual</div>
       <div class="rv ${liderActualC}">${fmt(Math.abs(diffActual))}</div>
       <div class="rs">a favor ${liderActual}</div>
       <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-d')">i</button>
-      <div class="tooltip" id="tip-d">Diferencia en votos validos entre ambos candidatos con las actas contadas hasta ahora. Este numero cambia conforme se procesan mas actas.</div>
+      <div class="tooltip" id="tip-d">Diferencia real en votos entre ambos candidatos con las actas contabilizadas hasta ahora.</div>
     </div>
     <div class="res-card">
-      <div class="rl">Pendientes neto</div>
-      <div class="rv ${totalImpacto >= 0 ? 'c-sanchez' : 'c-lopez'}">${fmt(Math.abs(totalImpacto))}</div>
-      <div class="rs">proyectado ${totalImpacto >= 0 ? 'Sanchez' : 'Lopez Aliaga'}</div>
-      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-p')">i</button>
-      <div class="tooltip" id="tip-p">Estimado de cuantos votos netos aportaran las actas que aun faltan por contar. Se calcula multiplicando los votos pendientes de cada departamento por la diferencia porcentual entre ambos candidatos en ese departamento. No es un resultado oficial — es una proyeccion estadistica.</div>
+      <div class="rl">Escenario CON JEE</div>
+      <div class="rv ${ganadorConJeeC}">${ganadorConJee}</div>
+      <div class="rs">por ~${fmt(Math.abs(Math.round(proyConJee)))} votos</div>
+      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-cj')">i</button>
+      <div class="tooltip" id="tip-cj">Proyeccion si TODAS las ${fmt(totalJee)} actas enviadas al JEE se aceptan y se suman. Incluye pendientes + JEE. Las actas JEE tienen problemas (ilegibles, inconsistencias) y el Jurado Electoral decide si se cuentan o se anulan.</div>
     </div>
-    <div class="res-card full">
-      <div class="rl">Posible segunda vuelta</div>
-      <div class="rv ${ganadorC}">${ganador}</div>
-      <div class="rs">por ~${fmt(Math.abs(Math.round(proyFinal)))} votos de ventaja proyectada</div>
-      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-g')">i</button>
-      <div class="tooltip" id="tip-g">Suma de la diferencia actual + el impacto estimado de los votos pendientes. Indica quien pasaria a segunda vuelta si los votos pendientes mantienen la misma tendencia que los ya contados en cada departamento. Es una estimacion — el resultado real puede variar.</div>
+    <div class="res-card">
+      <div class="rl">Escenario SIN JEE</div>
+      <div class="rv ${ganadorSinJeeC}">${ganadorSinJee}</div>
+      <div class="rs">por ~${fmt(Math.abs(Math.round(proySinJee)))} votos</div>
+      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-sj')">i</button>
+      <div class="tooltip" id="tip-sj">Proyeccion si NINGUNA acta del JEE se acepta (todas anuladas). Solo cuenta las actas pendientes que aun no han llegado a ONPE. Este es el escenario mas conservador.</div>
+    </div>
+    <div class="res-card full" style="background:linear-gradient(135deg,#fff8e1,#e3f2fd)">
+      <div class="rl">Actas en JEE (zona gris)</div>
+      <div class="rv" style="color:#555">${fmt(totalJee)}</div>
+      <div class="rs">actas con problemas en revision judicial — pueden aceptarse o anularse</div>
+      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-jee')">i</button>
+      <div class="tooltip" id="tip-jee">El JEE (Jurado Electoral Especial) revisa manualmente actas que tuvieron problemas: numeros que no cuadran, tachaduras, ilegibles, o impugnaciones de personeros. Algunas se validan y suman al conteo, otras se anulan. No se sabe de antemano cuantas se aceptaran. Por eso mostramos 2 escenarios.</div>
     </div>
   `;
 
