@@ -376,6 +376,22 @@ function render(data) {
       totalJeeDep = r.jee;
     }
 
+    // Ajuste por actas "huérfanas": las que reporta el departamento pero
+    // no están asignadas a ningún distrito. Se cuentan con el promedio dept.
+    // Si ONPE actualiza la data correctamente, esta diferencia tiende a 0
+    // y el ajuste se anula automáticamente (sin necesidad de cambiar código).
+    const jeeOrfanas = Math.max(0, (dept.totales.enviadasJee || 0) - totalJeeDep);
+    const actasFaltanDept = dept.totales.totalActas - dept.totales.contabilizadas;
+    const purasOrfanas = Math.max(0, actasFaltanDept - (totalJeeDep + jeeOrfanas) - (totalVfSinJee > 0 ? Math.round(totalVfSinJee / (deptVpa || 1)) : 0));
+
+    if (jeeOrfanas > 0 && deptVpa > 0) {
+      const votosOrfanasJee = deptVpa * jeeOrfanas;
+      totalVfConJee += Math.round(votosOrfanasJee);
+      totalImpConJee += Math.round(votosOrfanasJee * deptDelta / 100);
+      totalJeeDep += jeeOrfanas;
+      dept._jeeOrfanas = jeeOrfanas;
+    }
+
     dept._votosFaltanSimple = totalVfConJee;
     dept._votosFaltanSinJee = totalVfSinJee;
     dept._impactoSimple = totalImpConJee;
@@ -493,7 +509,17 @@ function render(data) {
           </div>
         </div>
 
-        <h4>6. Importante</h4>
+        <h4>6. Ajuste por actas "huérfanas"</h4>
+        ONPE a veces reporta más actas JEE a nivel departamento que las
+        que aparecen sumadas a nivel distrito (ej. mesas especiales,
+        electores residentes, recuentos). El modelo detecta estas actas
+        huérfanas y las incluye usando el promedio del departamento.
+        <br><br>
+        Cuando ONPE actualiza correctamente sus datos, esta diferencia
+        desaparece y el ajuste se anula automáticamente — sin tocar
+        el código.
+
+        <h4>7. Importante</h4>
         <ul>
           <li><b>Todo es dinámico</b>: cada sync recalcula con números frescos de ONPE.</li>
           <li><b>Granular</b>: usa data de cada uno de los 1,892 distritos.</li>
@@ -642,6 +668,17 @@ function render(data) {
           } else process(prov, deptVpa, deptS, deptL);
         });
       } else process(item, deptVpa, deptS, deptL);
+
+      // Ajuste actas JEE huérfanas (a nivel departamento sin distrito asignado)
+      const jeeReportado = item.totales.enviadasJee || 0;
+      const jeeHuerfanas = Math.max(0, jeeReportado - actasJee);
+      if (jeeHuerfanas > 0 && deptVpa > 0) {
+        const vEx = deptVpa * jeeHuerfanas;
+        votosJee += vEx;
+        votosJeeS += vEx * deptS / 100;
+        votosJeeL += vEx * deptL / 100;
+        actasJee = jeeReportado;
+      }
 
       return {
         actasPend, actasJee,
