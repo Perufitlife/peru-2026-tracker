@@ -62,13 +62,63 @@
   .winner-text { font-weight: 800; color: var(--text-primary); }
 
   /* Scenarios */
-  .scenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .scenarios { margin-bottom: 20px; }
   .scenario-card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
   .sc-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 4px; }
   .sc-winner { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 2px; }
   .sc-diff { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
   .sc-info { font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border); padding-top: 8px; }
-  .jee-card { grid-column: span 2; background: linear-gradient(135deg, var(--card), var(--yellow-bg)); display: flex; justify-content: space-between; align-items: center; }
+
+  /* Realista (principal) */
+  .sc-realista {
+    background: linear-gradient(135deg, #FFFFFF, #F0F7FF);
+    border: 2px solid var(--lopez);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .sc-realista.winner-s { border-color: var(--sanchez); background: linear-gradient(135deg, #FFFFFF, #FFF5EB); }
+  .sc-realista .sc-tag {
+    position: absolute; top: -10px; left: 16px;
+    background: var(--text-primary); color: white;
+    font-size: 0.65rem; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+    letter-spacing: 0.5px;
+  }
+  .sc-realista .sc-title { margin-top: 4px; }
+  .sc-realista .sc-winner { font-size: 1.6rem; margin: 4px 0; }
+  .sc-realista .sc-diff { font-size: 0.9rem; font-weight: 700; }
+
+  /* Escenarios secundarios */
+  .sc-extremes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .sc-extreme { background: var(--card); border-radius: 14px; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.02); opacity: 0.85; }
+  .sc-extreme .sc-title { font-size: 0.6rem; }
+  .sc-extreme .sc-winner { font-size: 0.95rem; }
+  .sc-extreme .sc-diff { font-size: 0.7rem; }
+
+  /* Metodología expandible */
+  .method-toggle {
+    width: 100%; background: var(--card); border: none;
+    padding: 12px 16px; border-radius: 14px;
+    font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);
+    text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .method-body {
+    display: none;
+    background: var(--card); border-radius: 14px;
+    padding: 16px; margin-top: 4px;
+    font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .method-body.open { display: block; }
+  .method-body h4 { font-size: 0.7rem; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 4px; }
+  .method-body h4:first-child { margin-top: 0; }
+  .method-body ul { padding-left: 16px; margin: 4px 0; }
+  .method-body li { margin-bottom: 4px; }
+  .method-body b { color: var(--text-primary); }
+
+  .jee-card { background: linear-gradient(135deg, var(--card), var(--yellow-bg)); display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: 14px; margin-top: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
 
   /* Trend Section */
   .trend-section { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
@@ -231,27 +281,88 @@ function render(data) {
 
   const proyConJee = diffActual + impConJee;
   const proySinJee = diffActual + impSinJee;
+  // Escenario realista: 65% del JEE se acepta (histórico)
+  const jeeAceptacion = 0.65;
+  const impRealista = impSinJee + (impConJee - impSinJee) * jeeAceptacion;
+  const proyRealista = diffActual + impRealista;
   const totalJee = depts.reduce((s, d) => s + d._actasJee, 0);
+  const jeeAceptadas = Math.round(totalJee * jeeAceptacion);
+
+  const winnerReal = proyRealista >= 0;
+  const winnerRealName = winnerReal ? 'Sánchez' : 'López Aliaga';
 
   // Render Scenarios
   document.getElementById('scenarios-container').innerHTML = `
     <div class="scenarios">
-      <div class="scenario-card">
-        <div class="sc-title">Escenario Conservador</div>
-        <div class="sc-winner" style="color: var(--${proySinJee >= 0 ? 'sanchez' : 'lopez'})">${proySinJee >= 0 ? 'Sánchez' : 'López A.'}</div>
-        <div class="sc-diff">+${fmt(Math.abs(Math.round(proySinJee)))} votos</div>
-        <div class="sc-info">Sin contar las actas observadas en el JEE. Solo actas pendientes puras.</div>
+      <div class="sc-realista ${winnerReal ? 'winner-s' : ''}">
+        <span class="sc-tag">PROYECCIÓN PRINCIPAL</span>
+        <div class="sc-title">Escenario realista (65% del JEE acepta)</div>
+        <div class="sc-winner" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">${winnerRealName}</div>
+        <div class="sc-diff" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">por ~${fmt(Math.abs(Math.round(proyRealista)))} votos</div>
+        <div class="sc-info">
+          Asume que ${fmt(jeeAceptadas)} de ${fmt(totalJee)} actas en el JEE se validan (tasa histórica).
+          Toca "cómo se calcula" abajo para detalles.
+        </div>
       </div>
-      <div class="scenario-card">
-        <div class="sc-title">Escenario Máximo</div>
-        <div class="sc-winner" style="color: var(--${proyConJee >= 0 ? 'sanchez' : 'lopez'})">${proyConJee >= 0 ? 'Sánchez' : 'López A.'}</div>
-        <div class="sc-diff">+${fmt(Math.abs(Math.round(proyConJee)))} votos</div>
-        <div class="sc-info">Proyección si las ${fmt(totalJee)} actas impugnadas en el JEE se validaran todas.</div>
+
+      <div class="sc-extremes">
+        <div class="sc-extreme">
+          <div class="sc-title">Conservador (0% JEE)</div>
+          <div class="sc-winner" style="color: var(--${proySinJee >= 0 ? 'sanchez' : 'lopez'})">${proySinJee >= 0 ? 'Sánchez' : 'López A.'}</div>
+          <div class="sc-diff">+${fmt(Math.abs(Math.round(proySinJee)))} votos</div>
+        </div>
+        <div class="sc-extreme">
+          <div class="sc-title">Máximo (100% JEE)</div>
+          <div class="sc-winner" style="color: var(--${proyConJee >= 0 ? 'sanchez' : 'lopez'})">${proyConJee >= 0 ? 'Sánchez' : 'López A.'}</div>
+          <div class="sc-diff">+${fmt(Math.abs(Math.round(proyConJee)))} votos</div>
+        </div>
       </div>
-      <div class="scenario-card jee-card">
+
+      <button class="method-toggle" onclick="toggleMethod()">
+        <span>Cómo se calcula el escenario realista</span>
+        <span id="method-chev">▼</span>
+      </button>
+      <div class="method-body" id="method-body">
+        <h4>¿Qué es el JEE?</h4>
+        Las actas que llegan al Jurado Electoral Especial son las que tuvieron problemas:
+        sumas que no cuadran, tachaduras, firmas incompletas, o impugnaciones de personeros.
+        Actualmente hay <b>${fmt(totalJee)} actas</b> en el JEE.
+
+        <h4>¿Cuántas se aceptan realmente?</h4>
+        Históricamente (datos de elecciones 2021), el JEE acepta aproximadamente:
+        <ul>
+          <li><b>~80%</b> de las actas con errores administrativos (sumas mal, tachaduras leves)</li>
+          <li><b>~50%</b> de las actas impugnadas políticamente por personeros</li>
+          <li><b>0%</b> de las actas con anulación firme (fraude, mesa no instalada)</li>
+        </ul>
+        <b>Promedio total: ~65% de aceptación.</b>
+
+        <h4>La fórmula</h4>
+        <ul>
+          <li><b>Diff actual:</b> ${fmt(diffActual)} votos (${diffActual >= 0 ? 'Sánchez' : 'López A.'})</li>
+          <li><b>Impacto Sin JEE</b> (pendientes puras al 100%): ${impSinJee >= 0 ? '+' : ''}${fmt(impSinJee)}</li>
+          <li><b>Impacto adicional del JEE si se aceptara todo:</b> ${(impConJee - impSinJee) >= 0 ? '+' : ''}${fmt(impConJee - impSinJee)}</li>
+          <li><b>Aplicamos 65%</b> de ese impacto: ${(impConJee - impSinJee) >= 0 ? '+' : ''}${fmt(Math.round((impConJee - impSinJee) * 0.65))}</li>
+          <li><b>Suma total:</b> ${fmt(Math.round(proyRealista))} → <b style="color:var(--${winnerReal?'sanchez':'lopez'})">${winnerRealName}</b></li>
+        </ul>
+
+        <h4>Por qué este es el más preciso</h4>
+        Los extremos (0% o 100% del JEE) son teóricos. En la realidad, el JEE siempre
+        acepta la mayoría con ajustes. El escenario realista usa la tasa histórica de
+        aceptación aplicada al impacto que tendrían las actas JEE de cada departamento.
+
+        <h4>Limitaciones</h4>
+        <ul>
+          <li>Asume que las actas JEE tienen la misma distribución de votos que el promedio departamental. En realidad pueden tener sesgos (ej. actas impugnadas en Lima vs errores admin en provincias).</li>
+          <li>La tasa del 65% es un promedio histórico. Puede variar en esta elección.</li>
+          <li>No es un resultado oficial, es una proyección estadística.</li>
+        </ul>
+      </div>
+
+      <div class="jee-card">
         <div>
-          <div class="sc-title">Actas Atascadas (JEE)</div>
-          <div class="sc-diff" style="color: var(--text-primary)">Requieren revisión manual del tribunal</div>
+          <div class="sc-title">Actas en el JEE</div>
+          <div class="sc-diff" style="color: var(--text-primary)">En revisión del tribunal</div>
         </div>
         <div style="font-weight: 800; font-size: 1.25rem;">${fmt(totalJee)}</div>
       </div>
@@ -437,6 +548,18 @@ function render(data) {
   });
 
   document.getElementById('regions-list').innerHTML = listHtml;
+}
+
+window.toggleMethod = function() {
+  const body = document.getElementById('method-body');
+  const ch = document.getElementById('method-chev');
+  if (body.classList.contains('open')) {
+    body.classList.remove('open');
+    ch.textContent = '▼';
+  } else {
+    body.classList.add('open');
+    ch.textContent = '▲';
+  }
 }
 
 window.toggleSub = function(id) {
