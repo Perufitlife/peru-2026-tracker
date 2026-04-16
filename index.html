@@ -281,12 +281,29 @@ function render(data) {
 
   const proyConJee = diffActual + impConJee;
   const proySinJee = diffActual + impSinJee;
-  // Escenario realista: 65% del JEE se acepta (histórico)
-  const jeeAceptacion = 0.65;
-  const impRealista = impSinJee + (impConJee - impSinJee) * jeeAceptacion;
+
+  // Escenario realista: tasas diferenciadas por tipo de region
+  // Urbano/Politico (Lima, Callao, Extranjero): 60% acepta (mas impugnaciones politicas)
+  // Resto (rural/admin): 75% acepta (mas errores administrativos que se corrigen)
+  const URBAN_RATE = 0.60;
+  const RURAL_RATE = 0.75;
+  const URBAN_DEPTS = ['LIMA', 'CALLAO', 'EXTRANJERO'];
+
+  let impRealista = impSinJee;
+  let totalJee = 0, jeeUrbano = 0, jeeRural = 0;
+  depts.forEach(dep => {
+    const isUrban = URBAN_DEPTS.includes(dep.nombre);
+    const rate = isUrban ? URBAN_RATE : RURAL_RATE;
+    const deltaImpacto = dep._impactoSimple - dep._impactoSinJee;
+    impRealista += deltaImpacto * rate;
+    totalJee += dep._actasJee;
+    if (isUrban) jeeUrbano += dep._actasJee; else jeeRural += dep._actasJee;
+    dep._rate = rate;
+    dep._isUrban = isUrban;
+  });
   const proyRealista = diffActual + impRealista;
-  const totalJee = depts.reduce((s, d) => s + d._actasJee, 0);
-  const jeeAceptadas = Math.round(totalJee * jeeAceptacion);
+  const tasaPromedio = totalJee > 0 ? ((jeeUrbano * URBAN_RATE + jeeRural * RURAL_RATE) / totalJee * 100) : 70;
+  const jeeAceptadas = Math.round(jeeUrbano * URBAN_RATE + jeeRural * RURAL_RATE);
 
   const winnerReal = proyRealista >= 0;
   const winnerRealName = winnerReal ? 'Sánchez' : 'López Aliaga';
@@ -296,12 +313,11 @@ function render(data) {
     <div class="scenarios">
       <div class="sc-realista ${winnerReal ? 'winner-s' : ''}">
         <span class="sc-tag">PROYECCIÓN PRINCIPAL</span>
-        <div class="sc-title">Escenario realista (65% del JEE acepta)</div>
+        <div class="sc-title">Escenario realista</div>
         <div class="sc-winner" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">${winnerRealName}</div>
         <div class="sc-diff" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">por ~${fmt(Math.abs(Math.round(proyRealista)))} votos</div>
         <div class="sc-info">
-          Asume que ${fmt(jeeAceptadas)} de ${fmt(totalJee)} actas en el JEE se validan (tasa histórica).
-          Toca "cómo se calcula" abajo para detalles.
+          Asume que ${fmt(jeeAceptadas)} de ${fmt(totalJee)} actas en el JEE se validan (~${tasaPromedio.toFixed(0)}% promedio).
         </div>
       </div>
 
@@ -323,39 +339,46 @@ function render(data) {
         <span id="method-chev">▼</span>
       </button>
       <div class="method-body" id="method-body">
-        <h4>¿Qué es el JEE?</h4>
-        Las actas que llegan al Jurado Electoral Especial son las que tuvieron problemas:
-        sumas que no cuadran, tachaduras, firmas incompletas, o impugnaciones de personeros.
-        Actualmente hay <b>${fmt(totalJee)} actas</b> en el JEE.
+        <h4>1. El problema</h4>
+        Hoy tenemos <b>${fmt(totalJee)} actas atascadas en el JEE</b>. El JEE (tribunal electoral)
+        las revisa una por una y decide si las cuenta o las anula. <b>Nadie sabe qué pasará con
+        cada una</b>, por eso hay que estimar.
 
-        <h4>¿Cuántas se aceptan realmente?</h4>
-        Históricamente (datos de elecciones 2021), el JEE acepta aproximadamente:
+        <h4>2. Cuántas se aceptan típicamente</h4>
+        Según data histórica (2021):
+        <div style="background:var(--bg);padding:10px;border-radius:8px;margin:6px 0">
+          <div style="display:flex;justify-content:space-between;padding:3px 0">
+            <span><b>Lima, Callao, Extranjero</b><br><span style="font-size:0.7rem">(zonas urbanas, más impugnaciones políticas)</span></span>
+            <span style="font-weight:800;color:var(--lopez)">60% acepta</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--border);margin-top:6px;padding-top:6px">
+            <span><b>Resto del Perú</b><br><span style="font-size:0.7rem">(zonas rurales, más errores administrativos)</span></span>
+            <span style="font-weight:800;color:var(--sanchez)">75% acepta</span>
+          </div>
+        </div>
+
+        <h4>3. Aplicado a HOY</h4>
         <ul>
-          <li><b>~80%</b> de las actas con errores administrativos (sumas mal, tachaduras leves)</li>
-          <li><b>~50%</b> de las actas impugnadas políticamente por personeros</li>
-          <li><b>0%</b> de las actas con anulación firme (fraude, mesa no instalada)</li>
+          <li>Lima/Callao/Extranjero tienen <b>${fmt(jeeUrbano)} actas</b> JEE → ~${fmt(Math.round(jeeUrbano * URBAN_RATE))} se aceptarán</li>
+          <li>Resto del país tiene <b>${fmt(jeeRural)} actas</b> JEE → ~${fmt(Math.round(jeeRural * RURAL_RATE))} se aceptarán</li>
+          <li><b>Total que se cuentan: ${fmt(jeeAceptadas)} de ${fmt(totalJee)} (${tasaPromedio.toFixed(0)}%)</b></li>
         </ul>
-        <b>Promedio total: ~65% de aceptación.</b>
 
-        <h4>La fórmula</h4>
+        <h4>4. El cálculo final</h4>
+        <div style="background:var(--bg);padding:10px;border-radius:8px;margin:6px 0;font-family:monospace;font-size:0.8rem">
+          <div>Sánchez lidera hoy por: <b>${fmt(diffActual)}</b></div>
+          <div style="color:var(--lopez)">+ Pendientes puras (Lima/Extranjero): <b>${impSinJee >= 0 ? '+' : ''}${fmt(impSinJee)}</b></div>
+          <div>+ JEE aceptadas (${tasaPromedio.toFixed(0)}%): <b>${(impConJee - impSinJee) >= 0 ? '+' : ''}${fmt(Math.round((impConJee - impSinJee) * tasaPromedio / 100))}</b></div>
+          <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px">
+            = <b style="color:var(--${winnerReal?'sanchez':'lopez'});font-size:1rem">${winnerRealName} +${fmt(Math.abs(Math.round(proyRealista)))}</b>
+          </div>
+        </div>
+
+        <h4>5. Importante</h4>
         <ul>
-          <li><b>Diff actual:</b> ${fmt(diffActual)} votos (${diffActual >= 0 ? 'Sánchez' : 'López A.'})</li>
-          <li><b>Impacto Sin JEE</b> (pendientes puras al 100%): ${impSinJee >= 0 ? '+' : ''}${fmt(impSinJee)}</li>
-          <li><b>Impacto adicional del JEE si se aceptara todo:</b> ${(impConJee - impSinJee) >= 0 ? '+' : ''}${fmt(impConJee - impSinJee)}</li>
-          <li><b>Aplicamos 65%</b> de ese impacto: ${(impConJee - impSinJee) >= 0 ? '+' : ''}${fmt(Math.round((impConJee - impSinJee) * 0.65))}</li>
-          <li><b>Suma total:</b> ${fmt(Math.round(proyRealista))} → <b style="color:var(--${winnerReal?'sanchez':'lopez'})">${winnerRealName}</b></li>
-        </ul>
-
-        <h4>Por qué este es el más preciso</h4>
-        Los extremos (0% o 100% del JEE) son teóricos. En la realidad, el JEE siempre
-        acepta la mayoría con ajustes. El escenario realista usa la tasa histórica de
-        aceptación aplicada al impacto que tendrían las actas JEE de cada departamento.
-
-        <h4>Limitaciones</h4>
-        <ul>
-          <li>Asume que las actas JEE tienen la misma distribución de votos que el promedio departamental. En realidad pueden tener sesgos (ej. actas impugnadas en Lima vs errores admin en provincias).</li>
-          <li>La tasa del 65% es un promedio histórico. Puede variar en esta elección.</li>
-          <li>No es un resultado oficial, es una proyección estadística.</li>
+          <li><b>Todo es dinámico</b>: cada vez que sincronizas, los números se recalculan.</li>
+          <li>Esto es una <b>estimación estadística</b>, no un resultado oficial.</li>
+          <li>El número real puede variar si las actas JEE tienen distribución de votos distinta al promedio del departamento (ej. una acta impugnada en Miraflores no vota igual que una en Comas).</li>
         </ul>
       </div>
 
