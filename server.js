@@ -11,6 +11,11 @@ const MIME = {
   '.js': 'application/javascript',
   '.json': 'application/json',
   '.css': 'text/css',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
 };
 
 let syncing = false;
