@@ -127,6 +127,21 @@
 
   .jee-card { background: linear-gradient(135deg, var(--card), var(--yellow-bg)); display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: 14px; margin-top: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
 
+  /* Prob card */
+  .prob-card { background: var(--card); border-radius: 16px; padding: 16px; margin-top: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  .prob-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 12px; text-align: center; }
+  .prob-bars { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .prob-side { font-size: 0.7rem; }
+  .prob-name { font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .prob-pct { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+  .prob-bar-wrap { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--border); }
+  .prob-bar-s { background: var(--sanchez); }
+  .prob-bar-l { background: var(--lopez); }
+  .prob-conds { background: var(--bg); border-radius: 10px; padding: 10px; font-size: 0.75rem; line-height: 1.4; color: var(--text-secondary); }
+  .prob-cond-tag { font-weight: 800; font-size: 0.7rem; margin-right: 4px; }
+  .prob-cond b { color: var(--text-primary); }
+  .prob-note { font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; text-align: center; line-height: 1.4; }
+
   /* Trend Section */
   .trend-section { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
   .tr-header { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 12px; }
@@ -431,6 +446,77 @@ function render(data) {
           <div class="sc-diff">+${fmt(Math.abs(Math.round(proyConJee)))} votos</div>
         </div>
       </div>
+
+      ${(() => {
+        // Calcular probabilidad: tasa critica donde cambia ganador
+        // Si SinJee y ConJee favorecen al MISMO candidato, es 99%/1%
+        const winnerSin = proySinJee >= 0 ? 'S' : 'L';
+        const winnerCon = proyConJee >= 0 ? 'S' : 'L';
+        let probS, probL, tasaCritica = null;
+
+        if (winnerSin === winnerCon) {
+          // Mismo ganador en ambos extremos
+          probS = winnerSin === 'S' ? 95 : 5;
+          probL = 100 - probS;
+        } else {
+          // Hay un punto de cruce — calcular tasa crítica
+          // proySinJee + (proyConJee - proySinJee) * t = 0
+          // t = -proySinJee / (proyConJee - proySinJee)
+          tasaCritica = -proySinJee / (proyConJee - proySinJee);
+          // Asumir distribución uniforme entre 50% y 85% (rango histórico)
+          // P(rate < critica) = % donde gana el del SinJee
+          if (tasaCritica <= 0.5) {
+            probS = winnerCon === 'S' ? 95 : 5;
+          } else if (tasaCritica >= 0.85) {
+            probS = winnerSin === 'S' ? 95 : 5;
+          } else {
+            const probWinnerSin = (tasaCritica - 0.5) / 0.35 * 100;
+            probS = winnerSin === 'S' ? Math.round(probWinnerSin) : Math.round(100 - probWinnerSin);
+          }
+          probL = 100 - probS;
+        }
+
+        const sNeedsRate = winnerCon === 'S' ? Math.max(50, Math.round((tasaCritica || 0) * 100)) : null;
+        const lNeedsRate = winnerSin === 'L' ? Math.min(85, Math.round((tasaCritica || 0) * 100)) : null;
+
+        return `
+          <div class="prob-card">
+            <div class="prob-title">Probabilidad de ganar</div>
+            <div class="prob-bars">
+              <div class="prob-side">
+                <div class="prob-name c-sanchez">Sánchez</div>
+                <div class="prob-pct c-sanchez">${probS}%</div>
+              </div>
+              <div class="prob-bar-wrap">
+                <div class="prob-bar-s" style="width:${probS}%"></div>
+                <div class="prob-bar-l" style="width:${probL}%"></div>
+              </div>
+              <div class="prob-side" style="text-align:right">
+                <div class="prob-name c-lopez">López A.</div>
+                <div class="prob-pct c-lopez">${probL}%</div>
+              </div>
+            </div>
+            <div class="prob-conds">
+              <div class="prob-cond">
+                <span class="prob-cond-tag c-sanchez">Sánchez gana si:</span>
+                ${winnerCon === 'S' && tasaCritica !== null
+                  ? `el JEE acepta más del <b>${Math.round(tasaCritica * 100)}%</b> de actas. Tasa actual asumida: 60%.`
+                  : winnerSin === 'S'
+                    ? `casi cualquier escenario del JEE — su ventaja se sostiene incluso anulando todo el JEE.`
+                    : `el JEE acepta casi todo (>85%) — escenario poco probable.`}
+              </div>
+              <div class="prob-cond" style="margin-top:6px">
+                <span class="prob-cond-tag c-lopez">López A. gana si:</span>
+                ${winnerSin === 'L' && tasaCritica !== null
+                  ? `el JEE acepta menos del <b>${Math.round(tasaCritica * 100)}%</b>. Esto es probable porque las JEE de Lima son políticas.`
+                  : winnerCon === 'L'
+                    ? `casi cualquier escenario — incluso aceptando todo el JEE.`
+                    : `el JEE anula casi todo (<50%) — escenario poco probable.`}
+              </div>
+            </div>
+            <div class="prob-note">Cálculo: cuántos escenarios de aceptación JEE (entre 50% y 85% históricos) favorecen a cada candidato.</div>
+          </div>`;
+      })()}
 
       <button class="method-toggle" onclick="toggleMethod()">
         <span>Cómo se calcula el escenario realista</span>
