@@ -389,8 +389,9 @@ function render(data) {
   const proyConJee = diffActual + impConJee;
   const proySinJee = diffActual + impSinJee;
 
-  // Escenario realista: tasa GLOBAL de 75% (promedio historico real)
-  const JEE_ACCEPT_RATE = 0.75;
+  // Escenario realista: tasa GLOBAL de 60% (conservador — muchas JEE en Lima son
+  // impugnaciones políticas con menor tasa de aceptación)
+  const JEE_ACCEPT_RATE = 0.60;
   const impRealista = impSinJee + (impConJee - impSinJee) * JEE_ACCEPT_RATE;
   const proyRealista = diffActual + impRealista;
   const totalJee = depts.reduce((s, d) => s + d._actasJee, 0);
@@ -413,7 +414,8 @@ function render(data) {
         <div class="sc-winner" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">${winnerRealName}</div>
         <div class="sc-diff" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">por ~${fmt(Math.abs(Math.round(proyRealista)))} votos</div>
         <div class="sc-info">
-          Asume que ${fmt(jeeAceptadas)} de ${fmt(totalJee)} actas en el JEE se validan (~${tasaPromedio.toFixed(0)}% promedio).
+          Asume que solo ${fmt(jeeAceptadas)} de ${fmt(totalJee)} actas JEE se validan (~${tasaPromedio.toFixed(0)}%).
+          <b style="color:var(--yellow);display:block;margin-top:6px">⚠ El resultado depende FUERTEMENTE de cuántas actas JEE acepte el tribunal.</b>
         </div>
       </div>
 
@@ -441,11 +443,18 @@ function render(data) {
         incompletas, o impugnaciones de personeros. El JEE las revisa una por una y
         decide si las cuenta o las anula. <b>Nadie sabe cuántas se aceptarán</b>.
 
-        <h4>2. Tasa histórica de aceptación</h4>
-        En elecciones pasadas (2021), entre 70% y 85% de las actas que llegan al JEE
-        terminan siendo aceptadas (con o sin correcciones). El resto se anula.
+        <h4>2. Tasa de aceptación que asumimos</h4>
+        Usamos <b>60% como tasa conservadora</b> de aceptación del JEE.
         <br><br>
-        Usamos <b>75% como tasa promedio realista</b>.
+        Aunque históricamente se acepta 70-85%, en esta elección hay muchas
+        actas en JEE de Lima que vienen de impugnaciones políticas
+        (Renovación Popular vs otros partidos), y esas tienen menor
+        tasa de aceptación que los simples errores administrativos rurales.
+        <div style="background:var(--yellow-bg);padding:8px;border-radius:8px;margin-top:8px;color:var(--text-primary);font-weight:600">
+          ⚠ Este es el escenario MÁS sensible. Si el JEE acepta más actas
+          de las que asumimos, Sánchez puede tomar la delantera. Si acepta
+          menos, López Aliaga gana por más.
+        </div>
 
         <h4>3. Cálculo a nivel DISTRITO</h4>
         Cada acta JEE se evalúa con el porcentaje real de SU distrito (no del promedio
@@ -461,7 +470,7 @@ function render(data) {
         <div style="background:var(--bg);padding:10px;border-radius:8px;margin:6px 0;font-family:monospace;font-size:0.78rem">
           <div>Diferencia actual: <b>${diffActual >= 0 ? '+' : ''}${fmt(diffActual)}</b> (${diffActual >= 0 ? 'Sánchez' : 'López'})</div>
           <div>+ Pendientes puras (100% se cuentan): <b style="color:var(--${impSinJee >= 0 ? 'sanchez' : 'lopez'})">${impSinJee >= 0 ? '+' : ''}${fmt(impSinJee)}</b></div>
-          <div>+ JEE aceptadas (${tasaPromedio.toFixed(0)}% de ${fmt(totalJee)}): <b style="color:var(--${(impConJee - impSinJee) * 0.75 >= 0 ? 'sanchez' : 'lopez'})">${(impConJee - impSinJee) >= 0 ? '+' : ''}${fmt(Math.round((impConJee - impSinJee) * 0.75))}</b></div>
+          <div>+ JEE aceptadas (${tasaPromedio.toFixed(0)}% de ${fmt(totalJee)}): <b style="color:var(--${(impConJee - impSinJee) * JEE_ACCEPT_RATE >= 0 ? 'sanchez' : 'lopez'})">${(impConJee - impSinJee) >= 0 ? '+' : ''}${fmt(Math.round((impConJee - impSinJee) * JEE_ACCEPT_RATE))}</b></div>
           <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;font-size:0.85rem">
             = <b style="color:var(--${winnerReal?'sanchez':'lopez'})">${winnerRealName} +${fmt(Math.abs(Math.round(proyRealista)))}</b>
           </div>
