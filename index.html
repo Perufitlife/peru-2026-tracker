@@ -30,8 +30,11 @@
 
   /* Header */
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .header-left .title { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; }
+  .header-left .title { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
   .header-left .meta { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px; }
+  .ig-link { color: var(--text-secondary); display: inline-flex; transition: color 0.2s; }
+  .ig-link:hover { color: var(--text-primary); }
+  .ig-link svg { width: 18px; height: 18px; }
   .sync-btn { background: var(--text-primary); color: white; border: none; padding: 8px 16px; border-radius: 99px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
   .sync-btn:active { transform: scale(0.95); }
   .sync-btn:disabled { opacity: 0.5; }
@@ -172,7 +175,16 @@
 
   <div class="header">
     <div class="header-left">
-      <div class="title">ONPE Tracker</div>
+      <div class="title">
+        ONPE Tracker
+        <a href="https://www.instagram.com/renzom13/" target="_blank" rel="noopener" class="ig-link" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+          </svg>
+        </a>
+      </div>
       <div class="meta" id="meta">Cargando...</div>
     </div>
     <button class="sync-btn" id="syncBtn" onclick="sync()">Actualizar</button>
