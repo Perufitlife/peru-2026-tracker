@@ -173,11 +173,11 @@
     <div class="leyenda-cols-title">Columnas de la tabla</div>
     <div class="leyenda-col-item"><b>Avance</b> — % de actas procesadas por ONPE</div>
     <div class="leyenda-col-item"><b>Votos</b> — votos ya contabilizados en esa region</div>
-    <div class="leyenda-col-item"><b>~Faltan</b> — estimado de votos pendientes (promedio votos/acta × actas faltantes)</div>
+    <div class="leyenda-col-item"><b>Pend</b> — actas pendientes puras (en negro) + actas en JEE (en <span style="color:#c62828">rojo</span>)</div>
     <div class="leyenda-col-item"><b>S</b> — % de votos validos de Roberto Sanchez en esa region</div>
     <div class="leyenda-col-item"><b>LA</b> — % de votos validos de Lopez Aliaga en esa region</div>
-    <div class="leyenda-col-item"><b>D</b> — diferencia en puntos porcentuales entre ambos candidatos</div>
-    <div class="leyenda-col-item"><b>Impacto</b> — votos netos estimados que aportan las actas pendientes de esa region. El color indica a quien favorece</div>
+    <div class="leyenda-col-item"><b>Sin JEE</b> — impacto neto estimado solo con actas pendientes (sin contar JEE). — indica que no hay pendientes</div>
+    <div class="leyenda-col-item"><b>Con JEE</b> — impacto neto si ademas se aceptan todas las actas del JEE</div>
   </div>
 </div>
 
@@ -327,14 +327,18 @@ function render(data) {
     const ve = item.totales.totalVotosEmitidos;
     const ac = item.totales.contabilizadas;
     const at = item.totales.totalActas;
+    const jee = item.totales.enviadasJee || 0;
     const vpa = ac > 0 ? ve / ac : 0;
-    const vf = item._votosFaltanSimple != null ? item._votosFaltanSimple : Math.round(vpa * (at - ac));
+    const pendPuras = Math.max(0, at - ac - jee);
+    const vfSinJee = Math.round(vpa * pendPuras);
+    const vfConJee = Math.round(vpa * (at - ac));
     const sD = findCand(item.candidatos, 'SANCHEZ PALOMINO');
     const lD = findCand(item.candidatos, 'LÓPEZ ALIAGA');
     const sP = sD ? sD.porcentajeVotosValidos : 0;
     const lP = lD ? lD.porcentajeVotosValidos : 0;
     const delta = sP - lP;
-    const impacto = item._impactoSimple != null ? item._impactoSimple : Math.round(vf * delta / 100);
+    const impSinJee = Math.round(vfSinJee * delta / 100);
+    const impConJee = item._impactoSimple != null ? item._impactoSimple : Math.round(vfConJee * delta / 100);
     const indent = isGrandChild ? 'padding-left:44px;font-weight:400;font-size:0.85em;color:#888;' :
                    isChild ? 'padding-left:24px;font-weight:400;font-size:0.9em;color:#555;' : '';
     const hasChildren = item.provincias?.length || item.distritos?.length;
@@ -343,22 +347,22 @@ function render(data) {
       <td class="region-name" style="${indent}">${titleCase(item.nombre)}${arrow}</td>
       <td class="r"><span class="badge ${badgeClass(pct)}">${pct.toFixed(1)}</span></td>
       <td class="r hide-mobile">${fmt(ve)}</td>
-      <td class="r" style="color:#86868b">${fmt(vf)}</td>
+      <td class="r" style="color:#86868b">${fmt(vfSinJee)}${jee > 0 ? '<span style="color:#c62828;font-size:0.8em"> +' + jee + '</span>' : ''}</td>
       <td class="r ${ac === 0 ? '' : 'val-s'}">${ac === 0 ? '-' : sP.toFixed(1)}</td>
       <td class="r ${ac === 0 ? '' : 'val-l'}">${ac === 0 ? '-' : lP.toFixed(1)}</td>
-      <td class="r ${ac === 0 ? '' : (delta >= 0 ? 'val-dp' : 'val-dn')}">${ac === 0 ? '-' : Math.abs(delta).toFixed(1)}</td>
-      <td class="r ${ac === 0 ? '' : (impacto >= 0 ? 'val-dp' : 'val-dn')}">${ac === 0 ? '-' : fmt(Math.abs(impacto))}</td>`;
+      <td class="r ${ac === 0 ? '' : (impSinJee === 0 ? '' : impSinJee > 0 ? 'val-dp' : 'val-dn')}">${ac === 0 ? '-' : (pendPuras === 0 ? '—' : fmt(Math.abs(impSinJee)))}</td>
+      <td class="r ${ac === 0 ? '' : (impConJee === 0 ? '' : impConJee > 0 ? 'val-dp' : 'val-dn')}">${ac === 0 ? '-' : fmt(Math.abs(impConJee))}</td>`;
   }
 
   let rows = `<tr>
     <th>Region<span class="th-info">toca para expandir</span></th>
     <th class="r">Avance</th>
     <th class="r hide-mobile">Votos</th>
-    <th class="r">~Faltan</th>
+    <th class="r">Pend</th>
     <th class="r">S</th>
     <th class="r">LA</th>
-    <th class="r">D</th>
-    <th class="r">Impacto</th>
+    <th class="r">Sin JEE</th>
+    <th class="r">Con JEE</th>
   </tr>`;
 
   depts.forEach((dept, i) => {
