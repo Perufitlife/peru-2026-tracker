@@ -5,6 +5,7 @@ const { execFile } = require('child_process');
 
 const PORT = 8080;
 const DIR = __dirname;
+const AUTO_SYNC_MINUTES = 10;
 
 const MIME = {
   '.html': 'text/html',
@@ -19,42 +20,68 @@ const MIME = {
 };
 
 let syncing = false;
+let lastSync = null;
+let lastError = null;
+
+function runSync(callback) {
+  if (syncing) {
+    if (callback) callback({ status: 'already_running' });
+    return;
+  }
+  syncing = true;
+  console.log(`[SYNC] Starting at ${new Date().toLocaleString('es-PE')}...`);
+
+  execFile('node', [path.join(DIR, 'fetch-data.js')], { timeout: 120000 }, (err, stdout, stderr) => {
+    syncing = false;
+    if (err) {
+      console.log('[SYNC] Error:', err.message);
+      lastError = err.message;
+      if (callback) callback({ status: 'error', message: err.message });
+      return;
+    }
+    console.log('[SYNC] Done!');
+    lastSync = new Date();
+    lastError = null;
+
+    // Auto-push to GitHub (data.json + history.json)
+    execFile('git', ['add', 'data.json', 'history.json'], { cwd: DIR }, () => {
+      execFile('git', ['commit', '-m', `Sync ${new Date().toISOString()}`], { cwd: DIR }, (commitErr) => {
+        if (commitErr) {
+          console.log('[GIT] Nothing to commit or error:', commitErr.message.split('\n')[0]);
+        } else {
+          execFile('git', ['push'], { cwd: DIR }, (pushErr) => {
+            if (pushErr) console.log('[PUSH] Error:', pushErr.message);
+            else console.log('[PUSH] Done!');
+          });
+        }
+      });
+    });
+    if (callback) callback({ status: 'ok' });
+  });
+}
 
 const server = http.createServer((req, res) => {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   // Sync endpoint
   if (req.url === '/api/sync') {
-    if (syncing) {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'already_running' }));
-      return;
-    }
-    syncing = true;
-    console.log('[SYNC] Starting...');
-    execFile('node', [path.join(DIR, 'fetch-data.js')], { timeout: 120000 }, (err, stdout, stderr) => {
-      syncing = false;
-      if (err) {
-        console.log('[SYNC] Error:', err.message);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'error', message: err.message }));
-      } else {
-        console.log('[SYNC] Done!');
-        console.log(stdout);
-        // Auto-push to GitHub (data.json + history.json)
-        execFile('git', ['add', 'data.json', 'history.json'], { cwd: DIR }, () => {
-          execFile('git', ['commit', '-m', `Sync ${new Date().toISOString()}`], { cwd: DIR }, () => {
-            execFile('git', ['push'], { cwd: DIR }, (pushErr) => {
-              if (pushErr) console.log('[PUSH] Error:', pushErr.message);
-              else console.log('[PUSH] Done!');
-            });
-          });
-        });
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok' }));
-      }
+    runSync(result => {
+      const code = result.status === 'error' ? 500 : 200;
+      res.writeHead(code, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
     });
+    return;
+  }
+
+  // Status endpoint
+  if (req.url === '/api/status') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      syncing,
+      lastSync: lastSync ? lastSync.toISOString() : null,
+      lastError,
+      autoSyncMinutes: AUTO_SYNC_MINUTES,
+    }));
     return;
   }
 
@@ -77,5 +104,22 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Dashboard: http://localhost:${PORT}`);
-  console.log('Sync endpoint: GET /api/sync');
+  console.log(`Sync endpoint: GET /api/sync`);
+  console.log(`Auto-sync: cada ${AUTO_SYNC_MINUTES} minutos`);
+
+  // Sincronización automática al arrancar (después de 5 segundos para dar tiempo)
+  setTimeout(() => {
+    console.log('[AUTO-SYNC] Sync inicial al arrancar...');
+    runSync();
+  }, 5000);
+
+  // Timer recurrente cada N minutos
+  setInterval(() => {
+    if (!syncing) {
+      console.log(`[AUTO-SYNC] Sync cada ${AUTO_SYNC_MINUTES} min...`);
+      runSync();
+    } else {
+      console.log('[AUTO-SYNC] Saltado: sync anterior aun en progreso');
+    }
+  }, AUTO_SYNC_MINUTES * 60 * 1000);
 });
