@@ -453,78 +453,126 @@ function render(data) {
         <span id="method-chev">▼</span>
       </button>
       <div class="method-body" id="method-body">
-        <h4>1. El problema</h4>
-        Hoy tenemos <b>${fmt(totalJee)} actas en el JEE</b> (Jurado Electoral Especial).
-        Son actas que tuvieron problemas: sumas que no cuadran, tachaduras, firmas
-        incompletas, o impugnaciones de personeros. El JEE las revisa una por una y
-        decide si las cuenta o las anula. <b>Nadie sabe cuántas se aceptarán</b>.
+        <h4>📌 La pregunta</h4>
+        ¿Quién va a pasar a la segunda vuelta entre Sánchez y López Aliaga?
+        Ya hay <b>${fmt(t.contabilizadas)} actas contadas</b> (${t.actasContabilizadas.toFixed(2)}%) y faltan <b>${fmt(t.totalActas - t.contabilizadas)}</b>. De esas que faltan, <b>${fmt(totalJee)}</b> están "atascadas" en el JEE.
 
-        <h4>2. Tasa de aceptación que asumimos</h4>
-        Usamos <b>${tasaPromedio.toFixed(0)}% como tasa de aceptación</b> del JEE.
-        <br><br>
-        Aunque históricamente se acepta 70-85%, en esta elección hay muchas
-        actas en JEE de Lima que vienen de impugnaciones políticas
-        (Renovación Popular vs otros partidos), y esas tienen menor
-        tasa de aceptación que los simples errores administrativos rurales.
-        <div style="background:var(--yellow-bg);padding:8px;border-radius:8px;margin-top:8px;color:var(--text-primary);font-weight:600">
-          ⚠ Este es el escenario MÁS sensible. Si el JEE acepta más actas
-          de las que asumimos, Sánchez puede tomar la delantera. Si acepta
-          menos, López Aliaga gana por más.
-        </div>
+        <h4>1. ¿Qué es una "acta"?</h4>
+        Cada mesa de votación llena un papel (acta) con los conteos. Cada acta vale <b>~${Math.round(t.totalVotosEmitidos / t.contabilizadas)} votos</b> en promedio. Hay 92,766 actas en todo el Perú + extranjero.
 
-        <h4>3. Cálculo a nivel DISTRITO</h4>
-        Cada acta JEE se evalúa con el porcentaje real de SU distrito (no del promedio
-        departamental). Por ejemplo:
+        <h4>2. ¿Qué es el JEE?</h4>
+        Cuando una mesa tiene problemas (sumas mal, tachaduras, firmas incompletas, o un personero de un partido la impugna), el acta no se cuenta automáticamente. Va al <b>Jurado Electoral Especial (JEE)</b> que la revisa manualmente y decide si:
         <ul>
-          <li>Una acta JEE en <b>Surco</b> usa LA=44.5%, no 19.9% promedio Lima</li>
-          <li>Una acta JEE en <b>Villa El Salvador</b> usa LA=12.4%</li>
-          <li>Una acta JEE en <b>Cajamarca rural</b> usa Sánchez=45%</li>
+          <li>✅ <b>Validar</b> el acta → los votos cuentan normal</li>
+          <li>❌ <b>Anular</b> el acta → los votos se pierden</li>
         </ul>
-        Total: <b>1,892 distritos</b> analizados individualmente.
+        Hoy hay <b>${fmt(totalJee)} actas atascadas en el JEE</b>. Nadie sabe cuántas se van a validar.
 
-        <h4>4. El cálculo paso a paso</h4>
-        <div style="background:var(--bg);padding:10px;border-radius:8px;margin:6px 0;font-family:monospace;font-size:0.78rem">
-          <div>Diferencia actual: <b>${diffActual >= 0 ? '+' : ''}${fmt(diffActual)}</b> (${diffActual >= 0 ? 'Sánchez' : 'López'})</div>
-          <div>+ Pendientes puras (100% se cuentan): <b style="color:var(--${impSinJee >= 0 ? 'sanchez' : 'lopez'})">${impSinJee >= 0 ? '+' : ''}${fmt(impSinJee)}</b></div>
-          <div>+ JEE aceptadas (${tasaPromedio.toFixed(0)}% de ${fmt(totalJee)}): <b style="color:var(--${(impConJee - impSinJee) * JEE_ACCEPT_RATE >= 0 ? 'sanchez' : 'lopez'})">${(impConJee - impSinJee) >= 0 ? '+' : ''}${fmt(Math.round((impConJee - impSinJee) * JEE_ACCEPT_RATE))}</b></div>
-          <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;font-size:0.85rem">
-            = <b style="color:var(--${winnerReal?'sanchez':'lopez'})">${winnerRealName} +${fmt(Math.abs(Math.round(proyRealista)))}</b>
+        <h4>3. Estado actual REAL (sin proyectar nada)</h4>
+        <div style="background:var(--bg);padding:10px;border-radius:8px;margin:6px 0;font-size:0.78rem">
+          <div>Sánchez: <b class="c-sanchez">${fmt(vS)} votos</b> (${nacS ? nacS.porcentajeVotosValidos.toFixed(2) : 0}%)</div>
+          <div>López Aliaga: <b class="c-lopez">${fmt(vL)} votos</b> (${nacL ? nacL.porcentajeVotosValidos.toFixed(2) : 0}%)</div>
+          <div style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px">
+            ${liderActual} lidera por <b>${fmt(Math.abs(diffActual))} votos</b>
           </div>
         </div>
 
-        <h4>5. Rango de incertidumbre</h4>
-        Si la tasa de aceptación real fuera distinta:
+        <h4>4. ¿Qué falta por contar?</h4>
+        Dos tipos de actas pendientes:
+        <ul>
+          <li><b>Pendientes puras (sin problemas):</b> ${fmt(t.totalActas - t.contabilizadas - totalJee)} actas. <b>Estas SÍ van a contar al 100%</b>, solo es cuestión de tiempo.</li>
+          <li><b>JEE (con problemas):</b> ${fmt(totalJee)} actas. <b>Acá viene la incertidumbre</b>.</li>
+        </ul>
+
+        <h4>5. Cómo proyectamos los votos pendientes</h4>
+        Para cada distrito (de ${fmt(1892)} en total), tomamos:
+        <div style="background:var(--bg);padding:8px 10px;border-radius:6px;margin:4px 0;font-family:monospace;font-size:0.72rem;color:var(--text-primary)">
+          votos del distrito ÷ actas contadas = votos por acta del distrito<br>
+          votos por acta × actas que faltan = votos pendientes
+        </div>
+        Luego aplicamos el <b>% real de cada candidato EN ESE distrito</b>.
+        <br><br>
+        <b>Ejemplo real con la data de ahora:</b><br>
+        Si en Cajamarca > Cajabamba faltan 5 actas y el distrito promedia 200 votos/acta con Sánchez al 45%, esas 5 actas darán ~5 × 200 × 45% = <b>450 votos para Sánchez</b>.
+        <br><br>
+        Hacemos esto para los 1,892 distritos y sumamos.
+
+        <h4>6. ¿Por qué importa hacerlo por distrito?</h4>
+        Porque cada distrito vota DISTINTO. No es lo mismo:
+        <ul>
+          <li><b>Surco (Lima)</b>: López al ~45%, Sánchez al ~1%</li>
+          <li><b>Villa El Salvador (Lima)</b>: López al ~12%, Sánchez al ~3%</li>
+          <li><b>Pichari (Cusco rural)</b>: Sánchez al ~50%, López al ~3%</li>
+        </ul>
+        Si usáramos el promedio Lima (López 20%) para una acta de Surco, estaríamos quitándole votos a López. Por eso vamos distrito por distrito.
+
+        <h4>7. ¿Qué pasa con el JEE? La gran pregunta</h4>
+        Si el JEE valida un acta, sus votos cuentan normal según el distrito. Si la anula, esos votos se pierden y nadie los gana.
+        <br><br>
+        <b>Asumimos que el JEE va a validar el ${tasaPromedio.toFixed(0)}% de las actas</b> y anular el ${(100 - tasaPromedio).toFixed(0)}%.
+        <br><br>
+        ¿Por qué ${tasaPromedio.toFixed(0)}%? Es ligeramente conservador respecto al promedio histórico (70-85%) por dos razones:
+        <ul>
+          <li>Hay <b>${fmt(d.departamentos.find(x=>x.nombre==='LIMA')?.totales.enviadasJee || 0)} actas JEE solo en Lima</b> — muchas son impugnaciones políticas (no errores admin), y esas tienen menor tasa de aceptación</li>
+          <li>La elección está peleada → más razones para anular</li>
+        </ul>
+        <div style="background:var(--yellow-bg);padding:8px;border-radius:8px;margin-top:8px;color:var(--text-primary);font-size:0.78rem">
+          ⚠ <b>El resultado depende fuertemente de este número.</b> Si el JEE valida más, Sánchez gana. Si valida menos, López gana. Por eso mostramos el rango abajo.
+        </div>
+
+        <h4>8. La cuenta paso a paso (con números actuales)</h4>
+        <div style="background:var(--bg);padding:10px;border-radius:8px;margin:6px 0;font-family:monospace;font-size:0.78rem">
+          <div>Hoy: ${liderActual} lidera por <b>${fmt(Math.abs(diffActual))}</b> votos</div>
+          <div style="color:#888;font-size:0.72rem;margin:4px 0 4px 12px">↳ es un hecho, no proyección</div>
+
+          <div>Pendientes puras (van a llegar al 100%):</div>
+          <div style="margin-left:12px">→ <b style="color:var(--${impSinJee >= 0 ? 'sanchez' : 'lopez'})">${impSinJee >= 0 ? '+' : ''}${fmt(impSinJee)}</b> votos netos para ${impSinJee >= 0 ? 'Sánchez' : 'López'}</div>
+          <div style="color:#888;font-size:0.72rem;margin-left:12px">↳ Lima/Extranjero pesan mucho acá (favorecen LA)</div>
+
+          <div style="margin-top:6px">JEE al ${tasaPromedio.toFixed(0)}% (${fmt(jeeAceptadas)} de ${fmt(totalJee)} se validan):</div>
+          <div style="margin-left:12px">→ <b style="color:var(--${(impConJee - impSinJee) * JEE_ACCEPT_RATE >= 0 ? 'sanchez' : 'lopez'})">${(impConJee - impSinJee) * JEE_ACCEPT_RATE >= 0 ? '+' : ''}${fmt(Math.round((impConJee - impSinJee) * JEE_ACCEPT_RATE))}</b> votos netos para ${(impConJee - impSinJee) * JEE_ACCEPT_RATE >= 0 ? 'Sánchez' : 'López'}</div>
+          <div style="color:#888;font-size:0.72rem;margin-left:12px">↳ las JEE rurales tienen alto delta para Sánchez</div>
+
+          <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:6px;font-size:0.9rem">
+            Resultado: <b style="color:var(--${winnerReal?'sanchez':'lopez'})">${winnerRealName} por ${fmt(Math.abs(Math.round(proyRealista)))} votos</b>
+          </div>
+        </div>
+
+        <h4>9. ¿Y si el JEE valida más o menos?</h4>
+        El cambio de tasa cambia todo. Estos son los escenarios con la data de AHORA:
         <div style="background:var(--bg);padding:10px;border-radius:8px;margin:6px 0">
           <div style="display:flex;justify-content:space-between;padding:3px 0">
-            <span><b>Pesimista (50% acepta)</b></span>
+            <span>JEE valida 50% (pesimista)</span>
             <span style="color:var(--${proy50 >= 0 ? 'sanchez' : 'lopez'});font-weight:700">${proy50 >= 0 ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(Math.round(proy50)))}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0">
-            <span><b>Realista (${tasaPromedio.toFixed(0)}% acepta) ← actual</b></span>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;background:rgba(0,0,0,0.04);padding:3px 6px;border-radius:4px;margin:2px 0">
+            <span><b>JEE valida ${tasaPromedio.toFixed(0)}% (lo que asumimos)</b></span>
             <span style="color:var(--${proyRealista >= 0 ? 'sanchez' : 'lopez'});font-weight:700">${proyRealista >= 0 ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(Math.round(proyRealista)))}</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:3px 0">
-            <span><b>Optimista (90% acepta)</b></span>
+            <span>JEE valida 90% (optimista)</span>
             <span style="color:var(--${proy90 >= 0 ? 'sanchez' : 'lopez'});font-weight:700">${proy90 >= 0 ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(Math.round(proy90)))}</span>
           </div>
         </div>
 
-        <h4>6. Ajuste por actas "huérfanas"</h4>
-        ONPE a veces reporta más actas JEE a nivel departamento que las
-        que aparecen sumadas a nivel distrito (ej. mesas especiales,
-        electores residentes, recuentos). El modelo detecta estas actas
-        huérfanas y las incluye usando el promedio del departamento.
-        <br><br>
-        Cuando ONPE actualiza correctamente sus datos, esta diferencia
-        desaparece y el ajuste se anula automáticamente — sin tocar
-        el código.
-
-        <h4>7. Importante</h4>
+        <h4>10. Lo que NO modelamos (limitaciones honestas)</h4>
         <ul>
-          <li><b>Todo es dinámico</b>: cada sync recalcula con números frescos de ONPE.</li>
-          <li><b>Granular</b>: usa data de cada uno de los 1,892 distritos.</li>
-          <li><b>No es resultado oficial</b>: es una proyección estadística basada en supuestos.</li>
-          <li>El resultado real puede variar si las actas JEE tienen distribución diferente al voto del distrito (ej. una acta impugnada puede no representar el promedio).</li>
+          <li>Las actas JEE no son aleatorias — fueron seleccionadas por personeros estratégicamente. Asumimos que votan como el promedio del distrito, pero podrían tener sesgo.</li>
+          <li>El JEE puede anular votos específicos dentro de un acta, no solo aceptar/rechazar la mesa entera.</li>
+          <li>Las apelaciones al JNE pueden cambiar resultados semanas después.</li>
+          <li>El extranjero tiene gran incertidumbre (solo ${(d.departamentos.find(x=>x.nombre==='EXTRANJERO')?.totales.actasContabilizadas || 0).toFixed(0)}% contado).</li>
+        </ul>
+
+        <h4>11. Ajuste por actas "huérfanas"</h4>
+        ONPE a veces reporta más JEE a nivel departamento que la suma de los distritos (mesas especiales, electores residentes, etc.). El modelo detecta estas actas y las incluye usando el promedio del depto. Cuando ONPE las desglose correctamente, este ajuste se anula solo.
+
+        <h4>✅ Resumen para tu mamá</h4>
+        <ul>
+          <li>Sumamos lo que ya hay (${liderActual} +${fmt(Math.abs(diffActual))})</li>
+          <li>Le añadimos lo que SEGURO va a llegar (pendientes puras: ${impSinJee >= 0 ? '+' : ''}${fmt(impSinJee)})</li>
+          <li>Le añadimos lo PROBABLE del JEE (${tasaPromedio.toFixed(0)}% de validación: ${(impConJee - impSinJee) * JEE_ACCEPT_RATE >= 0 ? '+' : ''}${fmt(Math.round((impConJee - impSinJee) * JEE_ACCEPT_RATE))})</li>
+          <li>Resultado proyectado: <b>${winnerRealName} por ${fmt(Math.abs(Math.round(proyRealista)))} votos</b></li>
+          <li>Pero ojo: es una <b>carrera muy cerrada</b> (margen <0.5% del total). El JEE puede mover esto.</li>
         </ul>
       </div>
 
