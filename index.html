@@ -405,9 +405,9 @@ function render(data) {
   const proyConJee = diffActual + impConJee;
   const proySinJee = diffActual + impSinJee;
 
-  // Escenario realista: tasa GLOBAL de 60% (conservador — muchas JEE en Lima son
-  // impugnaciones políticas con menor tasa de aceptación)
-  const JEE_ACCEPT_RATE = 0.60;
+  // Escenario realista: tasa GLOBAL del 65% (cerca del histórico real 70-85%
+  // pero conservador por las muchas impugnaciones políticas en Lima)
+  const JEE_ACCEPT_RATE = 0.65;
   const impRealista = impSinJee + (impConJee - impSinJee) * JEE_ACCEPT_RATE;
   const proyRealista = diffActual + impRealista;
   const totalJee = depts.reduce((s, d) => s + d._actasJee, 0);
@@ -460,7 +460,7 @@ function render(data) {
         decide si las cuenta o las anula. <b>Nadie sabe cuántas se aceptarán</b>.
 
         <h4>2. Tasa de aceptación que asumimos</h4>
-        Usamos <b>60% como tasa conservadora</b> de aceptación del JEE.
+        Usamos <b>${tasaPromedio.toFixed(0)}% como tasa de aceptación</b> del JEE.
         <br><br>
         Aunque históricamente se acepta 70-85%, en esta elección hay muchas
         actas en JEE de Lima que vienen de impugnaciones políticas
