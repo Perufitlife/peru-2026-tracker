@@ -37,8 +37,8 @@ const server = http.createServer((req, res) => {
       } else {
         console.log('[SYNC] Done!');
         console.log(stdout);
-        // Auto-push to GitHub
-        execFile('git', ['add', 'data.json'], { cwd: DIR }, () => {
+        // Auto-push to GitHub (data.json + history.json)
+        execFile('git', ['add', 'data.json', 'history.json'], { cwd: DIR }, () => {
           execFile('git', ['commit', '-m', `Sync ${new Date().toISOString()}`], { cwd: DIR }, () => {
             execFile('git', ['push'], { cwd: DIR }, (pushErr) => {
               if (pushErr) console.log('[PUSH] Error:', pushErr.message);
