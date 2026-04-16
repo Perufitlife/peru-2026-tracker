@@ -3,291 +3,151 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Peru 2026 — Segunda Vuelta Tracker</title>
+<title>ONPE 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-    background: #f5f5f7; color: #1d1d1f; padding: 16px;
-    -webkit-font-smoothing: antialiased;
+  :root {
+    --bg: #F2F4F7;
+    --card: #FFFFFF;
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --border: #E5E7EB;
+    --sanchez: #F97316;
+    --sanchez-bg: #FFEDD5;
+    --lopez: #3B82F6;
+    --lopez-bg: #DBEAFE;
+    --green: #10B981;
+    --green-bg: #D1FAE5;
+    --red: #EF4444;
+    --red-bg: #FEE2E2;
+    --yellow: #F59E0B;
+    --yellow-bg: #FEF3C7;
   }
-
-  .container { max-width: 720px; margin: 0 auto; }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text-primary); padding: 16px 12px; }
+  .container { max-width: 600px; margin: 0 auto; }
 
   /* Header */
-  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .header h1 { font-size: 1.2em; font-weight: 700; color: #1d1d1f; }
-  .header .sub { font-size: 0.7em; color: #86868b; margin-top: 2px; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .header-left .title { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; }
+  .header-left .meta { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px; }
+  .sync-btn { background: var(--text-primary); color: white; border: none; padding: 8px 16px; border-radius: 99px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+  .sync-btn:active { transform: scale(0.95); }
+  .sync-btn:disabled { opacity: 0.5; }
 
-  /* Boxing banner */
-  .ring-banner {
-    position: relative;
-    background: linear-gradient(180deg, #fff 0%, #f5f5f7 100%);
-    border-radius: 16px;
-    overflow: hidden;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    padding: 12px 16px 16px;
-  }
-  .ring-img {
-    width: 100%;
-    max-height: 180px;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto 8px;
-  }
-  .ring-scores {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 10px;
-    align-items: center;
-  }
-  .ring-fighter {
-    text-align: center;
-    padding: 8px 4px;
-    border-radius: 10px;
-    transition: all 0.3s;
-  }
-  .ring-fighter.lopez { background: linear-gradient(135deg, rgba(0,122,255,0.06), rgba(0,122,255,0.12)); }
-  .ring-fighter.sanchez { background: linear-gradient(135deg, rgba(255,149,0,0.06), rgba(255,149,0,0.12)); }
-  .ring-fighter.winning { box-shadow: 0 0 0 2px currentColor; }
-  .ring-fighter.lopez.winning { color: #007aff; }
-  .ring-fighter.sanchez.winning { color: #ff9500; }
-  .ring-name { font-size: 0.7em; font-weight: 700; color: #1d1d1f; text-transform: uppercase; letter-spacing: 0.5px; }
-  .ring-votes { font-size: 1.3em; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
-  .ring-pct { font-size: 0.75em; color: #86868b; font-variant-numeric: tabular-nums; }
-  .ring-vs {
-    font-size: 0.85em; font-weight: 800; color: #86868b;
-    padding: 0 4px;
-  }
-  .ring-diff {
-    text-align: center;
-    margin-top: 8px;
-    font-size: 0.8em;
-    color: #86868b;
-  }
-  .ring-diff b { font-variant-numeric: tabular-nums; }
-  @media (max-width: 600px) {
-    .ring-img { max-height: 140px; }
-    .ring-votes { font-size: 1.1em; }
-  }
-  .sync-btn {
-    background: #007aff; color: #fff; border: none; border-radius: 20px;
-    padding: 8px 18px; font-size: 0.8em; font-weight: 600; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .sync-btn:hover { background: #0066d6; }
-  .sync-btn:active { transform: scale(0.96); }
-  .sync-btn:disabled { background: #86868b; cursor: default; }
+  /* Hero Main */
+  .hero { background: var(--card); border-radius: 24px; padding: 24px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 16px; }
+  .progress-section { margin-bottom: 24px; text-align: center; }
+  .progress-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 700; margin-bottom: 4px; }
+  .progress-val { font-size: 2.5rem; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .progress-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+  .progress-bar-bg { height: 8px; background: var(--border); border-radius: 4px; margin-top: 12px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--text-primary); border-radius: 4px; transition: width 0.5s ease; }
 
-  /* Progress nacional */
-  .nacional {
-    background: #fff; border-radius: 16px; padding: 20px;
-    margin-bottom: 12px; text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }
-  .nacional .label { font-size: 0.7em; color: #86868b; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
-  .nacional .value { font-size: 2.8em; font-weight: 700; color: #1d1d1f; margin: 2px 0; letter-spacing: -1px; }
-  .nacional .detail { font-size: 0.8em; color: #86868b; }
-  .progress { width: 100%; height: 6px; background: #e8e8ed; border-radius: 3px; margin-top: 12px; overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 3px; background: #007aff; transition: width 0.4s ease; }
+  /* VS Board */
+  .vs-board { display: flex; align-items: center; justify-content: space-between; position: relative; }
+  .fighter { text-align: center; flex: 1; }
+  .fighter-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; margin: 0 auto 8px; color: white; }
+  .f-s .fighter-avatar { background: var(--sanchez); }
+  .f-l .fighter-avatar { background: var(--lopez); }
+  .fighter-name { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; }
+  .fighter-votes { font-size: 1.5rem; font-weight: 800; margin: 2px 0; font-variant-numeric: tabular-nums; }
+  .fighter-pct { font-size: 0.85rem; font-weight: 600; }
+  .f-s .fighter-votes, .f-s .fighter-pct { color: var(--sanchez); }
+  .f-l .fighter-votes, .f-l .fighter-pct { color: var(--lopez); }
+  .vs-badge { font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); padding: 4px 8px; border-radius: 12px; background: var(--bg); position: absolute; left: 50%; transform: translateX(-50%); }
 
-  /* Resumen cards */
-  .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-  .res-card {
-    background: #fff; border-radius: 14px; padding: 14px;
-    text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    position: relative;
-  }
-  .res-card .rl { font-size: 0.65em; color: #86868b; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-  .res-card .rv { font-size: 1.5em; font-weight: 700; margin: 3px 0; font-variant-numeric: tabular-nums; }
-  .res-card .rs { font-size: 0.72em; color: #86868b; }
-  .res-card.full { grid-column: 1 / -1; }
-  .res-card.full .rv { font-size: 1.8em; }
-  .c-sanchez { color: #ff9500; }
-  .c-lopez { color: #007aff; }
+  .hero-footer { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+  .winner-text { font-weight: 800; color: var(--text-primary); }
 
-  /* Info tooltip */
-  .info-btn {
-    position: absolute; top: 8px; right: 10px;
-    width: 18px; height: 18px; border-radius: 50%;
-    background: #e8e8ed; color: #86868b; border: none;
-    font-size: 0.65em; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    line-height: 1;
-  }
-  .info-btn:hover { background: #d1d1d6; color: #555; }
-  .tooltip {
-    display: none; position: absolute; top: 32px; right: 4px; left: 4px;
-    background: #1d1d1f; color: #fff; padding: 10px 12px;
-    border-radius: 10px; font-size: 0.72em; font-weight: 400;
-    text-align: left; z-index: 10; line-height: 1.5;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  }
-  .tooltip.show { display: block; }
+  /* Scenarios */
+  .scenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .scenario-card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+  .sc-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 4px; }
+  .sc-winner { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 2px; }
+  .sc-diff { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+  .sc-info { font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border); padding-top: 8px; }
+  .jee-card { grid-column: span 2; background: linear-gradient(135deg, var(--card), var(--yellow-bg)); display: flex; justify-content: space-between; align-items: center; }
 
-  /* Trend */
-  .trend-section {
-    background: #fff; border-radius: 16px; padding: 16px;
-    margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }
-  .trend-title {
-    font-size: 0.7em; color: #86868b; text-transform: uppercase;
-    letter-spacing: 1.5px; font-weight: 600; margin-bottom: 10px;
-  }
-  .trend-chart { width: 100%; height: 120px; position: relative; }
-  .trend-chart canvas { width: 100%; height: 100%; }
-  .trend-table { width: 100%; font-size: 0.75em; margin-top: 10px; border-collapse: collapse; }
-  .trend-table th { text-align: left; color: #86868b; font-weight: 600; padding: 4px 6px; font-size: 0.9em; border-bottom: 1px solid #e8e8ed; }
-  .trend-table td { padding: 4px 6px; border-bottom: 1px solid #f2f2f7; font-variant-numeric: tabular-nums; }
-  .trend-table .r { text-align: right; }
-  .trend-crossover { margin-top: 12px; padding: 10px 12px; background: #f5f5f7; border-radius: 10px; font-size: 0.8em; text-align: center; }
+  /* Trend Section */
+  .trend-section { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+  .tr-header { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 12px; }
+  .tr-time { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 12px; font-weight: 500; }
+  .tr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .tr-box { background: var(--bg); border-radius: 12px; padding: 10px 6px; text-align: center; }
+  .tr-box-lbl { font-size: 0.6rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+  .tr-box-val { font-size: 1rem; font-weight: 800; }
+  .tr-places { font-size: 0.75rem; }
+  .tr-place-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .tr-place-row:last-child { border-bottom: none; }
+  .tr-rate { margin-top: 12px; background: var(--bg); padding: 10px; border-radius: 12px;font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; text-align: center; line-height: 1.4; }
 
-  /* Leyenda */
-  .leyenda {
-    background: #fff; border-radius: 14px; padding: 14px 16px;
-    margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }
-  .leyenda-title {
-    font-size: 0.7em; color: #86868b; text-transform: uppercase;
-    letter-spacing: 1px; font-weight: 600; margin-bottom: 8px;
-  }
-  .leyenda-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
-  .leyenda-item { display: flex; align-items: center; gap: 6px; font-size: 0.75em; color: #555; }
-  .leyenda-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-  .leyenda-cols { margin-top: 10px; padding-top: 8px; border-top: 1px solid #f2f2f7; }
-  .leyenda-cols-title { font-size: 0.68em; color: #86868b; margin-bottom: 4px; font-weight: 600; }
-  .leyenda-col-item { font-size: 0.72em; color: #555; padding: 2px 0; }
-  .leyenda-col-item b { color: #1d1d1f; }
+  /* Regions Accordion */
+  .regions-header { font-size: 1rem; font-weight: 800; margin-bottom: 12px; margin-top: 8px; }
+  .r-card { background: var(--card); border-radius: 16px; margin-bottom: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  .r-head { padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+  .r-head:active { background: var(--bg); }
+  .r-title { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+  .badge { padding: 4px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; }
+  .b-green { background: var(--green-bg); color: var(--green); }
+  .b-blue { background: var(--lopez-bg); color: var(--lopez); }
+  .b-yellow { background: var(--yellow-bg); color: var(--yellow); }
+  .b-red { background: var(--red-bg); color: var(--red); }
+  .r-stats { text-align: right; }
+  .r-votes { font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px; }
+  .r-lead { font-size: 0.8rem; font-weight: 800; }
+  .r-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); background: #fafafa; }
+  .r-body.open { display: block; }
+  
+  /* Micro bar for candidates in region */
+  .micro-bar-wrap { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 8px; background: var(--border); }
+  .micro-s { background: var(--sanchez); }
+  .micro-l { background: var(--lopez); }
 
-  /* Table */
-  .table-wrap {
-    background: #fff; border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }
-  table { width: 100%; border-collapse: collapse; font-size: 0.78em; }
-  th {
-    text-align: left; padding: 10px 8px; font-size: 0.7em;
-    color: #86868b; text-transform: uppercase; letter-spacing: 0.5px;
-    font-weight: 600; border-bottom: 1px solid #e8e8ed;
-    position: sticky; top: 0; background: #fff; z-index: 10;
-    box-shadow: 0 1px 0 #e8e8ed;
-  }
-  th.r { text-align: right; }
-  th .th-info { font-weight: 400; text-transform: none; letter-spacing: 0; display: block; font-size: 0.85em; color: #aaa; }
-  td { padding: 9px 8px; border-bottom: 1px solid #f2f2f7; font-variant-numeric: tabular-nums; }
-  td.r { text-align: right; }
-  tr:last-child td { border-bottom: none; }
-  tr:active { background: #f2f2f7; }
+  /* Table Alternative Lists */
+  .sub-item { padding: 10px 0; border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .sub-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .sub-name { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .sub-stats { font-size: 0.75rem; text-align: right; }
+  .chev { font-size: 0.6rem; color: var(--text-secondary); transition: transform 0.2s; }
+  .open > .r-head > .r-title > .chev { transform: rotate(90deg); }
 
-  .region-name { font-weight: 600; color: #1d1d1f; }
-
-  /* Avance badge */
-  .badge {
-    display: inline-block; padding: 2px 8px; border-radius: 10px;
-    font-weight: 700; font-size: 0.9em; min-width: 48px; text-align: center;
-  }
-  .badge-green { background: #e8f5e9; color: #2e7d32; }
-  .badge-blue { background: #e3f2fd; color: #1565c0; }
-  .badge-yellow { background: #fff8e1; color: #f57f17; }
-  .badge-red { background: #ffebee; color: #c62828; }
-
-  .val-s { color: #ff9500; font-weight: 600; }
-  .val-l { color: #007aff; font-weight: 600; }
-  .val-dp { color: #ff9500; font-weight: 700; }
-  .val-dn { color: #007aff; font-weight: 700; }
-
-  /* Footer */
-  .footer { margin-top: 20px; padding: 16px; text-align: center; font-size: 0.7em; color: #aaa; line-height: 1.6; }
-  .footer a { color: #007aff; text-decoration: none; }
-
-  /* Responsive */
-  @media (max-width: 600px) {
-    body { padding: 10px; }
-    .nacional .value { font-size: 2.2em; }
-    .res-card .rv { font-size: 1.2em; }
-    .res-card.full .rv { font-size: 1.4em; }
-    table { font-size: 0.72em; }
-    th, td { padding: 8px 5px; }
-    .badge { font-size: 0.8em; padding: 2px 6px; }
-    .hide-mobile { display: none; }
-    .leyenda-grid { grid-template-columns: 1fr; }
-  }
+  .footer { text-align: center; margin-top: 32px; font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
 </style>
 </head>
 <body>
 <div class="container">
 
-<div class="header">
-  <div>
-    <div class="sub">by: junta tranqui</div>
-    <div class="sub" id="meta">Cargando...</div>
+  <div class="header">
+    <div class="header-left">
+      <div class="title">ONPE Tracker</div>
+      <div class="meta" id="meta">Cargando...</div>
+    </div>
+    <button class="sync-btn" id="syncBtn" onclick="sync()">Actualizar</button>
   </div>
-  <button class="sync-btn" id="syncBtn" onclick="sync()">Actualizar</button>
-</div>
 
-<div class="ring-banner">
-  <img src="img/pelea.png" alt="Sanchez vs Lopez Aliaga" class="ring-img">
-  <div class="ring-scores" id="ring-scores"></div>
-  <div class="ring-diff" id="ring-diff"></div>
-</div>
+  <div id="hero-container"></div>
+  <div id="scenarios-container"></div>
+  <div id="trend-container"></div>
 
-<div class="nacional" id="nacional"></div>
-<div class="resumen" id="resumen"></div>
+  <div class="regions-header">Detalle por Región</div>
+  <div id="regions-list"></div>
 
-<div class="leyenda" id="leyenda">
-  <div class="leyenda-title">Leyenda</div>
-  <div class="leyenda-grid">
-    <div class="leyenda-item"><span class="leyenda-dot" style="background:#2e7d32"></span> +90% actas contadas</div>
-    <div class="leyenda-item"><span class="leyenda-dot" style="background:#1565c0"></span> 80–90% actas contadas</div>
-    <div class="leyenda-item"><span class="leyenda-dot" style="background:#f57f17"></span> 70–80% actas contadas</div>
-    <div class="leyenda-item"><span class="leyenda-dot" style="background:#c62828"></span> Menos de 70% — alto pendiente</div>
-    <div class="leyenda-item"><span class="leyenda-dot" style="background:#ff9500"></span> Favorece a Sanchez</div>
-    <div class="leyenda-item"><span class="leyenda-dot" style="background:#007aff"></span> Favorece a Lopez Aliaga</div>
+  <div class="footer">
+    Datos en tiempo real obtenidos de la API pública de ONPE.<br>
+    Las proyecciones son cálculos matemáticos y no resultados oficiales declarados.
   </div>
-  <div class="leyenda-cols">
-    <div class="leyenda-cols-title">Columnas de la tabla</div>
-    <div class="leyenda-col-item"><b>Avance</b> — % de actas procesadas por ONPE</div>
-    <div class="leyenda-col-item"><b>Votos</b> — votos ya contabilizados en esa region</div>
-    <div class="leyenda-col-item"><b>Pend</b> — actas pendientes puras (en negro) + actas en JEE (en <span style="color:#c62828">rojo</span>)</div>
-    <div class="leyenda-col-item"><b>S</b> — % de votos validos de Roberto Sanchez en esa region</div>
-    <div class="leyenda-col-item"><b>LA</b> — % de votos validos de Lopez Aliaga en esa region</div>
-    <div class="leyenda-col-item"><b>Sin JEE</b> — impacto neto estimado solo con actas pendientes (sin contar JEE). — indica que no hay pendientes</div>
-    <div class="leyenda-col-item"><b>Con JEE</b> — impacto neto si ademas se aceptan todas las actas del JEE</div>
-  </div>
-</div>
-
-<div class="trend-section" id="trend-section"></div>
-<div class="table-wrap"><table id="tabla"></table></div>
-
-<div class="footer">
-  Datos oficiales de la <a href="https://resultadoelectoral.onpe.gob.pe" target="_blank">ONPE</a> via su API publica.<br>
-  Las proyecciones son estimaciones basadas en los porcentajes actuales de cada departamento aplicados a las actas pendientes. No constituyen resultados oficiales.<br>
-  Toca cualquier departamento para ver el desglose por provincia, y cualquier provincia para ver distritos.
-</div>
 
 </div>
 
 <script>
 const fmt = n => n.toLocaleString('es-PE');
 const titleCase = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-const badgeClass = p => p >= 90 ? 'badge-green' : p >= 80 ? 'badge-blue' : p >= 70 ? 'badge-yellow' : 'badge-red';
+const badgeClass = p => p >= 90 ? 'b-green' : p >= 80 ? 'b-blue' : p >= 70 ? 'b-yellow' : 'b-red';
 
 function findCand(list, needle) {
   return (list || []).find(c => c.nombreCandidato && c.nombreCandidato.includes(needle));
-}
-
-function toggleTip(id) {
-  const el = document.getElementById(id);
-  el.classList.toggle('show');
-  // Close on outside click
-  if (el.classList.contains('show')) {
-    setTimeout(() => {
-      document.addEventListener('click', function close(e) {
-        if (!el.contains(e.target)) { el.classList.remove('show'); document.removeEventListener('click', close); }
-      });
-    }, 10);
-  }
 }
 
 let historyData = [];
@@ -305,50 +165,46 @@ async function load() {
 function render(data) {
   const t = data.nacional.totales;
   const ts = new Date(data.timestamp);
-  document.getElementById('meta').textContent = `Actualizado: ${ts.toLocaleString('es-PE')}`;
+  document.getElementById('meta').textContent = `Actualizado: ${ts.toLocaleTimeString('es-PE', {hour: '2-digit', minute:'2-digit'})}`;
 
-  // Ring banner scores
-  const rsNac = findCand(data.nacional.candidatos, 'SANCHEZ PALOMINO');
-  const rlNac = findCand(data.nacional.candidatos, 'LÓPEZ ALIAGA');
-  const rsV = rsNac?.totalVotosValidos || 0;
-  const rlV = rlNac?.totalVotosValidos || 0;
-  const rsWin = rsV >= rlV;
-  document.getElementById('ring-scores').innerHTML = `
-    <div class="ring-fighter sanchez ${rsWin ? 'winning' : ''}">
-      <div class="ring-name c-sanchez">Sanchez</div>
-      <div class="ring-votes c-sanchez">${fmt(rsV)}</div>
-      <div class="ring-pct">${rsNac ? rsNac.porcentajeVotosValidos.toFixed(2) : 0}%</div>
-    </div>
-    <div class="ring-vs">VS</div>
-    <div class="ring-fighter lopez ${!rsWin ? 'winning' : ''}">
-      <div class="ring-name c-lopez">Lopez Aliaga</div>
-      <div class="ring-votes c-lopez">${fmt(rlV)}</div>
-      <div class="ring-pct">${rlNac ? rlNac.porcentajeVotosValidos.toFixed(2) : 0}%</div>
-    </div>
-  `;
-  const diff = rsV - rlV;
-  document.getElementById('ring-diff').innerHTML = `
-    <span class="${diff >= 0 ? 'c-sanchez' : 'c-lopez'}"><b>${diff >= 0 ? 'Sanchez' : 'Lopez Aliaga'}</b> lidera por <b>${fmt(Math.abs(diff))}</b> votos</span>
-  `;
-
-  // Nacional
-  document.getElementById('nacional').innerHTML = `
-    <div class="label">Actas procesadas</div>
-    <div class="value">${t.actasContabilizadas.toFixed(2)}%</div>
-    <div class="detail">${fmt(t.contabilizadas)} de ${fmt(t.totalActas)} actas — ${fmt(t.totalVotosEmitidos)} votos contados</div>
-    <div class="progress"><div class="progress-fill" style="width:${t.actasContabilizadas}%"></div></div>
-  `;
-
-  // Resumen Sanchez vs Lopez Aliaga
   const nacS = findCand(data.nacional.candidatos, 'SANCHEZ PALOMINO');
   const nacL = findCand(data.nacional.candidatos, 'LÓPEZ ALIAGA');
-  const vS = nacS ? nacS.totalVotosValidos : 0;
-  const vL = nacL ? nacL.totalVotosValidos : 0;
+  const vS = nacS?.totalVotosValidos || 0;
+  const vL = nacL?.totalVotosValidos || 0;
   const diffActual = vS - vL;
-  const liderActual = diffActual >= 0 ? 'Sanchez' : 'Lopez Aliaga';
-  const liderActualC = diffActual >= 0 ? 'c-sanchez' : 'c-lopez';
+  const isSWin = diffActual >= 0;
 
-  // Calcular 2 escenarios: con JEE y sin JEE
+  // Render HERO
+  document.getElementById('hero-container').innerHTML = `
+    <div class="hero">
+      <div class="progress-section">
+        <div class="progress-label">Actas Procesadas</div>
+        <div class="progress-val">${t.actasContabilizadas.toFixed(2)}%</div>
+        <div class="progress-sub">${fmt(t.contabilizadas)} de ${fmt(t.totalActas)} actas</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${t.actasContabilizadas}%;"></div></div>
+      </div>
+      
+      <div class="vs-board">
+        <div class="fighter f-s">
+          <div class="fighter-avatar">RS</div>
+          <div class="fighter-votes">${fmt(vS)}</div>
+          <div class="fighter-pct">${nacS ? nacS.porcentajeVotosValidos.toFixed(2) : 0}%</div>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="fighter f-l">
+          <div class="fighter-avatar">LA</div>
+          <div class="fighter-votes">${fmt(vL)}</div>
+          <div class="fighter-pct">${nacL ? nacL.porcentajeVotosValidos.toFixed(2) : 0}%</div>
+        </div>
+      </div>
+
+      <div class="hero-footer">
+        Diferencia de <span class="winner-text" style="color: var(--${isSWin ? 'sanchez' : 'lopez'})">${fmt(Math.abs(diffActual))}</span> votos a favor de ${isSWin ? 'Sánchez' : 'López Aliaga'}
+      </div>
+    </div>
+  `;
+
+  // Calcular Proyecciones
   let impConJee = 0, impSinJee = 0;
   const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
 
@@ -358,14 +214,12 @@ function render(data) {
     const ve = dept.totales.totalVotosEmitidos;
     const jee = dept.totales.enviadasJee || 0;
     const vpa = ac > 0 ? ve / ac : 0;
-    const faltanTotal = at - ac; // incluye JEE + pendientes
-    const faltanSinJee = at - ac - jee; // solo pendientes puras
     const sP = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
     const lP = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
     const delta = sP - lP;
 
-    dept._votosFaltanSimple = Math.round(vpa * faltanTotal);
-    dept._votosFaltanSinJee = Math.round(vpa * Math.max(0, faltanSinJee));
+    dept._votosFaltanSimple = Math.round(vpa * (at - ac));
+    dept._votosFaltanSinJee = Math.round(vpa * Math.max(0, (at - ac - jee)));
     dept._impactoSimple = Math.round(dept._votosFaltanSimple * delta / 100);
     dept._impactoSinJee = Math.round(dept._votosFaltanSinJee * delta / 100);
     dept._actasJee = jee;
@@ -376,61 +230,35 @@ function render(data) {
 
   const proyConJee = diffActual + impConJee;
   const proySinJee = diffActual + impSinJee;
-  const ganadorConJee = proyConJee >= 0 ? 'Roberto Sanchez' : 'Lopez Aliaga';
-  const ganadorSinJee = proySinJee >= 0 ? 'Roberto Sanchez' : 'Lopez Aliaga';
-  const ganadorConJeeC = proyConJee >= 0 ? 'c-sanchez' : 'c-lopez';
-  const ganadorSinJeeC = proySinJee >= 0 ? 'c-sanchez' : 'c-lopez';
+  const totalJee = depts.reduce((s, d) => s + d._actasJee, 0);
 
-  // Total actas JEE
-  const totalJee = depts.reduce((s, d) => s + (d._actasJee || 0), 0);
-
-  document.getElementById('resumen').innerHTML = `
-    <div class="res-card">
-      <div class="rl">Sanchez</div>
-      <div class="rv c-sanchez">${fmt(vS)}</div>
-      <div class="rs">${nacS ? nacS.porcentajeVotosValidos.toFixed(2) : 0}% de votos validos</div>
-      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-s')">i</button>
-      <div class="tooltip" id="tip-s">Votos validos de Roberto Sanchez Palomino (Juntos por el Peru) en las actas contabilizadas.</div>
-    </div>
-    <div class="res-card">
-      <div class="rl">Lopez Aliaga</div>
-      <div class="rv c-lopez">${fmt(vL)}</div>
-      <div class="rs">${nacL ? nacL.porcentajeVotosValidos.toFixed(2) : 0}% de votos validos</div>
-      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-l')">i</button>
-      <div class="tooltip" id="tip-l">Votos validos de Rafael Lopez Aliaga Cazorla (Renovacion Popular) en las actas contabilizadas.</div>
-    </div>
-    <div class="res-card full">
-      <div class="rl">Diferencia actual</div>
-      <div class="rv ${liderActualC}">${fmt(Math.abs(diffActual))}</div>
-      <div class="rs">a favor ${liderActual}</div>
-      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-d')">i</button>
-      <div class="tooltip" id="tip-d">Diferencia real en votos entre ambos candidatos con las actas contabilizadas hasta ahora.</div>
-    </div>
-    <div class="res-card">
-      <div class="rl">Escenario CON JEE</div>
-      <div class="rv ${ganadorConJeeC}">${ganadorConJee}</div>
-      <div class="rs">por ~${fmt(Math.abs(Math.round(proyConJee)))} votos</div>
-      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-cj')">i</button>
-      <div class="tooltip" id="tip-cj">Proyeccion si TODAS las ${fmt(totalJee)} actas enviadas al JEE se aceptan y se suman. Incluye pendientes + JEE. Las actas JEE tienen problemas (ilegibles, inconsistencias) y el Jurado Electoral decide si se cuentan o se anulan.</div>
-    </div>
-    <div class="res-card">
-      <div class="rl">Escenario SIN JEE</div>
-      <div class="rv ${ganadorSinJeeC}">${ganadorSinJee}</div>
-      <div class="rs">por ~${fmt(Math.abs(Math.round(proySinJee)))} votos</div>
-      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-sj')">i</button>
-      <div class="tooltip" id="tip-sj">Proyeccion si NINGUNA acta del JEE se acepta (todas anuladas). Solo cuenta las actas pendientes que aun no han llegado a ONPE. Este es el escenario mas conservador.</div>
-    </div>
-    <div class="res-card full" style="background:linear-gradient(135deg,#fff8e1,#e3f2fd)">
-      <div class="rl">Actas en JEE (zona gris)</div>
-      <div class="rv" style="color:#555">${fmt(totalJee)}</div>
-      <div class="rs">actas con problemas en revision judicial — pueden aceptarse o anularse</div>
-      <button class="info-btn" onclick="event.stopPropagation();toggleTip('tip-jee')">i</button>
-      <div class="tooltip" id="tip-jee">El JEE (Jurado Electoral Especial) revisa manualmente actas que tuvieron problemas: numeros que no cuadran, tachaduras, ilegibles, o impugnaciones de personeros. Algunas se validan y suman al conteo, otras se anulan. No se sabe de antemano cuantas se aceptaran. Por eso mostramos 2 escenarios.</div>
+  // Render Scenarios
+  document.getElementById('scenarios-container').innerHTML = `
+    <div class="scenarios">
+      <div class="scenario-card">
+        <div class="sc-title">Escenario Conservador</div>
+        <div class="sc-winner" style="color: var(--${proySinJee >= 0 ? 'sanchez' : 'lopez'})">${proySinJee >= 0 ? 'Sánchez' : 'López A.'}</div>
+        <div class="sc-diff">+${fmt(Math.abs(Math.round(proySinJee)))} votos</div>
+        <div class="sc-info">Sin contar las actas observadas en el JEE. Solo actas pendientes puras.</div>
+      </div>
+      <div class="scenario-card">
+        <div class="sc-title">Escenario Máximo</div>
+        <div class="sc-winner" style="color: var(--${proyConJee >= 0 ? 'sanchez' : 'lopez'})">${proyConJee >= 0 ? 'Sánchez' : 'López A.'}</div>
+        <div class="sc-diff">+${fmt(Math.abs(Math.round(proyConJee)))} votos</div>
+        <div class="sc-info">Proyección si las ${fmt(totalJee)} actas impugnadas en el JEE se validaran todas.</div>
+      </div>
+      <div class="scenario-card jee-card">
+        <div>
+          <div class="sc-title">Actas Atascadas (JEE)</div>
+          <div class="sc-diff" style="color: var(--text-primary)">Requieren revisión manual del tribunal</div>
+        </div>
+        <div style="font-weight: 800; font-size: 1.25rem;">${fmt(totalJee)}</div>
+      </div>
     </div>
   `;
 
-  // Trend section — compare with previous sync
-  const trendEl = document.getElementById('trend-section');
+  // Render Trend
+  const trendEl = document.getElementById('trend-container');
   if (historyData.length >= 2) {
     const prev = historyData[historyData.length - 2];
     const curr = historyData[historyData.length - 1];
@@ -438,160 +266,133 @@ function render(data) {
     const deltaVS = curr.vS - prev.vS;
     const deltaVL = curr.vL - prev.vL;
     const deltaDiff = curr.diff - prev.diff;
-    const ganoDelta = deltaDiff >= 0 ? 'Sanchez' : 'Lopez Aliaga';
-    const ganoDeltaC = deltaDiff >= 0 ? 'c-sanchez' : 'c-lopez';
 
-    // Find which departments changed the most
-    const deptChanges = [];
+    let changes = [];
     if (curr.deps && prev.deps) {
       for (const name of Object.keys(curr.deps)) {
         const c = curr.deps[name];
         const p = prev.deps[name];
         if (!p) continue;
-        const chgS = c.vS - p.vS;
-        const chgL = c.vL - p.vL;
-        const chgNet = chgS - chgL; // positivo = sanchez gano mas
-        if (chgS === 0 && chgL === 0) continue;
-        deptChanges.push({ name, chgS, chgL, chgNet, chgPct: c.pct - p.pct });
+        const net = (c.vS - p.vS) - (c.vL - p.vL);
+        if (net !== 0) changes.push({ name, net });
+      }
+      changes.sort((a,b) => Math.abs(b.net) - Math.abs(a.net));
+    }
+    const top = changes.slice(0, 4);
+    let topHtml = '';
+    top.forEach(c => {
+      topHtml += `<div class="tr-place-row">
+        <b>${titleCase(c.name)}</b>
+        <span style="color: var(--${c.net >= 0 ? 'sanchez':'lopez'})">+${fmt(Math.abs(c.net))} ${c.net >= 0 ? 'S':'LA'}</span>
+      </div>`;
+    });
+
+    const window = historyData.slice(-15);
+    let rateHtml = '';
+    if (window.length >= 2) {
+      const f = window[0], l = window[window.length-1];
+      const rate = (l.diff - f.diff) / (l.pct - f.pct);
+      if (Math.abs(rate) > 0 && (l.pct - f.pct) > 0) {
+        rateHtml = `<div class="tr-rate">Ritmo reciente: <b>${rate>=0?'+':''}${fmt(Math.round(rate))}</b> votos para ${rate>=0?'Sánchez':'L.Aliaga'} por cada 1% procesado.</div>`;
       }
     }
-    deptChanges.sort((a, b) => Math.abs(b.chgNet) - Math.abs(a.chgNet));
-    const topChanges = deptChanges.slice(0, 5);
-
-    // Rolling rate: last 15 updates or all if less
-    let crossHtml = '';
-    const window = historyData.slice(-15);
-    if (window.length >= 2 && window[window.length-1].pct !== window[0].pct) {
-      const first = window[0];
-      const last = window[window.length - 1];
-      const rate = (last.diff - first.diff) / (last.pct - first.pct);
-      const remaining = 100 - last.pct;
-
-      crossHtml = `<div class="trend-crossover">
-        <b>Ritmo reciente</b> (ultimas ${window.length} actualizaciones): por cada 1% de actas, la brecha cambio en <span class="${rate >= 0 ? 'c-sanchez' : 'c-lopez'}"><b>${rate >= 0 ? '+' : ''}${fmt(Math.round(rate))}</b></span> votos a favor de ${rate >= 0 ? 'Sanchez' : 'L.Aliaga'}.<br>
-        <span style="color:#86868b;font-size:0.9em">Nota: este ritmo no es predictivo — los votos pendientes de Lima y Extranjero pueden cambiar la tendencia. Ver escenarios arriba para proyeccion mas precisa.</span>
-      </div>`;
-    }
-
-    // Department changes list
-    let deptHtml = '';
-    if (topChanges.length > 0) {
-      deptHtml = '<div style="margin-top:10px"><div style="font-size:0.7em;color:#86868b;font-weight:600;margin-bottom:4px">DONDE SE MOVIERON LOS VOTOS</div>';
-      topChanges.forEach(d => {
-        const who = d.chgNet >= 0 ? 'S' : 'LA';
-        const whoC = d.chgNet >= 0 ? 'c-sanchez' : 'c-lopez';
-        deptHtml += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.78em;border-bottom:1px solid #f2f2f7">
-          <span>${titleCase(d.name)}</span>
-          <span>S <b>+${fmt(d.chgS)}</b> &nbsp; LA <b>+${fmt(d.chgL)}</b> &nbsp; <span class="${whoC}"><b>neto ${who} ${fmt(Math.abs(d.chgNet))}</b></span></span>
-        </div>`;
-      });
-      deptHtml += '</div>';
-    }
-
-    const prevTime = new Date(prev.t).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-    const currTime = new Date(curr.t).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
     trendEl.innerHTML = `
-      <div class="trend-title">Ultima actualizacion</div>
-      <div style="font-size:0.8em;color:#86868b;margin-bottom:8px">
-        De ${prev.pct.toFixed(2)}% a ${curr.pct.toFixed(2)}% (+${deltaPct.toFixed(2)} pp) — ${prevTime} → ${currTime}
+      <div class="trend-section">
+        <div class="tr-header">Última Actualización (${prev.pct.toFixed(2)}% ▸ ${curr.pct.toFixed(2)}%)</div>
+        <div class="tr-grid">
+          <div class="tr-box">
+            <div class="tr-box-lbl">SÁNCHEZ</div>
+            <div class="tr-box-val" style="color:var(--sanchez)">+${fmt(deltaVS)}</div>
+          </div>
+          <div class="tr-box">
+            <div class="tr-box-lbl">LÓPEZ A.</div>
+            <div class="tr-box-val" style="color:var(--lopez)">+${fmt(deltaVL)}</div>
+          </div>
+          <div class="tr-box">
+            <div class="tr-box-lbl">NETO</div>
+            <div class="tr-box-val" style="color:var(--${deltaDiff >= 0 ? 'sanchez':'lopez'})">
+              ${deltaDiff >= 0 ? 'S':'LA'} +${fmt(Math.abs(deltaDiff))}
+            </div>
+          </div>
+        </div>
+        <div class="tr-places">${topHtml}</div>
+        ${rateHtml}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-        <div style="text-align:center;padding:8px;background:#f5f5f7;border-radius:8px">
-          <div style="font-size:0.65em;color:#86868b;font-weight:600">SANCHEZ GANO</div>
-          <div style="font-size:1.2em;font-weight:700" class="c-sanchez">+${fmt(deltaVS)}</div>
-        </div>
-        <div style="text-align:center;padding:8px;background:#f5f5f7;border-radius:8px">
-          <div style="font-size:0.65em;color:#86868b;font-weight:600">L.ALIAGA GANO</div>
-          <div style="font-size:1.2em;font-weight:700" class="c-lopez">+${fmt(deltaVL)}</div>
-        </div>
-        <div style="text-align:center;padding:8px;background:#f5f5f7;border-radius:8px">
-          <div style="font-size:0.65em;color:#86868b;font-weight:600">NETO</div>
-          <div style="font-size:1.2em;font-weight:700" class="${ganoDeltaC}">${ganoDelta} +${fmt(Math.abs(deltaDiff))}</div>
-        </div>
-      </div>
-      ${deptHtml}
-      ${crossHtml}
     `;
-  } else {
-    trendEl.innerHTML = '';
   }
 
-  // Table
-  function buildRow(item, isChild, isGrandChild) {
-    const pct = item.totales.actasContabilizadas;
-    const ve = item.totales.totalVotosEmitidos;
-    const ac = item.totales.contabilizadas;
-    const at = item.totales.totalActas;
-    const jee = item.totales.enviadasJee || 0;
-    const vpa = ac > 0 ? ve / ac : 0;
-    const pendPuras = Math.max(0, at - ac - jee);
-    const vfSinJee = Math.round(vpa * pendPuras);
-    const vfConJee = Math.round(vpa * (at - ac));
-    const sD = findCand(item.candidatos, 'SANCHEZ PALOMINO');
-    const lD = findCand(item.candidatos, 'LÓPEZ ALIAGA');
+  // Render Regions List
+  let listHtml = '';
+  depts.forEach((dept, i) => {
+    const sD = findCand(dept.candidatos, 'SANCHEZ PALOMINO');
+    const lD = findCand(dept.candidatos, 'LÓPEZ ALIAGA');
     const sP = sD ? sD.porcentajeVotosValidos : 0;
     const lP = lD ? lD.porcentajeVotosValidos : 0;
-    const delta = sP - lP;
-    const impSinJee = Math.round(vfSinJee * delta / 100);
-    const impConJee = item._impactoSimple != null ? item._impactoSimple : Math.round(vfConJee * delta / 100);
-    const indent = isGrandChild ? 'padding-left:44px;font-weight:400;font-size:0.85em;color:#888;' :
-                   isChild ? 'padding-left:24px;font-weight:400;font-size:0.9em;color:#555;' : '';
-    const hasChildren = item.provincias?.length || item.distritos?.length;
-    const arrow = hasChildren && !isGrandChild ? ' ▸' : '';
-    return `
-      <td class="region-name" style="${indent}">${titleCase(item.nombre)}${arrow}</td>
-      <td class="r"><span class="badge ${badgeClass(pct)}">${pct.toFixed(1)}</span></td>
-      <td class="r hide-mobile">${fmt(ve)}</td>
-      <td class="r" style="color:#86868b">${fmt(vfSinJee)}${jee > 0 ? '<span style="color:#c62828;font-size:0.8em"> +' + jee + '</span>' : ''}</td>
-      <td class="r ${ac === 0 ? '' : 'val-s'}">${ac === 0 ? '-' : sP.toFixed(1)}</td>
-      <td class="r ${ac === 0 ? '' : 'val-l'}">${ac === 0 ? '-' : lP.toFixed(1)}</td>
-      <td class="r ${ac === 0 ? '' : (impSinJee === 0 ? '' : impSinJee > 0 ? 'val-dp' : 'val-dn')}">${ac === 0 ? '-' : (pendPuras === 0 ? '—' : fmt(Math.abs(impSinJee)))}</td>
-      <td class="r ${ac === 0 ? '' : (impConJee === 0 ? '' : impConJee > 0 ? 'val-dp' : 'val-dn')}">${ac === 0 ? '-' : fmt(Math.abs(impConJee))}</td>`;
-  }
-
-  let rows = `<tr>
-    <th>Region<span class="th-info">toca para expandir</span></th>
-    <th class="r">Avance</th>
-    <th class="r hide-mobile">Votos</th>
-    <th class="r">Pend</th>
-    <th class="r">S</th>
-    <th class="r">LA</th>
-    <th class="r">Sin JEE</th>
-    <th class="r">Con JEE</th>
-  </tr>`;
-
-  depts.forEach((dept, i) => {
-    const hasProvs = dept.provincias?.length > 0;
-    const deptId = 'dept-' + i;
-    rows += `<tr class="dept-row" ${hasProvs ? `onclick="toggleProvs('${deptId}')" style="cursor:pointer"` : ''}>${buildRow(dept, false)}</tr>`;
-    if (hasProvs) {
-      const provsSorted = [...dept.provincias].sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
-      provsSorted.forEach((prov, j) => {
-        const provId = `${deptId}-prov-${j}`;
-        const hasDists = prov.distritos?.length > 0;
-        rows += `<tr class="prov-row ${deptId}" style="display:none;background:#fafafa" ${hasDists ? `onclick="event.stopPropagation();toggleProvs('${provId}')" style="display:none;background:#fafafa;cursor:pointer"` : ''}>${buildRow(prov, true)}</tr>`;
-        if (hasDists) {
-          const distsSorted = [...prov.distritos].sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
-          distsSorted.forEach(dist => {
-            rows += `<tr class="dist-row ${provId}" style="display:none;background:#f2f2f7">${buildRow(dist, true, true)}</tr>`;
-          });
-        }
+    const isS = sP >= lP;
+    
+    // Provincias inner HTML
+    let provsHtml = '';
+    if (dept.provincias) {
+      const sortedProvs = [...dept.provincias].sort((a,b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
+      sortedProvs.forEach(prov => {
+        const ps = (findCand(prov.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+        const pl = (findCand(prov.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+        provsHtml += `
+          <div class="sub-item">
+            <div class="sub-name">
+              <span class="badge ${badgeClass(prov.totales.actasContabilizadas)}" style="font-size:0.6rem">${prov.totales.actasContabilizadas.toFixed(0)}%</span>
+              ${titleCase(prov.nombre)}
+            </div>
+            <div class="sub-stats">
+              <span style="font-weight:700; color:var(--${ps>=pl?'sanchez':'lopez'})">
+                ${Math.max(ps,pl).toFixed(1)}% ${ps>=pl?'S':'LA'}
+              </span>
+            </div>
+          </div>
+        `;
       });
     }
+
+    listHtml += `
+      <div class="r-card" id="r-card-${i}">
+        <div class="r-head" onclick="toggleRegion(${i})">
+          <div>
+            <div class="r-title">
+              <span class="chev">▶</span>
+              ${titleCase(dept.nombre)}
+            </div>
+            <div class="micro-bar-wrap">
+              <div class="micro-s" style="width: ${sP}%"></div>
+              <div class="micro-l" style="width: ${lP}%"></div>
+            </div>
+          </div>
+          <div class="r-stats">
+             <div class="badge ${badgeClass(dept.totales.actasContabilizadas)}" style="margin-bottom:6px; display:inline-block">${dept.totales.actasContabilizadas.toFixed(1)}%</div>
+             <div class="r-votes">Faltan ~${fmt(dept._votosFaltanSinJee)} votos</div>
+             <div class="r-lead" style="color:var(--${isS ? 'sanchez' : 'lopez'})">${isS ? 'Sánchez' : 'López'} lidera</div>
+          </div>
+        </div>
+        <div class="r-body" id="r-body-${i}">
+          <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); margin-bottom:8px; margin-top:8px; text-transform:uppercase;">Provincias</div>
+          ${provsHtml || '<div style="font-size:0.75rem; color:#888">No hay datos de provincias aún</div>'}
+        </div>
+      </div>
+    `;
   });
 
-  document.getElementById('tabla').innerHTML = rows;
+  document.getElementById('regions-list').innerHTML = listHtml;
 }
 
-function toggleProvs(id) {
-  const rows = document.querySelectorAll('.' + id);
-  const visible = rows[0]?.style.display !== 'none';
-  rows.forEach(r => r.style.display = visible ? 'none' : '');
-  const parent = document.querySelector(`[onclick*="${id}"]`);
-  if (parent) {
-    const nameCell = parent.querySelector('.region-name');
-    if (nameCell) nameCell.innerHTML = nameCell.innerHTML.replace(visible ? ' ▾' : ' ▸', visible ? ' ▸' : ' ▾');
+window.toggleRegion = function(id) {
+  const body = document.getElementById('r-body-' + id);
+  const card = document.getElementById('r-card-' + id);
+  if (body.classList.contains('open')) {
+    body.classList.remove('open');
+    card.classList.remove('open');
+  } else {
+    body.classList.add('open');
+    card.classList.add('open');
   }
 }
 
@@ -601,10 +402,9 @@ async function sync() {
   const btn = document.getElementById('syncBtn');
   if (!isLocal) {
     btn.disabled = true;
-    btn.textContent = 'Recargando...';
+    btn.textContent = 'Actualizando...';
     await load();
-    btn.textContent = 'Listo!';
-    setTimeout(() => { btn.textContent = 'Recargar'; btn.disabled = false; }, 1200);
+    setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 1000);
     return;
   }
   btn.disabled = true;
@@ -613,22 +413,18 @@ async function sync() {
     const res = await fetch('/api/sync');
     const d = await res.json();
     if (d.status === 'ok') {
-      btn.textContent = 'Listo!';
       await load();
-      setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 1200);
+      btn.textContent = 'Listo!';
+      setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 1000);
     } else {
       btn.textContent = d.status === 'already_running' ? 'En proceso...' : 'Error';
-      setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 3000);
+      setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 2000);
     }
   } catch {
     btn.textContent = 'Error';
-    setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 3000);
+    setTimeout(() => { btn.textContent = 'Actualizar'; btn.disabled = false; }, 2000);
   }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  if (!isLocal) document.getElementById('syncBtn').textContent = 'Recargar';
-});
 
 load();
 </script>
