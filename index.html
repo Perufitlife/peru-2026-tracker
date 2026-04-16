@@ -376,24 +376,19 @@ function render(data) {
     deptChanges.sort((a, b) => Math.abs(b.chgNet) - Math.abs(a.chgNet));
     const topChanges = deptChanges.slice(0, 5);
 
-    // Crossover projection using ALL history points
+    // Rolling rate: last 15 updates or all if less
     let crossHtml = '';
-    if (historyData.length >= 2) {
-      const first = historyData[0];
-      const last = historyData[historyData.length - 1];
-      const totalDPct = last.pct - first.pct;
-      const totalDDiff = last.diff - first.diff;
-      if (totalDPct > 0) {
-        const rate = totalDDiff / totalDPct; // votos por 1% de actas
-        const remaining = 100 - last.pct;
-        const projectedFinalDiff = last.diff + (rate * remaining);
+    const window = historyData.slice(-15);
+    if (window.length >= 2 && window[window.length-1].pct !== window[0].pct) {
+      const first = window[0];
+      const last = window[window.length - 1];
+      const rate = (last.diff - first.diff) / (last.pct - first.pct);
+      const remaining = 100 - last.pct;
 
-        crossHtml = `<div class="trend-crossover">
-          <b>Ritmo:</b> por cada 1% de actas, la brecha cambia en <span class="${rate >= 0 ? 'c-sanchez' : 'c-lopez'}"><b>${rate >= 0 ? '+' : ''}${fmt(Math.round(rate))}</b></span> votos.
-          Faltan <b>${remaining.toFixed(1)}%</b> de actas.
-          Proyeccion al 100%: <span class="${projectedFinalDiff >= 0 ? 'c-sanchez' : 'c-lopez'}"><b>${projectedFinalDiff >= 0 ? 'Sanchez' : 'Lopez Aliaga'}</b> por ~${fmt(Math.abs(Math.round(projectedFinalDiff)))}</span> votos.
-        </div>`;
-      }
+      crossHtml = `<div class="trend-crossover">
+        <b>Ritmo reciente</b> (ultimas ${window.length} actualizaciones): por cada 1% de actas, la brecha cambio en <span class="${rate >= 0 ? 'c-sanchez' : 'c-lopez'}"><b>${rate >= 0 ? '+' : ''}${fmt(Math.round(rate))}</b></span> votos a favor de ${rate >= 0 ? 'Sanchez' : 'L.Aliaga'}.<br>
+        <span style="color:#86868b;font-size:0.9em">Nota: este ritmo no es predictivo — los votos pendientes de Lima y Extranjero pueden cambiar la tendencia. Ver escenarios arriba para proyeccion mas precisa.</span>
+      </div>`;
     }
 
     // Department changes list
