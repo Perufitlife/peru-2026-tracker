@@ -420,6 +420,7 @@ function render(data) {
 
   const winnerReal = proyRealista >= 0;
   const winnerRealName = winnerReal ? 'Sánchez' : 'López Aliaga';
+  const liderActual = diffActual >= 0 ? 'Sánchez' : 'López Aliaga';
 
   // Render Scenarios
   document.getElementById('scenarios-container').innerHTML = `
