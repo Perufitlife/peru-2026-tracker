@@ -15,9 +15,14 @@ async function batch(items, fn) {
 
 (async () => {
   const t0 = Date.now();
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: false,
+    args: ['--window-position=-2400,-2400'] // fuera de pantalla
+  });
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+    locale: 'es-PE',
+    timezoneId: 'America/Lima'
   });
   const page = await context.newPage();
 
