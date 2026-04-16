@@ -255,28 +255,74 @@ function render(data) {
     </div>
   `;
 
-  // Calcular Proyecciones
+  // Calcular Proyecciones GRANULAR (a nivel distrito cuando hay data)
   let impConJee = 0, impSinJee = 0;
   const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
 
-  depts.forEach(dept => {
-    const ac = dept.totales.contabilizadas;
-    const at = dept.totales.totalActas;
-    const ve = dept.totales.totalVotosEmitidos;
-    const jee = dept.totales.enviadasJee || 0;
-    const vpa = ac > 0 ? ve / ac : 0;
-    const sP = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
-    const lP = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+  // Helper: calcular impacto granular de un item con sus propios %
+  function calcImpactoLocal(item) {
+    const ac = item.totales.contabilizadas;
+    const at = item.totales.totalActas;
+    const ve = item.totales.totalVotosEmitidos;
+    const jee = item.totales.enviadasJee || 0;
+    if (ac === 0) return { vfSinJee: 0, vfConJee: 0, impSinJee: 0, impConJee: 0, jee: jee };
+    const vpa = ve / ac;
+    const vfSinJee = Math.round(vpa * Math.max(0, at - ac - jee));
+    const vfConJee = Math.round(vpa * (at - ac));
+    const sP = (findCand(item.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+    const lP = (findCand(item.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
     const delta = sP - lP;
+    return {
+      vfSinJee, vfConJee, jee,
+      impSinJee: Math.round(vfSinJee * delta / 100),
+      impConJee: Math.round(vfConJee * delta / 100),
+    };
+  }
 
-    dept._votosFaltanSimple = Math.round(vpa * (at - ac));
-    dept._votosFaltanSinJee = Math.round(vpa * Math.max(0, (at - ac - jee)));
-    dept._impactoSimple = Math.round(dept._votosFaltanSimple * delta / 100);
-    dept._impactoSinJee = Math.round(dept._votosFaltanSinJee * delta / 100);
-    dept._actasJee = jee;
+  depts.forEach(dept => {
+    let totalVfSinJee = 0, totalVfConJee = 0, totalImpSinJee = 0, totalImpConJee = 0, totalJeeDep = 0;
 
-    impConJee += dept._impactoSimple;
-    impSinJee += dept._impactoSinJee;
+    // Si tiene provincias, ir granular
+    if (dept.provincias?.length > 0) {
+      dept.provincias.forEach(prov => {
+        // Si la provincia tiene distritos, ir aun mas granular
+        if (prov.distritos?.length > 0) {
+          prov.distritos.forEach(dist => {
+            const r = calcImpactoLocal(dist);
+            totalVfSinJee += r.vfSinJee;
+            totalVfConJee += r.vfConJee;
+            totalImpSinJee += r.impSinJee;
+            totalImpConJee += r.impConJee;
+            totalJeeDep += r.jee;
+          });
+        } else {
+          // Provincia sin distritos (Extranjero = paises)
+          const r = calcImpactoLocal(prov);
+          totalVfSinJee += r.vfSinJee;
+          totalVfConJee += r.vfConJee;
+          totalImpSinJee += r.impSinJee;
+          totalImpConJee += r.impConJee;
+          totalJeeDep += r.jee;
+        }
+      });
+    } else {
+      // Sin sub-data, usar el departamento
+      const r = calcImpactoLocal(dept);
+      totalVfSinJee = r.vfSinJee;
+      totalVfConJee = r.vfConJee;
+      totalImpSinJee = r.impSinJee;
+      totalImpConJee = r.impConJee;
+      totalJeeDep = r.jee;
+    }
+
+    dept._votosFaltanSimple = totalVfConJee;
+    dept._votosFaltanSinJee = totalVfSinJee;
+    dept._impactoSimple = totalImpConJee;
+    dept._impactoSinJee = totalImpSinJee;
+    dept._actasJee = totalJeeDep;
+
+    impConJee += totalImpConJee;
+    impSinJee += totalImpSinJee;
   });
 
   const proyConJee = diffActual + impConJee;
@@ -374,11 +420,18 @@ function render(data) {
           </div>
         </div>
 
-        <h4>5. Importante</h4>
+        <h4>5. Cálculo a nivel DISTRITO (preciso)</h4>
+        Cada acta JEE se evalúa con el % real de su distrito o provincia, no del promedio departamental.
+        <br><br>
+        Ejemplo: una acta JEE en <b>Santiago de Surco</b> (Lima) usa LA=44.5%, no el 19.9% promedio de Lima.
+        Una acta JEE en <b>Villa El Salvador</b> usa LA=12.4%. Esto refleja el voto real de cada zona.
+
+        <h4>6. Importante</h4>
         <ul>
-          <li><b>Todo es dinámico</b>: cada vez que sincronizas, los números se recalculan.</li>
+          <li><b>Todo es dinámico</b>: cada sync recalcula con los números más recientes de ONPE.</li>
+          <li><b>Granular por distrito</b>: 1,892 distritos analizados individualmente, no por promedios.</li>
           <li>Esto es una <b>estimación estadística</b>, no un resultado oficial.</li>
-          <li>El número real puede variar si las actas JEE tienen distribución de votos distinta al promedio del departamento (ej. una acta impugnada en Miraflores no vota igual que una en Comas).</li>
+          <li>Las tasas de aceptación del JEE (60% urbano, 75% rural) son históricas; pueden variar.</li>
         </ul>
       </div>
 
