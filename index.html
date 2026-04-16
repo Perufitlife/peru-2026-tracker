@@ -304,18 +304,24 @@ function render(data) {
   const depts = data.departamentos.sort((a, b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
 
   // Helper: calcular impacto granular de un item con sus propios %
-  function calcImpactoLocal(item) {
+  // Si no tiene data (0% contado), usa fallback (provincia o departamento)
+  function calcImpactoLocal(item, fallbackVpa, fallbackDelta) {
     const ac = item.totales.contabilizadas;
     const at = item.totales.totalActas;
     const ve = item.totales.totalVotosEmitidos;
     const jee = item.totales.enviadasJee || 0;
-    if (ac === 0) return { vfSinJee: 0, vfConJee: 0, impSinJee: 0, impConJee: 0, jee: jee };
-    const vpa = ve / ac;
+    let vpa, delta;
+    if (ac > 0) {
+      vpa = ve / ac;
+      const sP = (findCand(item.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+      const lP = (findCand(item.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+      delta = sP - lP;
+    } else {
+      vpa = fallbackVpa || 0;
+      delta = fallbackDelta || 0;
+    }
     const vfSinJee = Math.round(vpa * Math.max(0, at - ac - jee));
     const vfConJee = Math.round(vpa * (at - ac));
-    const sP = (findCand(item.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
-    const lP = (findCand(item.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
-    const delta = sP - lP;
     return {
       vfSinJee, vfConJee, jee,
       impSinJee: Math.round(vfSinJee * delta / 100),
@@ -326,13 +332,25 @@ function render(data) {
   depts.forEach(dept => {
     let totalVfSinJee = 0, totalVfConJee = 0, totalImpSinJee = 0, totalImpConJee = 0, totalJeeDep = 0;
 
-    // Si tiene provincias, ir granular
+    // Fallback dept-level
+    const dac = dept.totales.contabilizadas;
+    const deptVpa = dac > 0 ? dept.totales.totalVotosEmitidos / dac : 0;
+    const deptSp = (findCand(dept.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+    const deptLp = (findCand(dept.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+    const deptDelta = deptSp - deptLp;
+
     if (dept.provincias?.length > 0) {
       dept.provincias.forEach(prov => {
-        // Si la provincia tiene distritos, ir aun mas granular
+        // Provincia como fallback para sus distritos
+        const pac = prov.totales.contabilizadas;
+        const provVpa = pac > 0 ? prov.totales.totalVotosEmitidos / pac : deptVpa;
+        const provSp = (findCand(prov.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || deptSp;
+        const provLp = (findCand(prov.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || deptLp;
+        const provDelta = provSp - provLp;
+
         if (prov.distritos?.length > 0) {
           prov.distritos.forEach(dist => {
-            const r = calcImpactoLocal(dist);
+            const r = calcImpactoLocal(dist, provVpa, provDelta);
             totalVfSinJee += r.vfSinJee;
             totalVfConJee += r.vfConJee;
             totalImpSinJee += r.impSinJee;
@@ -341,7 +359,7 @@ function render(data) {
           });
         } else {
           // Provincia sin distritos (Extranjero = paises)
-          const r = calcImpactoLocal(prov);
+          const r = calcImpactoLocal(prov, deptVpa, deptDelta);
           totalVfSinJee += r.vfSinJee;
           totalVfConJee += r.vfConJee;
           totalImpSinJee += r.impSinJee;
@@ -350,8 +368,7 @@ function render(data) {
         }
       });
     } else {
-      // Sin sub-data, usar el departamento
-      const r = calcImpactoLocal(dept);
+      const r = calcImpactoLocal(dept, deptVpa, deptDelta);
       totalVfSinJee = r.vfSinJee;
       totalVfConJee = r.vfConJee;
       totalImpSinJee = r.impSinJee;
@@ -561,12 +578,18 @@ function render(data) {
     const isS = sP >= lP;
     
     // Helper: calcular votos faltantes y desglose Sanchez/Lopez (granular)
+    // Si distrito tiene 0% contado, usa promedio de provincia (o departamento como fallback)
     function calcDesglose(item) {
       let votosPend = 0, votosJee = 0;
       let votosPendS = 0, votosPendL = 0, votosJeeS = 0, votosJeeL = 0;
       let actasPend = 0, actasJee = 0;
 
-      function process(it) {
+      // Fallback dept-level
+      const deptVpa = item.totales.contabilizadas > 0 ? item.totales.totalVotosEmitidos / item.totales.contabilizadas : 0;
+      const deptS = (findCand(item.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+      const deptL = (findCand(item.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+
+      function process(it, fallbackVpa, fallbackS, fallbackL) {
         const ac = it.totales.contabilizadas;
         const at = it.totales.totalActas;
         const ve = it.totales.totalVotosEmitidos;
@@ -574,27 +597,42 @@ function render(data) {
         const pend = Math.max(0, at - ac - jee);
         actasPend += pend;
         actasJee += jee;
-        if (ac === 0) return;
-        const vpa = ve / ac;
+
+        let vpa, sP, lP;
+        if (ac > 0) {
+          vpa = ve / ac;
+          sP = (findCand(it.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+          lP = (findCand(it.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+        } else {
+          // Sin data del distrito — usar fallback (provincia o dept)
+          vpa = fallbackVpa;
+          sP = fallbackS;
+          lP = fallbackL;
+        }
+
         const vp = vpa * pend;
         const vj = vpa * jee;
         votosPend += vp;
         votosJee += vj;
-        const sP = (findCand(it.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
-        const lP = (findCand(it.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
         votosPendS += vp * sP / 100;
         votosPendL += vp * lP / 100;
         votosJeeS += vj * sP / 100;
         votosJeeL += vj * lP / 100;
       }
 
-      if (item.distritos?.length) item.distritos.forEach(process);
-      else if (item.provincias?.length) {
+      if (item.distritos?.length) {
+        item.distritos.forEach(d => process(d, deptVpa, deptS, deptL));
+      } else if (item.provincias?.length) {
         item.provincias.forEach(prov => {
-          if (prov.distritos?.length) prov.distritos.forEach(process);
-          else process(prov);
+          // Si la provincia tiene data, usarla como fallback para sus distritos sin data
+          const provVpa = prov.totales.contabilizadas > 0 ? prov.totales.totalVotosEmitidos / prov.totales.contabilizadas : deptVpa;
+          const provS = (findCand(prov.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || deptS;
+          const provL = (findCand(prov.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || deptL;
+          if (prov.distritos?.length) {
+            prov.distritos.forEach(d => process(d, provVpa, provS, provL));
+          } else process(prov, deptVpa, deptS, deptL);
         });
-      } else process(item);
+      } else process(item, deptVpa, deptS, deptL);
 
       return {
         actasPend, actasJee,
