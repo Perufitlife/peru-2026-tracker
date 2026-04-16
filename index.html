@@ -412,7 +412,7 @@ function render(data) {
         <span class="sc-tag">PROYECCIÓN PRINCIPAL</span>
         <div class="sc-title">Escenario realista</div>
         <div class="sc-winner" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">${winnerRealName}</div>
-        <div class="sc-diff" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">por ~${fmt(Math.abs(Math.round(proyRealista)))} votos</div>
+        <div class="sc-diff" style="color: var(--${winnerReal ? 'sanchez' : 'lopez'})">por ${fmt(Math.abs(Math.round(proyRealista)))} votos</div>
         <div class="sc-info">
           Asume que solo ${fmt(jeeAceptadas)} de ${fmt(totalJee)} actas JEE se validan (~${tasaPromedio.toFixed(0)}%).
           <b style="color:var(--yellow);display:block;margin-top:6px">⚠ El resultado depende FUERTEMENTE de cuántas actas JEE acepte el tribunal.</b>
