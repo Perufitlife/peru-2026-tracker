@@ -175,7 +175,13 @@
 
   /* Desglose votos pendientes */
   .desglose-box { background: var(--bg); border-radius: 12px; padding: 12px; margin-top: 8px; }
-  .desg-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 10px; }
+  .desg-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .desg-help-btn { background: none; border: 1px solid var(--border); color: var(--text-secondary); font-size: 0.6rem; padding: 2px 8px; border-radius: 99px; cursor: pointer; font-weight: 600; text-transform: none; letter-spacing: 0; }
+  .desg-help-btn:active { background: var(--card); }
+  .desg-help-body { display: none; background: white; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 0.7rem; line-height: 1.5; color: var(--text-secondary); border-left: 3px solid var(--lopez); }
+  .desg-help-body.open { display: block; }
+  .desg-help-body b { color: var(--text-primary); }
+  .desg-formula { background: var(--bg); padding: 6px 8px; border-radius: 6px; margin: 4px 0; font-family: monospace; font-size: 0.68rem; color: var(--text-primary); }
   .desg-row { background: white; border-radius: 10px; padding: 10px; margin-bottom: 8px; border-left: 3px solid; }
   .desg-row.pendientes { border-left-color: var(--green); }
   .desg-row.jee { border-left-color: var(--yellow); }
@@ -699,7 +705,15 @@ function render(data) {
         </div>
         <div class="r-body" id="r-body-${i}">
           <div class="desglose-box">
-            <div class="desg-title">Votos por contar en ${titleCase(dept.nombre)}</div>
+            <div class="desg-title">
+              <span>Votos por contar</span>
+              <button class="desg-help-btn" onclick="event.stopPropagation();toggleHelp(${i})">¿cómo?</button>
+            </div>
+            <div class="desg-help-body" id="dh-${i}">
+              Tomamos el <b>promedio de votos por acta</b> de cada distrito, lo multiplicamos por las actas que faltan ahí, y aplicamos el <b>% real de Sánchez y López en ese mismo distrito</b>.
+              <div class="desg-formula">votos × % candidato del distrito</div>
+              Sumamos todos los distritos del departamento. Como cada distrito vota distinto (zona urbana vs rural), esto da un cálculo más preciso que usar el promedio general.
+            </div>
 
             <div class="desg-row pendientes">
               <div class="desg-row-head">
@@ -743,6 +757,11 @@ function render(data) {
   });
 
   document.getElementById('regions-list').innerHTML = listHtml;
+}
+
+window.toggleHelp = function(id) {
+  const el = document.getElementById('dh-' + id);
+  if (el) el.classList.toggle('open');
 }
 
 window.toggleMethod = function() {
