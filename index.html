@@ -514,7 +514,7 @@ function render(data) {
         <br><br>
         ¿Por qué ${tasaPromedio.toFixed(0)}%? Es ligeramente conservador respecto al promedio histórico (70-85%) por dos razones:
         <ul>
-          <li>Hay <b>${fmt(d.departamentos.find(x=>x.nombre==='LIMA')?.totales.enviadasJee || 0)} actas JEE solo en Lima</b> — muchas son impugnaciones políticas (no errores admin), y esas tienen menor tasa de aceptación</li>
+          <li>Hay <b>${fmt(data.departamentos.find(x=>x.nombre==='LIMA')?.totales.enviadasJee || 0)} actas JEE solo en Lima</b> — muchas son impugnaciones políticas (no errores admin), y esas tienen menor tasa de aceptación</li>
           <li>La elección está peleada → más razones para anular</li>
         </ul>
         <div style="background:var(--yellow-bg);padding:8px;border-radius:8px;margin-top:8px;color:var(--text-primary);font-size:0.78rem">
@@ -561,7 +561,7 @@ function render(data) {
           <li>Las actas JEE no son aleatorias — fueron seleccionadas por personeros estratégicamente. Asumimos que votan como el promedio del distrito, pero podrían tener sesgo.</li>
           <li>El JEE puede anular votos específicos dentro de un acta, no solo aceptar/rechazar la mesa entera.</li>
           <li>Las apelaciones al JNE pueden cambiar resultados semanas después.</li>
-          <li>El extranjero tiene gran incertidumbre (solo ${(d.departamentos.find(x=>x.nombre==='EXTRANJERO')?.totales.actasContabilizadas || 0).toFixed(0)}% contado).</li>
+          <li>El extranjero tiene gran incertidumbre (solo ${(data.departamentos.find(x=>x.nombre==='EXTRANJERO')?.totales.actasContabilizadas || 0).toFixed(0)}% contado).</li>
         </ul>
 
         <h4>11. Ajuste por actas "huérfanas"</h4>
