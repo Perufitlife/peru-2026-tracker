@@ -828,7 +828,7 @@ function render(data) {
     // Provincias inner HTML con desglose de distritos
     let provsHtml = '';
     if (dept.provincias) {
-      const sortedProvs = [...dept.provincias].sort((a,b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
+      const sortedProvs = [...dept.provincias].sort((a,b) => (b.totales.totalActas - b.totales.contabilizadas) - (a.totales.totalActas - a.totales.contabilizadas));
       sortedProvs.forEach((prov, pi) => {
         const ps = (findCand(prov.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
         const pl = (findCand(prov.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
@@ -839,7 +839,7 @@ function render(data) {
         // Distritos HTML
         let distsHtml = '';
         if (provHasDistritos) {
-          const sortedDists = [...prov.distritos].sort((a,b) => b.totales.actasContabilizadas - a.totales.actasContabilizadas);
+          const sortedDists = [...prov.distritos].sort((a,b) => (b.totales.totalActas - b.totales.contabilizadas) - (a.totales.totalActas - a.totales.contabilizadas));
           sortedDists.forEach(dist => {
             const dac = dist.totales.contabilizadas;
             const ds = (findCand(dist.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
