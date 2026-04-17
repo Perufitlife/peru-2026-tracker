@@ -3447,7 +3447,7 @@
     }
   },
   {
-    "t": "2026-04-17T20:50:38.383Z",
+    "t": "2026-04-17T21:01:00.829Z",
     "pct": 93.359,
     "vS": 1890544,
     "vL": 1877454,
@@ -3462,15 +3462,15 @@
       "sumDeptCont": 86601,
       "sumDeptJee": 5617,
       "sumDeptPend": 548,
-      "sumDistCont": 86086,
-      "sumDistJee": 5224,
-      "sumDistPend": 1456,
+      "sumDistCont": 86474,
+      "sumDistJee": 5532,
+      "sumDistPend": 760,
       "deptDriftCont": -4,
       "deptDriftJee": -29,
       "deptDriftPend": 33,
-      "distDriftCont": -519,
-      "distDriftJee": -422,
-      "distDriftPend": 941
+      "distDriftCont": -131,
+      "distDriftJee": -114,
+      "distDriftPend": 245
     },
     "deps": {
       "AMAZONAS": {
@@ -3510,13 +3510,13 @@
       },
       "CUSCO": {
         "pct": 94.527,
-        "vS": 149562,
-        "vL": 31688
+        "vS": 149726,
+        "vL": 31695
       },
       "HUANCAVELICA": {
         "pct": 94.894,
-        "vS": 71344,
-        "vL": 3862
+        "vS": 71456,
+        "vL": 3866
       },
       "HUÁNUCO": {
         "pct": 90.944,
