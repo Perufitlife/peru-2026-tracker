@@ -1103,6 +1103,7 @@ function renderBatalla(data) {
   const diff = vS - vL;
   const actas = data.nacional.totales;
   const laGana = diff <= 0;
+  const JEE_ACCEPT_RATE = 0.65;
 
   // JEE por departamento
   const rows = [];
@@ -1308,6 +1309,23 @@ function renderBatalla(data) {
     </div>`;
   }).join('');
 
+  // ====== CALCULOS ======
+
+  // Top VALIDAR (zonas LA)
+  const topVal = allBattle.filter(d => d.accion === 'VALIDAR').sort((a,b) => b.gananciaLA - a.gananciaLA).slice(0, 8);
+  // Top ANULAR realistas (zonas S, solo impugnaciones ~30% de las JEE, no admin errors)
+  const topAnul = allBattle.filter(d => d.accion === 'ANULAR').sort((a,b) => b.porActa - a.porActa).slice(0, 8);
+
+  // Escenario realista LA
+  // Validar: 80% de actas pro-LA se aceptan (mezcla admin+impugnación)
+  // Anular: solo 15% de actas pro-S se anulan (mayoría son admin errors que pasan)
+  const VALIDATE_RATE = 0.80;
+  const ANNUL_RATE = 0.15;
+  const gainsValidar = Math.round(proLA.reduce((s,r) => s + r.netoLA, 0) * VALIDATE_RATE);
+  const gainsAnular = Math.round(proS.reduce((s,r) => s + Math.abs(r.netoLA), 0) * ANNUL_RATE);
+  const gainsTotal = gainsValidar + gainsAnular + impactoPend;
+  const resultadoFinal = gainsTotal - diff;
+
   document.getElementById('batalla-container').innerHTML = `
     <div class="jee-hero">
       <div class="jee-hero-title">Batalla por la Segunda Vuelta · ${actas.actasContabilizadas.toFixed(2)}%</div>
@@ -1358,7 +1376,69 @@ function renderBatalla(data) {
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Plan de batalla — paso a paso</div>
+      <div class="jee-list-title">📖 ¿Cómo funciona el JEE?</div>
+      <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.6">
+        Hay <b>${fmt(totalJee)} actas</b> que tuvieron problemas y están en el tribunal (JEE). El JEE decide si cada acta se <b>valida</b> (los votos cuentan) o se <b>anula</b> (los votos se pierden).
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0">
+          <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center;border-top:3px solid #aaa">
+            <div style="font-size:0.6rem;font-weight:700;color:var(--text-secondary)">ERRORES ADMIN</div>
+            <div style="font-size:1rem;font-weight:800">~70%</div>
+            <div style="font-size:0.65rem;color:var(--text-secondary)">sumas mal, tachaduras — casi todas se validan</div>
+          </div>
+          <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center;border-top:3px solid var(--yellow)">
+            <div style="font-size:0.6rem;font-weight:700;color:var(--text-secondary)">IMPUGNACIONES</div>
+            <div style="font-size:1rem;font-weight:800">~20%</div>
+            <div style="font-size:0.65rem;color:var(--text-secondary)">partidos cuestionan — se pelea 50/50</div>
+          </div>
+          <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center;border-top:3px solid var(--red)">
+            <div style="font-size:0.6rem;font-weight:700;color:var(--text-secondary)">GRAVES</div>
+            <div style="font-size:1rem;font-weight:800">~10%</div>
+            <div style="font-size:0.65rem;color:var(--text-secondary)">ilegibles, fraude — se anulan</div>
+          </div>
+        </div>
+        <b>Por eso NO todas las actas pro-Sánchez se pueden anular.</b> La mayoría son errores que se corrigen y los votos de Sánchez cuentan igual.
+      </div>
+    </div>
+
+    <div class="jee-list" style="border:2px solid var(--lopez);border-radius:16px">
+      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Estrategia realista para López Aliaga</div>
+      <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">
+        LA NO gana anulando actas rurales (son pocas las anulables).
+        <b style="color:var(--lopez)">LA gana VALIDANDO sus propias actas urbanas</b> — cada acta de Lima/USA que se valida es +40 a +110 votos netos para LA.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--lopez-bg);padding:10px;border-radius:10px;text-align:center">
+          <div style="font-size:0.6rem;font-weight:700;color:var(--lopez)">VALIDAR URBANAS</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);margin:4px 0">${proLA.reduce((s,r)=>s+r.jee,0)} actas × 80% aceptación</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--lopez)">+${fmt(gainsValidar)}</div>
+          <div style="font-size:0.65rem;color:var(--text-secondary)">votos netos para LA</div>
+        </div>
+        <div style="background:var(--sanchez-bg);padding:10px;border-radius:10px;text-align:center">
+          <div style="font-size:0.6rem;font-weight:700;color:var(--sanchez)">ANULAR RURALES</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);margin:4px 0">${proS.reduce((s,r)=>s+r.jee,0)} actas × 15% anulación</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--sanchez)">+${fmt(gainsAnular)}</div>
+          <div style="font-size:0.65rem;color:var(--text-secondary)">votos que S pierde</div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);padding:10px;border-radius:10px;font-size:0.8rem;text-align:center">
+        <div style="color:var(--text-secondary)">Pendientes puras: ${impactoPend >= 0 ? 'LA' : 'S'} +${fmt(Math.abs(impactoPend))}</div>
+        <div style="color:var(--text-secondary);margin:4px 0">Validar urbanas: LA +${fmt(gainsValidar)} · Anular rurales: LA +${fmt(gainsAnular)}</div>
+        <div style="border-top:1px solid var(--border);padding-top:6px;margin-top:6px">
+          <span style="color:var(--text-secondary)">Ganancia total LA: +${fmt(gainsTotal)} vs gap de ${fmt(diff)} =</span>
+          <div style="font-size:1.2rem;font-weight:800;color:var(--${resultadoFinal >= 0 ? 'lopez' : 'sanchez'});margin-top:4px">
+            ${resultadoFinal >= 0 ? '🛡️ LA gana por ' + fmt(resultadoFinal) : '🚩 S mantiene por ' + fmt(Math.abs(resultadoFinal))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="jee-list">
+      <div class="jee-list-title" style="color:var(--lopez)">✅ Prioridad personeros: VALIDAR estas actas</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">
+        Actas de zonas urbanas pro-LA que están en el JEE. Si los personeros defienden estas actas y se validan, LA suma fuerte. Ordenadas por impacto total.
+      </div>
       <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:4px;line-height:1.4">
         Top 15 acciones por impacto. ✅ Validar actas pro-LA ❌ Anular actas pro-S.
         ${fastestCovers ? `<b style="color:var(--lopez)">Solo ${titleCase(fastest.dept)} > ${titleCase(fastest.dist)} (${fastest.jee} actas) cubre todo el gap.</b>` : ''}
@@ -1389,8 +1469,11 @@ function renderBatalla(data) {
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--sanchez)">❌ Top distritos donde ANULAR — más daño a Sánchez/acta</div>
-      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">Distritos donde S saca 50-70%. Cada acta anulada quita votos a Sánchez.</div>
+      <div class="jee-list-title" style="color:var(--sanchez)">❌ Bonus: si se logra ANULAR estas actas rurales</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">
+        Actas en distritos donde Sánchez saca 50-70%. <b>Ojo: la mayoría son errores admin que se van a validar.</b>
+        Solo las que fueron impugnadas políticamente tienen chance real de anularse. Estas son las de mayor impacto por acta.
+      </div>
       ${anularHtml}
     </div>
   `;
