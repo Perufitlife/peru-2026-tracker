@@ -175,6 +175,40 @@
 
   .footer { text-align: center; margin-top: 32px; font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
 
+  /* Tabs */
+  .tabs { display: flex; gap: 0; margin-bottom: 20px; background: var(--border); border-radius: 12px; padding: 3px; }
+  .tab-btn { flex: 1; padding: 10px 8px; border: none; background: none; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .tab-btn.active { background: var(--card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Batalla JEE */
+  .jee-hero { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); text-align: center; }
+  .jee-hero-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); font-weight: 700; }
+  .jee-hero-val { font-size: 2rem; font-weight: 800; margin: 4px 0; letter-spacing: -1px; }
+  .jee-hero-sub { font-size: 0.8rem; color: var(--text-secondary); }
+
+  .jee-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .jee-path { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); border-top: 3px solid; }
+  .jee-path.path-la { border-top-color: var(--lopez); }
+  .jee-path.path-s { border-top-color: var(--sanchez); }
+  .jee-path-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 8px; }
+  .jee-path-val { font-size: 1.3rem; font-weight: 800; margin-bottom: 2px; }
+  .jee-path-sub { font-size: 0.7rem; color: var(--text-secondary); }
+
+  .jee-list { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 12px; }
+  .jee-list-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 12px; }
+  .jee-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .jee-item:last-child { border-bottom: none; }
+  .jee-item-left { flex: 1; }
+  .jee-item-name { font-size: 0.85rem; font-weight: 600; }
+  .jee-item-detail { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
+  .jee-item-right { text-align: right; }
+  .jee-item-impact { font-size: 0.95rem; font-weight: 800; }
+  .jee-item-actas { font-size: 0.65rem; color: var(--text-secondary); }
+  .jee-item-bar { height: 4px; border-radius: 2px; margin-top: 4px; background: var(--border); overflow: hidden; }
+  .jee-item-fill { height: 100%; border-radius: 2px; }
+
   /* Desglose votos pendientes */
   .desglose-box { background: var(--bg); border-radius: 12px; padding: 12px; margin-top: 8px; }
   .desg-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
@@ -220,12 +254,23 @@
     <button class="sync-btn" id="syncBtn" onclick="sync()" style="display:none">Actualizar</button>
   </div>
 
-  <div id="hero-container"></div>
-  <div id="scenarios-container"></div>
-  <div id="trend-container"></div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('resumen')">Resumen</button>
+    <button class="tab-btn" onclick="switchTab('batalla')">Batalla JEE</button>
+  </div>
+
+  <div id="tab-resumen" class="tab-content active">
+    <div id="hero-container"></div>
+    <div id="scenarios-container"></div>
+    <div id="trend-container"></div>
 
   <div class="regions-header">Detalle por Región</div>
   <div id="regions-list"></div>
+  </div><!-- fin tab-resumen -->
+
+  <div id="tab-batalla" class="tab-content">
+    <div id="batalla-container"></div>
+  </div><!-- fin tab-batalla -->
 
   <div class="footer">
     Datos en tiempo real obtenidos de la API pública de ONPE.<br>
@@ -963,6 +1008,9 @@ function render(data) {
   });
 
   document.getElementById('regions-list').innerHTML = listHtml;
+
+  // Render Batalla JEE tab
+  renderBatalla(data);
 }
 
 window.toggleHelp = function(id) {
@@ -1038,6 +1086,137 @@ async function sync() {
 
 // Mostrar boton Actualizar solo en localhost (donde si sincroniza con ONPE)
 if (isLocal) document.getElementById('syncBtn').style.display = '';
+
+window.switchTab = function(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[onclick*="${tab}"]`).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function renderBatalla(data) {
+  const findCand = (list, n) => (list||[]).find(c => c.nombreCandidato?.includes(n));
+  const nacS = findCand(data.nacional.candidatos, 'SANCHEZ PALOMINO');
+  const nacL = findCand(data.nacional.candidatos, 'LÓPEZ ALIAGA');
+  const diff = nacS.totalVotosValidos - nacL.totalVotosValidos;
+
+  // Build JEE data per department
+  const jeeRows = [];
+  let totalJeeActas = 0;
+  data.departamentos.forEach(dep => {
+    const jee = dep.totales.enviadasJee || 0;
+    if (jee === 0) return;
+    totalJeeActas += jee;
+    const vpa = dep.totales.contabilizadas > 0 ? dep.totales.totalVotosEmitidos / dep.totales.contabilizadas : 0;
+    const s = (findCand(dep.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
+    const l = (findCand(dep.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
+    const impacto = Math.round(vpa * jee * (s - l) / 100);
+    jeeRows.push({ n: dep.nombre, jee, vpa: Math.round(vpa), s, l, impacto });
+  });
+
+  // Separate pro-LA vs pro-S
+  const proLA = jeeRows.filter(r => r.impacto < 0).sort((a,b) => a.impacto - b.impacto);
+  const proS = jeeRows.filter(r => r.impacto >= 0).sort((a,b) => b.impacto - a.impacto);
+  const totalProLA = proLA.reduce((s,r) => s + Math.abs(r.impacto), 0);
+  const totalProS = proS.reduce((s,r) => s + r.impacto, 0);
+  const maxImpacto = Math.max(totalProLA, totalProS) || 1;
+
+  // Build pro-LA list
+  let laListHtml = '';
+  let laAcum = 0;
+  proLA.forEach(r => {
+    laAcum += Math.abs(r.impacto);
+    const w = Math.abs(r.impacto) / maxImpacto * 100;
+    laListHtml += `<div class="jee-item">
+      <div class="jee-item-left">
+        <div class="jee-item-name">${titleCase(r.n)}</div>
+        <div class="jee-item-detail">LA ${r.l.toFixed(1)}% vs S ${r.s.toFixed(1)}% · ${r.vpa} votos/acta</div>
+        <div class="jee-item-bar"><div class="jee-item-fill" style="width:${w.toFixed(0)}%;background:var(--lopez)"></div></div>
+      </div>
+      <div class="jee-item-right">
+        <div class="jee-item-impact c-lopez">${fmt(Math.abs(r.impacto))}</div>
+        <div class="jee-item-actas">${r.jee} actas</div>
+      </div>
+    </div>`;
+  });
+
+  // Build pro-S list
+  let sListHtml = '';
+  let sAcum = 0;
+  proS.forEach(r => {
+    sAcum += r.impacto;
+    const w = r.impacto / maxImpacto * 100;
+    sListHtml += `<div class="jee-item">
+      <div class="jee-item-left">
+        <div class="jee-item-name">${titleCase(r.n)}</div>
+        <div class="jee-item-detail">S ${r.s.toFixed(1)}% vs LA ${r.l.toFixed(1)}% · ${r.vpa} votos/acta</div>
+        <div class="jee-item-bar"><div class="jee-item-fill" style="width:${w.toFixed(0)}%;background:var(--sanchez)"></div></div>
+      </div>
+      <div class="jee-item-right">
+        <div class="jee-item-impact c-sanchez">${fmt(r.impacto)}</div>
+        <div class="jee-item-actas">${r.jee} actas</div>
+      </div>
+    </div>`;
+  });
+
+  // Scenarios table
+  const jeeImpTotal = jeeRows.reduce((s,r) => s + r.impacto, 0);
+  let scenariosHtml = '';
+  [30, 40, 50, 60, 65, 70, 75, 80, 85, 90, 100].forEach(pct => {
+    const t = pct / 100;
+    const proy = diff + jeeImpTotal * t;
+    // Pendientes puras (already counted separately in the main model)
+    // Here we show ONLY the JEE battle effect
+    const winner = proy >= 0 ? 'S' : 'LA';
+    const winnerC = proy >= 0 ? 'c-sanchez' : 'c-lopez';
+    const highlight = pct === 65 ? 'font-weight:800;background:var(--bg);padding:2px 6px;border-radius:4px' : '';
+    scenariosHtml += `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.78rem;${highlight}">
+      <span>${pct}% se valida${pct === 65 ? ' ← modelo' : ''}</span>
+      <span class="${winnerC}" style="font-weight:700">${winner === 'S' ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(Math.round(proy)))}</span>
+    </div>`;
+  });
+
+  document.getElementById('batalla-container').innerHTML = `
+    <div class="jee-hero">
+      <div class="jee-hero-title">Batalla JEE — ${fmt(totalJeeActas)} actas en disputa</div>
+      <div class="jee-hero-val" style="color:var(--${diff >= 0 ? 'sanchez' : 'lopez'})">
+        ${diff >= 0 ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(diff))}
+      </div>
+      <div class="jee-hero-sub">diferencia actual · el JEE decide quién pasa</div>
+    </div>
+
+    <div class="jee-paths">
+      <div class="jee-path path-la">
+        <div class="jee-path-title">Tanque López Aliaga</div>
+        <div class="jee-path-val c-lopez">${fmt(totalProLA)}</div>
+        <div class="jee-path-sub">votos potenciales si se validan ${proLA.reduce((s,r)=>s+r.jee,0)} actas pro-LA</div>
+      </div>
+      <div class="jee-path path-s">
+        <div class="jee-path-title">Tanque Sánchez</div>
+        <div class="jee-path-val c-sanchez">${fmt(totalProS)}</div>
+        <div class="jee-path-sub">votos potenciales si se validan ${proS.reduce((s,r)=>s+r.jee,0)} actas pro-S</div>
+      </div>
+    </div>
+
+    <div class="jee-list">
+      <div class="jee-list-title" style="color:var(--lopez)">Actas que favorecen a López Aliaga (si se validan)</div>
+      ${laListHtml}
+    </div>
+
+    <div class="jee-list">
+      <div class="jee-list-title" style="color:var(--sanchez)">Actas que favorecen a Sánchez (si se validan)</div>
+      ${sListHtml}
+    </div>
+
+    <div class="jee-list">
+      <div class="jee-list-title">¿A qué tasa el JEE valida?</div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">
+        Si el JEE valida X% de TODAS las actas por igual, este sería el resultado:
+      </div>
+      ${scenariosHtml}
+    </div>
+  `;
+}
 
 load();
 </script>
