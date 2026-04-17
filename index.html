@@ -367,17 +367,18 @@ function render(data) {
       vpa = fallbackVpa || 0;
       delta = fallbackDelta || 0;
     }
-    const vfSinJee = Math.round(vpa * Math.max(0, at - ac - jee));
+    const pendPuras = Math.max(0, at - ac - jee);
+    const vfSinJee = Math.round(vpa * pendPuras);
     const vfConJee = Math.round(vpa * (at - ac));
     return {
-      vfSinJee, vfConJee, jee,
+      vfSinJee, vfConJee, jee, pendPuras,
       impSinJee: Math.round(vfSinJee * delta / 100),
       impConJee: Math.round(vfConJee * delta / 100),
     };
   }
 
   depts.forEach(dept => {
-    let totalVfSinJee = 0, totalVfConJee = 0, totalImpSinJee = 0, totalImpConJee = 0, totalJeeDep = 0;
+    let totalVfSinJee = 0, totalVfConJee = 0, totalImpSinJee = 0, totalImpConJee = 0, totalJeeDep = 0, totalPendActas = 0;
 
     // Fallback dept-level
     const dac = dept.totales.contabilizadas;
@@ -403,6 +404,7 @@ function render(data) {
             totalImpSinJee += r.impSinJee;
             totalImpConJee += r.impConJee;
             totalJeeDep += r.jee;
+            totalPendActas += r.pendPuras;
           });
         } else {
           // Provincia sin distritos (Extranjero = paises)
@@ -412,6 +414,7 @@ function render(data) {
           totalImpSinJee += r.impSinJee;
           totalImpConJee += r.impConJee;
           totalJeeDep += r.jee;
+          totalPendActas += r.pendPuras;
         }
       });
     } else {
@@ -421,6 +424,7 @@ function render(data) {
       totalImpSinJee = r.impSinJee;
       totalImpConJee = r.impConJee;
       totalJeeDep = r.jee;
+      totalPendActas = r.pendPuras;
     }
 
     // ===== AJUSTES POR ACTAS "HUÉRFANAS" =====
@@ -448,10 +452,11 @@ function render(data) {
     }
 
     // (B) Sobre-conteo de pendientes (suma hijos > agregado)
+    // Usamos el conteo real de actas pendientes de los hijos (NO back-computado
+    // desde votos, porque vpa heterogéneo entre hijos distorsiona el factor — ej. Extranjero)
     const pendRealAgregado = Math.max(0, dept.totales.totalActas - dept.totales.contabilizadas - (dept.totales.enviadasJee || 0));
-    const pendActasCalculadas = totalVfSinJee > 0 && deptVpa > 0 ? Math.round(totalVfSinJee / deptVpa) : 0;
-    if (pendActasCalculadas > pendRealAgregado && deptVpa > 0) {
-      const factor = pendRealAgregado / pendActasCalculadas;
+    if (totalPendActas > pendRealAgregado && totalPendActas > 0) {
+      const factor = pendRealAgregado / totalPendActas;
       const ajusteVotos = totalVfSinJee * (1 - factor);
       const ajusteImpacto = totalImpSinJee * (1 - factor);
       totalVfSinJee = Math.round(totalVfSinJee * factor);
@@ -459,7 +464,7 @@ function render(data) {
       // También afecta el conjunto con JEE
       totalVfConJee = Math.round(totalVfConJee - ajusteVotos);
       totalImpConJee = Math.round(totalImpConJee - ajusteImpacto);
-      dept._pendOrfanas = pendActasCalculadas - pendRealAgregado;
+      dept._pendOrfanas = totalPendActas - pendRealAgregado;
     }
 
     dept._votosFaltanSimple = totalVfConJee;
@@ -1105,39 +1110,101 @@ function renderBatalla(data) {
   const pct = data.nacional.totales.actasContabilizadas;
   const laGana = diff <= 0;
 
-  // 1. Pendientes puras
-  let pendLA = 0, pendS = 0, pendActas = 0;
+  // ===== CÁLCULO GRANULAR (distrito-level con ajustes A+B, igual que Resumen) =====
+  const getPct = (item, name) => (fC(item.candidatos, name) || {}).porcentajeVotosValidos || 0;
+
+  const processLeaf = (item, fbVpa, fbS, fbL, acc) => {
+    const ac = item.totales.contabilizadas;
+    const at = item.totales.totalActas;
+    const jee = item.totales.enviadasJee || 0;
+    let vpa, s, l;
+    if (ac > 0) {
+      vpa = item.totales.totalVotosEmitidos / ac;
+      s = getPct(item, 'SANCHEZ PALOMINO');
+      l = getPct(item, 'LÓPEZ ALIAGA');
+    } else {
+      vpa = fbVpa; s = fbS; l = fbL;
+    }
+    const pendPuras = Math.max(0, at - ac - jee);
+    acc.pendLA += vpa * pendPuras * l / 100;
+    acc.pendS  += vpa * pendPuras * s / 100;
+    acc.pendActas += pendPuras;
+    acc.jeeLA += vpa * jee * l / 100;
+    acc.jeeS  += vpa * jee * s / 100;
+    acc.jeeActas += jee;
+  };
+
+  let pendLA = 0, pendS = 0, pendActas = 0, totalJee = 0;
+  const jeeDepts = [];
+
   data.departamentos.forEach(dep => {
-    const ac = dep.totales.contabilizadas;
-    const pend = dep.totales.pendientesJee || Math.max(0, dep.totales.totalActas - ac - (dep.totales.enviadasJee||0));
-    if (ac === 0 || pend === 0) return;
-    pendActas += pend;
-    const vpa = dep.totales.totalVotosEmitidos / ac;
-    const s = (fC(dep.candidatos,'SANCHEZ PALOMINO')||{}).porcentajeVotosValidos||0;
-    const l = (fC(dep.candidatos,'LÓPEZ ALIAGA')||{}).porcentajeVotosValidos||0;
-    pendLA += vpa * pend * l / 100;
-    pendS += vpa * pend * s / 100;
+    const dac = dep.totales.contabilizadas;
+    const deptVpa = dac > 0 ? dep.totales.totalVotosEmitidos / dac : 0;
+    const deptS = getPct(dep, 'SANCHEZ PALOMINO');
+    const deptL = getPct(dep, 'LÓPEZ ALIAGA');
+    const acc = { pendLA:0, pendS:0, pendActas:0, jeeLA:0, jeeS:0, jeeActas:0 };
+
+    if (dep.provincias?.length) {
+      dep.provincias.forEach(prov => {
+        const pac = prov.totales.contabilizadas;
+        const provVpa = pac > 0 ? prov.totales.totalVotosEmitidos / pac : deptVpa;
+        const provS = pac > 0 ? getPct(prov, 'SANCHEZ PALOMINO') : deptS;
+        const provL = pac > 0 ? getPct(prov, 'LÓPEZ ALIAGA') : deptL;
+        if (prov.distritos?.length) {
+          prov.distritos.forEach(d => processLeaf(d, provVpa, provS, provL, acc));
+        } else {
+          processLeaf(prov, deptVpa, deptS, deptL, acc);
+        }
+      });
+    } else {
+      processLeaf(dep, deptVpa, deptS, deptL, acc);
+    }
+
+    // Ajuste A: JEE huérfanas (dept reporta más JEE que la suma de hijos)
+    const jeeAgg = dep.totales.enviadasJee || 0;
+    const orfanas = Math.max(0, jeeAgg - acc.jeeActas);
+    if (orfanas > 0 && deptVpa > 0) {
+      acc.jeeLA += deptVpa * orfanas * deptL / 100;
+      acc.jeeS  += deptVpa * orfanas * deptS / 100;
+      acc.jeeActas += orfanas;
+    }
+
+    // Ajuste B: sobre-conteo pendientes (hijos suman más pendientes que el agregado)
+    const pendAgg = Math.max(0, dep.totales.totalActas - dep.totales.contabilizadas - jeeAgg);
+    if (acc.pendActas > pendAgg && acc.pendActas > 0) {
+      const factor = pendAgg / acc.pendActas;
+      acc.pendLA *= factor;
+      acc.pendS  *= factor;
+      acc.pendActas = pendAgg;
+    }
+
+    pendLA += acc.pendLA;
+    pendS  += acc.pendS;
+    pendActas += acc.pendActas;
+
+    if (acc.jeeActas > 0) {
+      totalJee += acc.jeeActas;
+      const neto = Math.round(acc.jeeLA - acc.jeeS); // positivo = LA gana si validan
+      jeeDepts.push({
+        n: dep.nombre,
+        jee: acc.jeeActas,
+        s: deptS,
+        l: deptL,
+        neto,
+        absNeto: Math.abs(neto)
+      });
+    }
   });
-  pendLA = Math.round(pendLA); pendS = Math.round(pendS);
+
+  pendLA = Math.round(pendLA);
+  pendS  = Math.round(pendS);
   const pendNeto = pendLA - pendS;
   const gapPost = diff - pendNeto;
 
-  // 2. JEE por departamento
-  let netoProLA = 0, netoProS = 0, actasProLA = 0, actasProS = 0, totalJee = 0;
-  const jeeDepts = [];
-  data.departamentos.forEach(dep => {
-    const jee = dep.totales.enviadasJee || 0;
-    if (jee === 0) return;
-    totalJee += jee;
-    const ac = dep.totales.contabilizadas;
-    if (ac === 0) return;
-    const vpa = dep.totales.totalVotosEmitidos / ac;
-    const s = (fC(dep.candidatos,'SANCHEZ PALOMINO')||{}).porcentajeVotosValidos||0;
-    const l = (fC(dep.candidatos,'LÓPEZ ALIAGA')||{}).porcentajeVotosValidos||0;
-    const neto = Math.round(vpa * jee * (l - s) / 100); // positivo = LA gana
-    if (neto > 0) { netoProLA += neto; actasProLA += jee; }
-    else { netoProS += Math.abs(neto); actasProS += jee; }
-    jeeDepts.push({n: dep.nombre, jee, s, l, neto, absNeto: Math.abs(neto)});
+  let netoProLA = 0, netoProS = 0, actasProLA = 0, actasProS = 0;
+  jeeDepts.forEach(d => {
+    if (d.neto > 0) { netoProLA += d.neto; actasProLA += d.jee; }
+    else { netoProS += d.absNeto; actasProS += d.jee; }
   });
 
   // 3. Escenarios diferenciales
