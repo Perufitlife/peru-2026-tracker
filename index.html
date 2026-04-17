@@ -14,9 +14,9 @@
     --text-primary: #111827;
     --text-secondary: #6B7280;
     --border: #E5E7EB;
-    --sanchez: #F97316;
-    --sanchez-bg: #FFEDD5;
-    --lopez: #3B82F6;
+    --sanchez: #DC2626;
+    --sanchez-bg: #FEE2E2;
+    --lopez: #2563EB;
     --lopez-bg: #DBEAFE;
     --green: #10B981;
     --green-bg: #D1FAE5;
@@ -1187,24 +1187,24 @@ function renderBatalla(data) {
 
     <div class="jee-paths">
       <div class="jee-path path-la">
-        <div class="jee-path-title">Tanque López Aliaga</div>
+        <div class="jee-path-title">🛡️ Esquina Azul — López Aliaga</div>
         <div class="jee-path-val c-lopez">${fmt(totalProLA)}</div>
-        <div class="jee-path-sub">votos potenciales si se validan ${proLA.reduce((s,r)=>s+r.jee,0)} actas pro-LA</div>
+        <div class="jee-path-sub">votos de Lima, Extranjero y costa urbana · ${proLA.reduce((s,r)=>s+r.jee,0)} actas</div>
       </div>
       <div class="jee-path path-s">
-        <div class="jee-path-title">Tanque Sánchez</div>
+        <div class="jee-path-title">🚩 Esquina Roja — Sánchez</div>
         <div class="jee-path-val c-sanchez">${fmt(totalProS)}</div>
-        <div class="jee-path-sub">votos potenciales si se validan ${proS.reduce((s,r)=>s+r.jee,0)} actas pro-S</div>
+        <div class="jee-path-sub">votos de sierra, selva y provincias rurales · ${proS.reduce((s,r)=>s+r.jee,0)} actas</div>
       </div>
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--lopez)">Actas que favorecen a López Aliaga (si se validan)</div>
+      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Actas pro-López Aliaga — Lima, Extranjero, Costa</div>
       ${laListHtml}
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--sanchez)">Actas que favorecen a Sánchez (si se validan)</div>
+      <div class="jee-list-title" style="color:var(--sanchez)">🚩 Actas pro-Sánchez — Sierra, Selva, Rurales</div>
       ${sListHtml}
     </div>
 
