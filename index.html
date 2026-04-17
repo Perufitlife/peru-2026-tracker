@@ -1226,257 +1226,400 @@ function renderBatalla(data) {
   const totJeeS = leaves.reduce((a,l) => a + l.votosS, 0) + orfanasGlobalS;
   const jeeNetoAllValida = totJeeL - totJeeS;
 
-  // ===== MODELO REALISTA: tasa base 80% · con personero ±Xpp =====
-  // Tasa base 80% = tasa histórica de validación JEE (~70-85%). Si nadie actúa, todo queda ahí.
-  // Con personero DEFENDIENDO: sube tasa del distrito (más actas validan).
-  // Con personero IMPUGNANDO: baja tasa del distrito (más actas se anulan).
-  // Esfuerzo realista ±15pp (95% vs 65%). El diferencial alcanzable depende del operativo.
-  const RATE_BASE = 0.80;
-  const ESFUERZO_PP = 15;  // esfuerzo por defecto (±15pp) para plan mínimo y roster
-  const DELTA_DEF = ESFUERZO_PP / 100;  // +0.15 → 95%
-  const DELTA_ANU = ESFUERZO_PP / 100;  // -0.15 → 65%
+  // ===== MODELO CALIBRADO CON DATA HISTÓRICA (2021, 2016) =====
+  // Fuentes:
+  // - 2021 (Castillo vs Keiko, diff 44,263): 1,286 actas JEE, neto movido ~3,000 votos
+  // - 2021: FP presentó 945 nulidades, 810 rechazadas por forma, 135 a fondo → 100% rechazadas
+  // - 2021: 84 apelaciones actas observadas en JNE, tasa éxito apelante ~15-20%
+  // - 2016 (PPK vs Keiko, diff 42,597): solo 173 actas JEE, movieron ~0
+  // - Tipo impugnación más exitosa: error material aritmético. Nulidades de fondo: ~0% éxito
+  //
+  // CALIBRACIÓN: tasa base JEE ~85% (mérito legal); efecto operativo marginal pero real ±3-6pp
+  const RATE_BASE = 0.85;
+  const SIGMA = 0.04;
 
+  // Escenarios adversariales (LA opera vs S opera también)
+  const ESCENARIOS = [
+    { id: 'favorable', label: 'Favorable · LA full operativo, S pasivo',    deltaLA: 0.06, deltaS: 0.01 },
+    { id: 'paridad',   label: 'Paridad · ambos operativo similar',           deltaLA: 0.04, deltaS: 0.04 },
+    { id: 'adverso',   label: 'Adverso · S domina operativo legal',          deltaLA: 0.02, deltaS: 0.06 },
+  ];
+
+  // Montecarlo
+  const N_SIMS = 1000;
+  function randNormal(mu, sigma) {
+    const u1 = Math.random() || 1e-9, u2 = Math.random();
+    return mu + sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function simular(sc) {
+    const results = new Array(N_SIMS);
+    for (let i = 0; i < N_SIMS; i++) {
+      let net = 0;
+      for (const l of leaves) {
+        let rate = RATE_BASE + randNormal(0, SIGMA);
+        // En zona pro-LA: LA defiende (+deltaLA) y S impugna (-deltaS) → net shift = deltaLA - deltaS
+        // En zona pro-S:  LA impugna (-deltaLA) y S defiende (+deltaS) → rate del distrito baja menos
+        //                 pero el valor al modelo: el rate aplicado al (votosL-votosS) es hacia menos validación
+        if (l.zonaProLA) rate += sc.deltaLA - sc.deltaS;
+        else             rate += -sc.deltaLA + sc.deltaS;
+        rate = clamp(rate, 0.50, 0.99);
+        net += rate * (l.votosL - l.votosS);
+      }
+      const rateOrf = clamp(RATE_BASE + randNormal(0, SIGMA), 0.50, 0.99);
+      net += rateOrf * (orfanasGlobalLA - orfanasGlobalS);
+      // Pendientes puras: vienen solas, pequeño ruido
+      const pendRuido = randNormal(0, Math.abs(pendNeto) * 0.10);  // 10% sigma
+      results[i] = (pendNeto + pendRuido) + net - diff;  // >0 = LA gana
+    }
+    results.sort((a, b) => a - b);
+    const wins = results.filter(r => r >= 0).length;
+    return {
+      label: sc.label, id: sc.id,
+      deltaLA: sc.deltaLA, deltaS: sc.deltaS,
+      probLA: wins / N_SIMS,
+      p5: Math.round(results[Math.floor(N_SIMS * 0.05)]),
+      p50: Math.round(results[Math.floor(N_SIMS * 0.50)]),
+      p95: Math.round(results[Math.floor(N_SIMS * 0.95)]),
+      mean: Math.round(results.reduce((a,r) => a+r, 0) / N_SIMS),
+    };
+  }
+
+  const simFavorable = simular(ESCENARIOS[0]);
+  const simParidad = simular(ESCENARIOS[1]);
+  const simAdverso = simular(ESCENARIOS[2]);
+
+  // Cap histórico aprox: en 2021 tras todo el litigio se movieron ~3,000 votos netos sobre 1,286 actas.
+  // Ratio: ~2.3 votos netos movidos por acta JEE. Con 5,555 actas → techo teórico ~12,800 votos.
+  // (Pero más realista: ~3,000-6,000 netos en escenario favorable)
+  const capHistorico = Math.round(5555 * 2.3);
+
+  // ===== Impacto por distrito (para la tabla operativa) =====
   leaves.forEach(l => {
     l.impacto = Math.abs(l.votosL - l.votosS);
-    l.accion = l.zonaProLA ? 'DEFENDER' : 'ANULAR';
-    l.deltaVotos = (ESFUERZO_PP / 100) * l.impacto;  // votos netos LA que APORTA ejecutar la acción
-    l.impactoPorActa = l.impacto / l.jee;
+    l.accion = l.zonaProLA ? 'DEFENDER' : 'IMPUGNAR';
+    // Impacto esperado del operativo en este distrito (favorable · ±6pp)
+    l.aporteOperativo = (simFavorable.deltaLA - simFavorable.deltaS) * l.impacto;  // signo absoluto
+    if (!l.zonaProLA) l.aporteOperativo = (simFavorable.deltaLA - simFavorable.deltaS) * l.impacto;  // mismo signo: operativo LA ayuda
   });
 
-  // Evalúa resultado final dado un set de distritos donde SE EJECUTA la acción y un esfuerzo en pp
-  function evaluarPlan(actSet, esfuerzoPp) {
-    const d = esfuerzoPp / 100;
-    let net = 0;
-    leaves.forEach(l => {
-      const rate = actSet.has(l)
-        ? (l.zonaProLA ? RATE_BASE + d : RATE_BASE - d)
-        : RATE_BASE;
-      net += rate * (l.votosL - l.votosS);
-    });
-    net += RATE_BASE * (orfanasGlobalLA - orfanasGlobalS);
-    return pendNeto + net - diff;
-  }
-
-  const baseline = evaluarPlan(new Set(), 0);  // resultado sin actuar (todo 80%)
-
-  // ===== PLAN MÍNIMO: distritos ordenados por impacto, acumular hasta ganar =====
-  // Para cada nivel de esfuerzo (10/15/20pp), encontrar cuántos distritos necesita LA para ganar
+  // Distritos donde concentrar operativo: top por impacto (cubre 80% del impacto total)
   const sortedByImpacto = [...leaves].sort((a,b) => b.impacto - a.impacto);
-  function planMinimo(esfuerzoPp) {
-    const set = new Set();
-    for (let i = 0; i < sortedByImpacto.length; i++) {
-      set.add(sortedByImpacto[i]);
-      const r = evaluarPlan(set, esfuerzoPp);
-      if (r >= 0) return { distritos: Array.from(set), resultado: r, gana: true };
-    }
-    return { distritos: sortedByImpacto, resultado: evaluarPlan(new Set(sortedByImpacto), esfuerzoPp), gana: false };
+  const totImpacto = leaves.reduce((a,l) => a+l.impacto, 0);
+  const focusSet = new Set();
+  let cum = 0;
+  for (const l of sortedByImpacto) {
+    focusSet.add(l);
+    cum += l.impacto;
+    if (cum >= totImpacto * 0.80) break;
   }
+  const planPrincipal = {
+    distritos: Array.from(focusSet),
+    actas: Array.from(focusSet).reduce((a,l) => a+l.jee, 0),
+    cobertura: cum / totImpacto,
+  };
 
-  const plan10 = planMinimo(10);
-  const plan15 = planMinimo(15);
-  const plan20 = planMinimo(20);
-  const planPrincipal = plan15;  // el escenario recomendado: ±15pp
-
-  // ===== Agregar por depto: actas JEE totales, cuántas en plan, cuántas dejar natural, aporte =====
-  const planSet = new Set(planPrincipal.distritos);
+  // ===== Agregar por depto + dimensionar operativo legal =====
+  // Benchmark 2021: FP desplegó operativo masivo (945 nulidades, decenas de abogados, 60 JEE).
+  // ONPE/JNE tiene ~60 JEE a nivel nacional. Distribución aproximada (basada en población):
+  // Lima 10-12 JEE; depts grandes (Piura, La Libertad, Cajamarca, Puno, Arequipa) 3 JEE;
+  // intermedios 2 JEE; pequeños 1 JEE. Total ≈ 60.
+  // Costo benchmark: abogado electoral Perú S/500-1,200/día. Operativo 60 JEE × 2 abog × 20 días ≈ S/2M.
   const porDepto = {};
   leaves.forEach(l => {
     if (!porDepto[l.dept]) porDepto[l.dept] = {
-      actasJee: 0,
-      actasPelear: 0, distritosPelear: 0,
-      actasNatural: 0, distritosNatural: 0,
+      actasJee: 0, distritos: 0,
+      actasFocus: 0, distritosFocus: 0,
       impDefender: 0, impImpugnar: 0,
-      aporte: 0,
-      distritosPlan: []
+      impactoFocus: 0,
+      aporteEsperado: 0,
+      topDistritos: [],
     };
     const d = porDepto[l.dept];
     d.actasJee += l.jee;
+    d.distritos += 1;
     if (l.zonaProLA) d.impDefender += l.impacto;
     else d.impImpugnar += l.impacto;
-    if (planSet.has(l)) {
-      d.actasPelear += l.jee;
-      d.distritosPelear++;
-      d.aporte += l.deltaVotos;
-      d.distritosPlan.push(l);
-    } else {
-      d.actasNatural += l.jee;
-      d.distritosNatural++;
+    if (focusSet.has(l)) {
+      d.actasFocus += l.jee;
+      d.distritosFocus += 1;
+      d.impactoFocus += l.impacto;
+      d.aporteEsperado += l.aporteOperativo;
+      d.topDistritos.push(l);
     }
   });
 
-  // Totales globales para contexto
+  // JEE aproximados por depto (60 total, distribuidos por tamaño)
+  // Ajuste simple: 1 JEE por cada 500 actas totales, mínimo 1, máximo 12
+  data.departamentos.forEach(dep => {
+    const nombre = dep.nombre;
+    if (!porDepto[nombre]) return;
+    const jeeCount = Math.max(1, Math.min(12, Math.round(dep.totales.totalActas / 500)));
+    porDepto[nombre].jeeEstimado = jeeCount;
+  });
+
+  // Totales globales ONPE
   const totActasNac = data.nacional.totales.totalActas;
   const totContabilizadas = data.nacional.totales.contabilizadas;
   const totPendPurasNac = data.nacional.totales.pendientesJee || 0;
   const totJeeNac = data.nacional.totales.enviadasJee || 0;
-  const totActasPelear = planPrincipal.distritos.reduce((a,l) => a+l.jee, 0);
-  const totActasNatural = leaves.reduce((a,l) => a+l.jee, 0) - totActasPelear;
-  const pctPelear = totJeeNac > 0 ? Math.round(totActasPelear / totJeeNac * 100) : 0;
+  const totActasFocus = planPrincipal.actas;
 
-  // Deptos ordenados: primero los DEFENDER (zonas pro-LA) por aporte, luego IMPUGNAR por aporte
+  // Operativo total estimado
+  const totJeeEstimados = Object.values(porDepto).reduce((a,d) => a + (d.jeeEstimado || 1), 0);
+  const personerosPorJEE = 2;  // titular + alterno, benchmark histórico
+  const diasOperativo = 21;    // ~3 semanas (tiempo JEE + apelación JNE en 2021)
+  const personerosDia = totJeeEstimados * personerosPorJEE * diasOperativo;
+  const costoPerDia = 800;     // S/ por abogado-día (rango medio)
+  const costoOperativo = personerosDia * costoPerDia;
+
+  // Deptos ordenados por aporte esperado descendente
   const arr = Object.entries(porDepto).map(([nombre, info]) => ({
     nombre, ...info,
     esDefender: info.impDefender >= info.impImpugnar,
     esExtranjero: nombre === 'EXTRANJERO'
   }));
-  const deptosDefender = arr.filter(d => d.esDefender).sort((a,b) => b.aporte - a.aporte);
-  const deptosImpugnar = arr.filter(d => !d.esDefender).sort((a,b) => b.aporte - a.aporte);
+  const deptosDefender = arr.filter(d => d.esDefender).sort((a,b) => b.aporteEsperado - a.aporteEsperado);
+  const deptosImpugnar = arr.filter(d => !d.esDefender).sort((a,b) => b.aporteEsperado - a.aporteEsperado);
 
   // ===== Helpers =====
   const fmtV = v => fmt(Math.round(v));
   const syncTime = new Date(data.timestamp).toLocaleString('es-PE', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+  const fmtProb = p => (p * 100).toFixed(0) + '%';
 
   function renderDeptoRow(d) {
     const icon = d.esExtranjero ? '🌎' : (d.esDefender ? '🛡️' : '⚔️');
     const accionLabel = d.esDefender ? 'DEFENDER' : 'IMPUGNAR';
     const accionColor = d.esDefender ? '#2563EB' : '#DC2626';
-    const topDistritos = d.distritosPlan.sort((a,b) => b.deltaVotos - a.deltaVotos).slice(0, 3);
+    const topDistritos = d.topDistritos.sort((a,b) => b.impacto - a.impacto).slice(0, 3);
     const topDetail = topDistritos.length
-      ? topDistritos.map(l => `${titleCase(l.leaf)} (${l.jee}a)`).join(' · ')
+      ? topDistritos.map(l => `${titleCase(l.leaf)} (${l.jee}a, ${l.l.toFixed(0)}%L/${l.s.toFixed(0)}%S)`).join(' · ')
       : '—';
+    const personerosDept = (d.jeeEstimado || 1) * personerosPorJEE;
     return `<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid ${accionColor};border-radius:10px;padding:12px;margin-bottom:6px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:180px">
-          <div style="display:flex;align-items:center;gap:6px">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span style="font-size:1.1rem">${icon}</span>
             <b style="font-size:0.95rem">${titleCase(d.nombre)}</b>
             <span style="background:${accionColor};color:white;padding:2px 7px;border-radius:4px;font-size:0.58rem;font-weight:800;letter-spacing:0.04em">${accionLabel}</span>
+            <span style="background:var(--bg);color:var(--text-secondary);padding:2px 6px;border-radius:4px;font-size:0.58rem;font-weight:700">${d.jeeEstimado || 1} JEE · ${personerosDept} abogados</span>
           </div>
-          <div style="font-size:0.68rem;color:var(--text-secondary);margin-top:3px">
-            Top: ${topDetail}
+          <div style="font-size:0.66rem;color:var(--text-secondary);margin-top:4px;line-height:1.35">
+            ${topDetail}
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,auto);gap:10px;align-items:center">
+        <div style="display:grid;grid-template-columns:repeat(3,auto);gap:12px;align-items:center">
           <div style="text-align:center">
             <div style="font-size:1.05rem;font-weight:800">${d.actasJee}</div>
-            <div style="font-size:0.56rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em">TOTAL JEE</div>
+            <div style="font-size:0.55rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em">ACTAS JEE</div>
           </div>
           <div style="text-align:center">
-            <div style="font-size:1.05rem;font-weight:800;color:${accionColor}">${d.actasPelear}</div>
-            <div style="font-size:0.56rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em">PELEAR</div>
+            <div style="font-size:1.05rem;font-weight:800;color:${accionColor}">${d.distritosFocus}</div>
+            <div style="font-size:0.55rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em">DIST FOCO</div>
           </div>
-          <div style="text-align:center">
-            <div style="font-size:1.05rem;font-weight:800;color:#9ca3af">${d.actasNatural}</div>
-            <div style="font-size:0.56rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em">NATURAL</div>
-          </div>
-          <div style="text-align:center;min-width:70px">
-            <div style="font-size:1.05rem;font-weight:800;color:var(--lopez)">+${fmtV(d.aporte)}</div>
-            <div style="font-size:0.56rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em">VOTOS LA</div>
+          <div style="text-align:center;min-width:65px">
+            <div style="font-size:1.05rem;font-weight:800;color:var(--lopez)">+${fmtV(d.aporteEsperado)}</div>
+            <div style="font-size:0.55rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em">VOTOS LA</div>
           </div>
         </div>
       </div>
     </div>`;
   }
 
+  function renderEscenarioCard(sim, highlight) {
+    const bg = highlight ? 'var(--lopez-bg)' : 'var(--card)';
+    const border = highlight ? 'var(--lopez)' : 'var(--border)';
+    const winColor = sim.probLA >= 0.5 ? 'var(--lopez)' : (sim.probLA >= 0.3 ? '#d97706' : 'var(--sanchez)');
+    return `<div style="background:${bg};border:${highlight?'2':'1'}px solid ${border};border-radius:12px;padding:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+        <div style="font-weight:800;font-size:0.82rem;flex:1">${sim.label}</div>
+        <div style="background:${winColor};color:white;padding:3px 10px;border-radius:6px;font-size:0.78rem;font-weight:800;white-space:nowrap">
+          P(LA gana) = ${fmtProb(sim.probLA)}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:0.68rem">
+        <div style="text-align:center;padding:6px;background:var(--bg);border-radius:6px">
+          <div style="color:var(--text-secondary);font-weight:700">PESIMISTA (p5)</div>
+          <div style="font-weight:800;color:${sim.p5 >= 0 ? 'var(--lopez)' : 'var(--sanchez)'}">${sim.p5 >= 0 ? 'LA +' : 'S +'}${fmtV(Math.abs(sim.p5))}</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:var(--bg);border-radius:6px">
+          <div style="color:var(--text-secondary);font-weight:700">MEDIANA</div>
+          <div style="font-weight:800;color:${sim.p50 >= 0 ? 'var(--lopez)' : 'var(--sanchez)'}">${sim.p50 >= 0 ? 'LA +' : 'S +'}${fmtV(Math.abs(sim.p50))}</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:var(--bg);border-radius:6px">
+          <div style="color:var(--text-secondary);font-weight:700">OPTIMISTA (p95)</div>
+          <div style="font-weight:800;color:${sim.p95 >= 0 ? 'var(--lopez)' : 'var(--sanchez)'}">${sim.p95 >= 0 ? 'LA +' : 'S +'}${fmtV(Math.abs(sim.p95))}</div>
+        </div>
+      </div>
+      <div style="font-size:0.62rem;color:var(--text-secondary);margin-top:6px;text-align:center">
+        LA +${(sim.deltaLA*100).toFixed(0)}pp tasa · S +${(sim.deltaS*100).toFixed(0)}pp tasa
+      </div>
+    </div>`;
+  }
+
   document.getElementById('batalla-container').innerHTML = `
-    <!-- HERO: marcador + resultado del plan -->
+    <!-- HERO: estado observacional -->
     <div class="jee-hero" style="padding:16px">
       <div style="text-align:center;font-size:0.62rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.08em;margin-bottom:6px">
-        BATALLA POR LA 2DA VUELTA · ${pct.toFixed(2)}% ESCRUTADO
+        MONITOR 2DA VUELTA · ${pct.toFixed(2)}% ESCRUTADO · Sync ${syncTime}
       </div>
-      <div style="display:flex;justify-content:space-around;align-items:center;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-around;align-items:center;margin-bottom:10px">
         <div style="text-align:center;flex:1">
           <div style="font-size:0.65rem;color:var(--text-secondary);font-weight:700">🚩 SÁNCHEZ</div>
-          <div style="font-size:1.35rem;font-weight:900;color:var(--sanchez)">${fmt(vS)}</div>
-          <div style="font-size:0.62rem;color:var(--text-secondary)">votos válidos</div>
+          <div style="font-size:1.4rem;font-weight:900;color:var(--sanchez)">${fmt(vS)}</div>
+          <div style="font-size:0.62rem;color:var(--text-secondary)">${nacS.porcentajeVotosValidos.toFixed(2)}%</div>
         </div>
-        <div style="font-size:0.65rem;color:var(--text-secondary);font-weight:800;padding:0 8px">VS</div>
+        <div style="font-size:0.6rem;color:var(--text-secondary);font-weight:800">VS</div>
         <div style="text-align:center;flex:1">
           <div style="font-size:0.65rem;color:var(--text-secondary);font-weight:700">🛡️ LÓPEZ ALIAGA</div>
-          <div style="font-size:1.35rem;font-weight:900;color:var(--lopez)">${fmt(vL)}</div>
-          <div style="font-size:0.62rem;color:var(--text-secondary)">votos válidos</div>
+          <div style="font-size:1.4rem;font-weight:900;color:var(--lopez)">${fmt(vL)}</div>
+          <div style="font-size:0.62rem;color:var(--text-secondary)">${nacL.porcentajeVotosValidos.toFixed(2)}%</div>
         </div>
       </div>
-      <div style="text-align:center;padding:6px;background:var(--sanchez-bg);border-radius:8px;font-size:0.72rem;font-weight:700;color:var(--sanchez);margin-bottom:10px">
-        S lidera por ${fmt(diff)} votos · sin acción de personeros, al cierre S +${fmtV(Math.abs(baseline))}
-      </div>
-      <div style="background:linear-gradient(135deg, var(--lopez-bg), rgba(37,99,235,0.05));padding:14px;border-radius:14px;border:2px solid var(--lopez);text-align:center">
-        <div style="font-size:0.62rem;color:var(--lopez);font-weight:800;letter-spacing:0.09em">CON EL PLAN</div>
-        <div style="font-size:2rem;font-weight:900;color:var(--lopez);margin:4px 0;line-height:1">
-          LA gana por +${fmtV(planPrincipal.resultado)}
-        </div>
-        <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.45">
-          Peleando <b>${fmt(totActasPelear)} actas</b> de las <b>${fmt(totJeeNac)}</b> en JEE (${pctPelear}%) · resto en tasa natural
-        </div>
+      <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;font-size:0.75rem;font-weight:700">
+        Diferencia actual: <span style="color:var(--sanchez)">S +${fmt(diff)} votos</span>
       </div>
     </div>
 
-    <!-- FUENTE DE DATOS -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.7rem;color:var(--text-secondary);line-height:1.5">
-      <b style="color:var(--text)">📊 Fuente:</b> ONPE en vivo (resultadoelectoral.onpe.gob.pe) — sincronizado ${syncTime}.
-      Cifras nacionales autoritativas; el desglose por distrito viene de los endpoints de cada ubigeo.
-    </div>
-
-    <!-- LAS 3 CUENTAS: de dónde viene cada número -->
+    <!-- ESTADO DEL PROCESO: 3 cuentas -->
     <div class="jee-list">
-      <div class="jee-list-title">Las ${fmt(totActasNac)} actas · ¿dónde están?</div>
+      <div class="jee-list-title">Estado del proceso · ${fmt(totActasNac)} actas totales</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
         <div style="background:var(--card);padding:12px;border-radius:10px;text-align:center;border:1px solid var(--border)">
-          <div style="font-size:0.58rem;color:var(--text-secondary);font-weight:800;letter-spacing:0.06em">YA CONTADAS</div>
-          <div style="font-size:1.4rem;font-weight:900;margin:4px 0">${fmt(totContabilizadas)}</div>
-          <div style="font-size:0.62rem;color:var(--text-secondary)">${pct.toFixed(1)}% · S lidera +${fmt(diff)}</div>
+          <div style="font-size:0.56rem;color:var(--text-secondary);font-weight:800;letter-spacing:0.06em">CONTABILIZADAS</div>
+          <div style="font-size:1.35rem;font-weight:900;margin:3px 0">${fmt(totContabilizadas)}</div>
+          <div style="font-size:0.62rem;color:var(--text-secondary)">${pct.toFixed(1)}% del total</div>
         </div>
-        <div style="background:var(--lopez-bg);padding:12px;border-radius:10px;text-align:center;border:1px solid var(--lopez)">
-          <div style="font-size:0.58rem;color:var(--lopez);font-weight:800;letter-spacing:0.06em">POR LLEGAR</div>
-          <div style="font-size:1.4rem;font-weight:900;margin:4px 0;color:var(--lopez)">${fmt(totPendPurasNac)}</div>
-          <div style="font-size:0.62rem;color:var(--text-secondary)">llegan solas · LA +${fmt(pendNeto)}</div>
+        <div style="background:var(--card);padding:12px;border-radius:10px;text-align:center;border:1px solid var(--border)">
+          <div style="font-size:0.56rem;color:var(--text-secondary);font-weight:800;letter-spacing:0.06em">PENDIENTES</div>
+          <div style="font-size:1.35rem;font-weight:900;margin:3px 0">${fmt(totPendPurasNac)}</div>
+          <div style="font-size:0.62rem;color:var(--text-secondary)">llegarán solas</div>
         </div>
-        <div style="background:#fef3c7;padding:12px;border-radius:10px;text-align:center;border:1px solid #d97706">
-          <div style="font-size:0.58rem;color:#b45309;font-weight:800;letter-spacing:0.06em">EN JEE</div>
-          <div style="font-size:1.4rem;font-weight:900;margin:4px 0;color:#b45309">${fmt(totJeeNac)}</div>
-          <div style="font-size:0.62rem;color:var(--text-secondary)">aquí se decide todo</div>
+        <div style="background:var(--card);padding:12px;border-radius:10px;text-align:center;border:1px solid var(--border)">
+          <div style="font-size:0.56rem;color:var(--text-secondary);font-weight:800;letter-spacing:0.06em">EN JEE</div>
+          <div style="font-size:1.35rem;font-weight:900;margin:3px 0">${fmt(totJeeNac)}</div>
+          <div style="font-size:0.62rem;color:var(--text-secondary)">resolución tribunal</div>
         </div>
       </div>
       <div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:8px;font-size:0.72rem;text-align:center;line-height:1.5">
-        Post-pendientes: S lidera por solo <b>${fmt(gapPost)}</b>. El plan JEE tiene que cerrar ese gap.
+        Proyección pendientes puras: LA <b style="color:var(--lopez)">+${fmt(pendLA)}</b> vs S <b style="color:var(--sanchez)">+${fmt(pendS)}</b> (neto LA +${fmt(pendNeto)}).
+        Gap post-pendientes: <b>S +${fmt(gapPost)}</b>.
       </div>
     </div>
 
-    <!-- EL PLAN: tabla por depto -->
-    <div class="jee-list" style="border:2px solid var(--lopez);border-radius:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div class="jee-list-title" style="color:var(--lopez);margin:0">El plan · ${fmt(totActasPelear)} actas a pelear</div>
-        <div style="background:var(--lopez);color:white;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:800">
-          LA +${fmtV(planPrincipal.resultado)}
+    <!-- PRECEDENTE HISTÓRICO -->
+    <div class="jee-list">
+      <div class="jee-list-title">📚 Precedente histórico JEE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:var(--card);padding:12px;border-radius:10px;border-left:4px solid #6366f1">
+          <div style="font-size:0.62rem;color:#6366f1;font-weight:800;letter-spacing:0.04em">2021 · Castillo vs Keiko</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-top:4px">diff ${'44,263'} votos (0.25%)</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">
+            1,286 actas JEE · neto movido <b>~3,000 votos</b><br>
+            FP: 945 nulidades → 100% rechazadas<br>
+            Apelaciones JNE: tasa éxito 15-20% forma, 0% fondo<br>
+            Proceso: ~3 semanas
+          </div>
+        </div>
+        <div style="background:var(--card);padding:12px;border-radius:10px;border-left:4px solid #6366f1">
+          <div style="font-size:0.62rem;color:#6366f1;font-weight:800;letter-spacing:0.04em">2016 · PPK vs Keiko</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-top:4px">diff ${'42,597'} votos (0.25%)</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:6px;line-height:1.5">
+            173 actas JEE · <b>movieron ~0 votos netos</b><br>
+            Sin batalla legal significativa<br>
+            Keiko concedió al 99.77%<br>
+            Proceso: ~1 semana
+          </div>
         </div>
       </div>
-      <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">
-        <b>PELEAR</b> = personeros LA llevan la tasa de validación de ese distrito a <b>95%</b> (defensa) o <b>65%</b> (impugnación) en vez de la base <b>80%</b>.
-        <b>NATURAL</b> = queda a 80% sin acción. Incluso así, LA gana porque solo necesitas ~${pctPelear}% de las actas JEE peleadas.
+      <div style="background:#fef3c7;padding:10px;border-radius:8px;font-size:0.72rem;color:#b45309;line-height:1.55">
+        <b>2026 es escala inédita:</b> ${fmt(totJeeNac)} actas JEE — <b>4.3× más que 2021</b>, 32× más que 2016.
+        Si se replica el ratio de 2021 (2.3 votos netos movidos por acta), <b>techo teórico ${fmt(capHistorico)} votos</b> en juego en JEE.
+      </div>
+    </div>
+
+    <!-- PROYECCIÓN MONTECARLO -->
+    <div class="jee-list">
+      <div class="jee-list-title">Proyección Montecarlo · ${N_SIMS} simulaciones</div>
+      <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
+        Modelo: tasa base JEE 85% (calibrada con 2021), ruido σ=4pp por distrito, efecto operativo ±3-6pp según escenario.
+        Supuesto clave: actas JEE votan como el distrito que las envía (<i>limitación: sesgo de selección no modelado</i>).
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:6px">
+        ${renderEscenarioCard(simFavorable, false)}
+        ${renderEscenarioCard(simParidad, true)}
+        ${renderEscenarioCard(simAdverso, false)}
+      </div>
+      <div style="background:var(--bg);padding:10px;border-radius:8px;margin-top:10px;font-size:0.7rem;line-height:1.55">
+        <b>Interpretación:</b> el pool JEE 2026 es estructuralmente pro-S (${fmt(Math.round(totJeeS))} votos S vs ${fmt(Math.round(totJeeL))} votos LA al 100% validación).
+        Si las ${fmt(totJeeNac)} actas se resuelven a tasa uniforme, S amplía ventaja ~${fmt(Math.abs(Math.round(totJeeL - totJeeS)))} votos.
+        Variables no modeladas (sesgo selección, tasa diferencial por tipo de causal, decisiones JNE no predecibles) pueden alterar sustancialmente el resultado.
+      </div>
+    </div>
+
+    <!-- COMPOSICIÓN DEL POOL JEE POR DEPTO -->
+    <div class="jee-list">
+      <div class="jee-list-title">Composición del pool JEE · ${Object.keys(porDepto).length} deptos</div>
+      <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
+        ${leaves.length} distritos con actas JEE identificables + ${Math.round(orfanasGlobalActas)} actas huérfanas.
+        ${focusSet.size} distritos concentran ${Math.round(planPrincipal.cobertura*100)}% del impacto absoluto.
       </div>
 
-      <!-- Grupo DEFENDER -->
       <div style="display:flex;align-items:center;gap:6px;margin:10px 0 6px;padding-left:4px">
         <span style="font-size:0.9rem">🛡️</span>
-        <b style="font-size:0.82rem;color:#2563EB">DEFENDER — zonas pro-LA</b>
+        <b style="font-size:0.82rem;color:#2563EB">Zonas pro-LA (Lima, Extranjero, costa)</b>
         <div style="flex:1;height:1px;background:var(--border)"></div>
         <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:700">
-          ${deptosDefender.reduce((a,d)=>a+d.actasPelear,0)} actas · +${fmtV(deptosDefender.reduce((a,d)=>a+d.aporte,0))}
+          ${deptosDefender.reduce((a,d)=>a+d.actasJee,0)} actas
         </span>
       </div>
       ${deptosDefender.map(renderDeptoRow).join('')}
 
-      <!-- Grupo IMPUGNAR -->
       <div style="display:flex;align-items:center;gap:6px;margin:16px 0 6px;padding-left:4px">
         <span style="font-size:0.9rem">⚔️</span>
-        <b style="font-size:0.82rem;color:#DC2626">IMPUGNAR — zonas pro-S</b>
+        <b style="font-size:0.82rem;color:#DC2626">Zonas pro-S (sierra, selva rural)</b>
         <div style="flex:1;height:1px;background:var(--border)"></div>
         <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:700">
-          ${deptosImpugnar.reduce((a,d)=>a+d.actasPelear,0)} actas · +${fmtV(deptosImpugnar.reduce((a,d)=>a+d.aporte,0))}
+          ${deptosImpugnar.reduce((a,d)=>a+d.actasJee,0)} actas
         </span>
       </div>
       ${deptosImpugnar.map(renderDeptoRow).join('')}
     </div>
 
-    <!-- EXPLICACION DE UNIDADES -->
-    <div style="background:var(--card);border:1px dashed var(--border);border-radius:10px;padding:12px;margin-top:12px;font-size:0.7rem;color:var(--text-secondary);line-height:1.6">
-      <b style="color:var(--text)">📖 Cómo leer cada fila:</b><br>
-      <b>Total JEE</b> = # actas que tiene el depto en disputa.
-      <b>Pelear</b> = actas donde personeros LA llevan la tasa a 95%/65%.
-      <b>Natural</b> = actas que quedan en tasa base 80% (sin acción).
-      <b>Votos LA</b> = cuántos votos netos aporta LA al resultado final si ejecuta "pelear" en ese depto.<br>
-      <b>Top:</b> los 3 distritos del plan con mayor aporte en ese depto.
-    </div>
+    <!-- METODOLOGÍA Y FUENTES -->
+    <details style="background:var(--card);border:1px dashed var(--border);border-radius:10px;padding:10px;margin-top:10px">
+      <summary style="cursor:pointer;font-size:0.72rem;font-weight:700">📊 Metodología · limitaciones · fuentes</summary>
+      <div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.65;margin-top:10px">
+        <b style="color:var(--text)">Datos</b><br>
+        ONPE en vivo (resultadoelectoral.onpe.gob.pe), sync ${syncTime}. ${leaves.length} distritos JEE identificables + ${Math.round(orfanasGlobalActas)} actas huérfanas (sin distrito asignado a nivel agregado).<br><br>
+
+        <b style="color:var(--text)">Ajustes de consistencia</b><br>
+        ONPE reporta cifras inconsistentes entre niveles jerárquicos (nacional/depto/distrito).
+        Se aplican 3 ajustes: (A) JEE huérfanas por depto, (B) sobre-conteo pendientes por depto, (C) reconciliación con agregado nacional ONPE.<br><br>
+
+        <b style="color:var(--text)">Modelo Montecarlo</b><br>
+        Tasa base JEE <b>85%</b> (mediana histórica 2021/2016, rango 70-95%).
+        Ruido σ=4pp por distrito (Box-Muller).
+        Efecto operativo ±3-6pp según escenario adversarial.
+        ${N_SIMS} simulaciones por escenario. P(LA gana) = fracción con resultado ≥0.<br><br>
+
+        <b style="color:var(--text)">Benchmarks históricos</b><br>
+        • 2021: 1,286 actas JEE → neto ~3,000 votos. FP: 945 nulidades, 100% rechazadas. JNE apelaciones: 15-20% éxito forma, 0% fondo.<br>
+        • 2016: 173 actas JEE → ~0 votos movidos. Sin batalla legal.<br>
+        • Tasa JEE validación general: ~85-95% actas se resuelven (mérito legal).<br><br>
+
+        <b style="color:var(--text)">Limitaciones críticas</b><br>
+        • <b>Sesgo de selección:</b> las actas JEE son las problemáticas. Su distribución política puede no reflejar al distrito que las envía. El modelo asume que sí.<br>
+        • <b>Pool estructural:</b> 2026 tiene pool JEE pro-S. Ningún escenario adversarial realista con ±6pp cambia esto — coherente con 2021 (FP con operativo máximo no movió la aguja de 44K votos).<br>
+        • <b>Variables no modeladas:</b> decisiones JNE imprevistas, recuentos ordenados, sorpresas legales 2da vuelta. El modelo no las captura.<br>
+        • <b>Punto de muestreo único:</b> esta es una proyección al ${pct.toFixed(1)}% escrutado. Los últimos ~7% de actas y las resoluciones JEE pueden cambiar el escenario sustancialmente.<br><br>
+
+        <b style="color:var(--text)">Fuentes del análisis histórico</b><br>
+        Gestión, El Comercio, Ojo Público, Convoca, RPP (cobertura 2021 y 2016). Resoluciones JNE 2021 (rechazo masivo de nulidades FP).
+      </div>
+    </details>
   `;
 }
 
