@@ -1187,142 +1187,156 @@ function renderBatalla(data) {
   const totJeeS = leaves.reduce((a,l) => a + l.votosS, 0) + orfanasGlobalS;
   const jeeNetoAllValida = totJeeL - totJeeS;
 
-  // ===== CLASIFICAR CADA DISTRITO POR CRITICIDAD =====
-  // impacto = |votosL - votosS|. Si se ejecuta la accion (defender valida/anular se anula) se
-  // capturan esos votos netos para LA. Si no, LA los pierde (asumiendo tasa base).
-  const TIER_ALTO = 200, TIER_MEDIO = 50;
-  const tierOf = imp => imp >= TIER_ALTO ? 'ALTO' : imp >= TIER_MEDIO ? 'MEDIO' : 'BAJO';
+  // ===== MODELO REALISTA: tasa base 80% · con personero ±Xpp =====
+  // Tasa base 80% = tasa histórica de validación JEE (~70-85%). Si nadie actúa, todo queda ahí.
+  // Con personero DEFENDIENDO: sube tasa del distrito (más actas validan).
+  // Con personero IMPUGNANDO: baja tasa del distrito (más actas se anulan).
+  // Esfuerzo realista ±15pp (95% vs 65%). El diferencial alcanzable depende del operativo.
+  const RATE_BASE = 0.80;
+  const ESFUERZO_PP = 15;  // esfuerzo por defecto (±15pp) para plan mínimo y roster
+  const DELTA_DEF = ESFUERZO_PP / 100;  // +0.15 → 95%
+  const DELTA_ANU = ESFUERZO_PP / 100;  // -0.15 → 65%
+
   leaves.forEach(l => {
     l.impacto = Math.abs(l.votosL - l.votosS);
     l.accion = l.zonaProLA ? 'DEFENDER' : 'ANULAR';
-    l.tier = tierOf(l.impacto);
+    l.deltaVotos = (ESFUERZO_PP / 100) * l.impacto;  // votos netos LA que APORTA ejecutar la acción
     l.impactoPorActa = l.impacto / l.jee;
   });
 
-  // ===== ESCENARIOS (tasas base: zonas pro-LA 80%, zonas pro-S 80% — baseline neutral) =====
-  const RATE_BASE = 0.80;  // tasa asumida cuando no hay accion personero
-  // Accion "ejecutada": defender = 100% valida (sumamos completo votosL-votosS);
-  //                    anular = 0% valida (sumamos 0).
-  // Sin accion: tasa base × (votosL - votosS). Para zonas pro-LA esto suma algo <100%;
-  //            para zonas pro-S esto suma algo negativo (S gana).
-  function evaluarEscenario(tiersEjecutados) {
-    let netJEE = 0;
+  // Evalúa resultado final dado un set de distritos donde SE EJECUTA la acción y un esfuerzo en pp
+  function evaluarPlan(actSet, esfuerzoPp) {
+    const d = esfuerzoPp / 100;
+    let net = 0;
     leaves.forEach(l => {
-      if (tiersEjecutados.has(l.tier)) {
-        // Accion ejecutada: DEFENDER valida 100% (capturamos vL - vS);
-        // ANULAR anula 100% (capturamos 0 — evitamos que pro-S sume para S).
-        if (l.accion === 'DEFENDER') netJEE += (l.votosL - l.votosS);
-        // ANULAR → 0 votos en juego, no suma nada
-      } else {
-        // Sin accion: tasa base
-        netJEE += RATE_BASE * (l.votosL - l.votosS);
-      }
+      const rate = actSet.has(l)
+        ? (l.zonaProLA ? RATE_BASE + d : RATE_BASE - d)
+        : RATE_BASE;
+      net += rate * (l.votosL - l.votosS);
     });
-    // Orfanas: tasa base (no accionables)
-    netJEE += RATE_BASE * (orfanasGlobalLA - orfanasGlobalS);
-    return pendNeto + netJEE - diff;
+    net += RATE_BASE * (orfanasGlobalLA - orfanasGlobalS);
+    return pendNeto + net - diff;
   }
 
-  const escenarioNada = evaluarEscenario(new Set());
-  const escenarioAlto = evaluarEscenario(new Set(['ALTO']));
-  const escenarioAltoMedio = evaluarEscenario(new Set(['ALTO', 'MEDIO']));
-  const escenarioTodo = evaluarEscenario(new Set(['ALTO', 'MEDIO', 'BAJO']));
+  const baseline = evaluarPlan(new Set(), 0);  // resultado sin actuar (todo 80%)
 
-  // ===== AGRUPAR POR DEPTO para el roster de acciones =====
-  // Dos grupos: DEFENDER (zonas pro-LA) y ANULAR (zonas pro-S)
-  function buildDeptGroups(filterFn) {
-    const g = {};
-    leaves.filter(filterFn).forEach(l => {
-      if (!g[l.dept]) g[l.dept] = { totalImpacto:0, actas:0, distritosAlto:0, distritosMedio:0, distritosBajo:0, leaves:[], actasAlto:0, actasMedio:0, actasBajo:0 };
-      const d = g[l.dept];
-      d.totalImpacto += l.impacto;
-      d.actas += l.jee;
-      d.leaves.push(l);
-      if (l.tier === 'ALTO') { d.distritosAlto++; d.actasAlto += l.jee; }
-      else if (l.tier === 'MEDIO') { d.distritosMedio++; d.actasMedio += l.jee; }
-      else { d.distritosBajo++; d.actasBajo += l.jee; }
-    });
-    return Object.entries(g).sort((a,b) => b[1].totalImpacto - a[1].totalImpacto);
+  // ===== PLAN MÍNIMO: distritos ordenados por impacto, acumular hasta ganar =====
+  // Para cada nivel de esfuerzo (10/15/20pp), encontrar cuántos distritos necesita LA para ganar
+  const sortedByImpacto = [...leaves].sort((a,b) => b.impacto - a.impacto);
+  function planMinimo(esfuerzoPp) {
+    const set = new Set();
+    for (let i = 0; i < sortedByImpacto.length; i++) {
+      set.add(sortedByImpacto[i]);
+      const r = evaluarPlan(set, esfuerzoPp);
+      if (r >= 0) return { distritos: Array.from(set), resultado: r, gana: true };
+    }
+    return { distritos: sortedByImpacto, resultado: evaluarPlan(new Set(sortedByImpacto), esfuerzoPp), gana: false };
   }
-  const deptDefender = buildDeptGroups(l => l.zonaProLA);
-  const deptAnular = buildDeptGroups(l => !l.zonaProLA);
 
-  // Totales globales
-  const totDefender = leaves.filter(l => l.zonaProLA);
-  const totAnular = leaves.filter(l => !l.zonaProLA);
-  const sumBy = (arr, tier) => {
-    const f = arr.filter(l => tier ? l.tier === tier : true);
-    return { dist: f.length, actas: f.reduce((a,l)=>a+l.jee,0), imp: f.reduce((a,l)=>a+l.impacto,0) };
-  };
-  const defAlto = sumBy(totDefender, 'ALTO'), defMedio = sumBy(totDefender, 'MEDIO'), defBajo = sumBy(totDefender, 'BAJO');
-  const anuAlto = sumBy(totAnular, 'ALTO'), anuMedio = sumBy(totAnular, 'MEDIO'), anuBajo = sumBy(totAnular, 'BAJO');
+  const plan10 = planMinimo(10);
+  const plan15 = planMinimo(15);
+  const plan20 = planMinimo(20);
+  const planPrincipal = plan15;  // el escenario recomendado: ±15pp
+
+  // ===== Plan mínimo por depto =====
+  const planSet = new Set(planPrincipal.distritos);
+  const deptPlan = {};
+  planPrincipal.distritos.forEach(l => {
+    if (!deptPlan[l.dept]) deptPlan[l.dept] = { defender:[], anular:[], totalDelta:0, totalActas:0 };
+    (l.zonaProLA ? deptPlan[l.dept].defender : deptPlan[l.dept].anular).push(l);
+    deptPlan[l.dept].totalDelta += l.deltaVotos;
+    deptPlan[l.dept].totalActas += l.jee;
+  });
+  const deptPlanSorted = Object.entries(deptPlan).sort((a,b) => b[1].totalDelta - a[1].totalDelta);
 
   // ===== Render helpers =====
   const fmtV = v => fmt(Math.round(v));
-  const tierBadge = (tier) => {
-    const colors = { ALTO: '#dc2626', MEDIO: '#ea580c', BAJO: '#9ca3af' };
-    return `<span style="background:${colors[tier]};color:white;padding:1px 6px;border-radius:4px;font-size:0.6rem;font-weight:800;letter-spacing:0.03em">${tier}</span>`;
-  };
+  const fmtSigno = v => (v >= 0 ? '+' : '') + fmtV(v);
 
   function renderDistrito(l) {
-    const accionColor = l.accion === 'DEFENDER' ? 'var(--lopez)' : 'var(--lopez)';
-    const ppa = Math.round(l.impactoPorActa);
-    const hint = l.accion === 'DEFENDER'
-      ? `si valida todo → LA +${fmtV(l.impacto)} · si todo se anula → S +${fmtV(l.impacto)}`
-      : `si valida todo → S +${fmtV(l.impacto)} · si todo se anula → ${ppa >= 0 ? 'empate' : ''} (LA neutraliza)`;
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:0.75rem">
+    const inPlan = planSet.has(l);
+    const accionText = l.accion === 'DEFENDER' ? 'DEFENDER' : 'IMPUGNAR';
+    const bgColor = inPlan ? 'var(--lopez-bg)' : 'var(--bg)';
+    const borderColor = inPlan ? 'var(--lopez)' : 'transparent';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:${bgColor};border:1px solid ${borderColor};border-radius:6px;margin-bottom:4px;font-size:0.75rem">
       <div style="flex:1;min-width:0">
-        <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <b>${titleCase(l.leaf)}</b>
-          ${tierBadge(l.tier)}
+          ${inPlan ? '<span style="background:var(--lopez);color:white;padding:1px 6px;border-radius:4px;font-size:0.58rem;font-weight:800">EN PLAN</span>' : ''}
         </div>
         <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:2px">
-          ${l.jee} actas · ${ppa} votos/acta · LA ${l.l.toFixed(1)}% vs S ${l.s.toFixed(1)}%
+          ${l.jee} actas · LA ${l.l.toFixed(1)}% vs S ${l.s.toFixed(1)}% · impacto bruto ±${fmtV(l.impacto)}
         </div>
       </div>
-      <div style="color:${accionColor};text-align:right;min-width:75px">
-        <div style="font-weight:800;font-size:0.9rem">±${fmtV(l.impacto)}</div>
-        <div style="font-size:0.6rem;color:var(--text-secondary);font-weight:700">${l.accion}</div>
+      <div style="text-align:right;min-width:85px">
+        <div style="font-weight:800;font-size:0.88rem;color:var(--lopez)">+${fmtV(l.deltaVotos)}</div>
+        <div style="font-size:0.58rem;color:var(--text-secondary);font-weight:700">${accionText} (±${ESFUERZO_PP}pp)</div>
       </div>
     </div>`;
   }
 
-  function renderDeptBlock(dept, info, accion) {
-    const criticos = info.leaves.filter(l => l.tier === 'ALTO').sort((a,b) => b.impacto - a.impacto);
-    const medios = info.leaves.filter(l => l.tier === 'MEDIO').sort((a,b) => b.impacto - a.impacto);
-    const bajos = info.leaves.filter(l => l.tier === 'BAJO').sort((a,b) => b.impacto - a.impacto);
+  function renderDeptPlanBlock(dept, info) {
+    const all = [...info.defender, ...info.anular].sort((a,b) => b.deltaVotos - a.deltaVotos);
     return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div>
           <div style="font-weight:800;font-size:0.9rem">${titleCase(dept)}</div>
           <div style="font-size:0.68rem;color:var(--text-secondary)">
-            ${info.distritosAlto ? info.distritosAlto + ' ALTO (' + info.actasAlto + ' actas) · ' : ''}
-            ${info.distritosMedio ? info.distritosMedio + ' MEDIO (' + info.actasMedio + ') · ' : ''}
-            ${info.distritosBajo ? info.distritosBajo + ' BAJO' : ''}
+            ${info.defender.length ? info.defender.length + ' DEFENDER' : ''}${info.defender.length && info.anular.length ? ' · ' : ''}${info.anular.length ? info.anular.length + ' IMPUGNAR' : ''} · ${info.totalActas} actas
           </div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:0.95rem;font-weight:800;color:var(--lopez)">±${fmtV(info.totalImpacto)}</div>
-          <div style="font-size:0.6rem;color:var(--text-secondary);font-weight:700">impacto total</div>
+          <div style="font-size:0.95rem;font-weight:800;color:var(--lopez)">+${fmtV(info.totalDelta)}</div>
+          <div style="font-size:0.58rem;color:var(--text-secondary);font-weight:700">votos netos LA</div>
         </div>
       </div>
-      ${criticos.map(renderDistrito).join('')}
-      ${medios.length ? `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.7rem;color:var(--text-secondary);padding:4px 0">${medios.length} distrito${medios.length>1?'s':''} MEDIO (click)</summary><div style="margin-top:4px">${medios.map(renderDistrito).join('')}</div></details>` : ''}
-      ${bajos.length ? `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:0.7rem;color:var(--text-secondary);padding:4px 0">${bajos.length} distrito${bajos.length>1?'s':''} BAJO — no crítico (click)</summary><div style="margin-top:4px">${bajos.map(renderDistrito).join('')}</div></details>` : ''}
+      ${all.map(renderDistrito).join('')}
     </div>`;
   }
+  const deptPlanHtml = deptPlanSorted.map(([d, info]) => renderDeptPlanBlock(d, info)).join('');
 
-  const defenderBlocksHtml = deptDefender.map(([d, info]) => renderDeptBlock(d, info, 'DEFENDER')).join('');
-  const anularBlocksHtml = deptAnular.map(([d, info]) => renderDeptBlock(d, info, 'ANULAR')).join('');
+  // ===== Roster completo: por depto, con los del plan destacados =====
+  const allByDept = {};
+  leaves.forEach(l => {
+    if (!allByDept[l.dept]) allByDept[l.dept] = { leaves:[], totalImpacto:0, enPlan:0 };
+    allByDept[l.dept].leaves.push(l);
+    allByDept[l.dept].totalImpacto += l.impacto;
+    if (planSet.has(l)) allByDept[l.dept].enPlan++;
+  });
+  const rosterSorted = Object.entries(allByDept).sort((a,b) => b[1].totalImpacto - a[1].totalImpacto);
+  function renderRosterBlock(dept, info) {
+    const enPlan = info.leaves.filter(l => planSet.has(l)).sort((a,b) => b.deltaVotos - a.deltaVotos);
+    const fueraPlan = info.leaves.filter(l => !planSet.has(l)).sort((a,b) => b.impacto - a.impacto);
+    return `<details style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px">
+      <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <b style="font-size:0.88rem">${titleCase(dept)}</b>
+          <span style="color:var(--text-secondary);font-size:0.68rem;margin-left:4px">
+            ${info.leaves.length} distritos · ${info.enPlan} en plan
+          </span>
+        </div>
+        <span style="color:var(--lopez);font-weight:800;font-size:0.82rem">±${fmtV(info.totalImpacto)}</span>
+      </summary>
+      <div style="margin-top:8px">
+        ${enPlan.length ? '<div style="font-size:0.68rem;color:var(--lopez);font-weight:700;margin-bottom:4px">EN PLAN (ordenados por aporte)</div>' : ''}
+        ${enPlan.map(renderDistrito).join('')}
+        ${fueraPlan.length ? `<div style="font-size:0.68rem;color:var(--text-secondary);font-weight:700;margin:8px 0 4px">FUERA DEL PLAN (impacto menor — tasa base 80%)</div>${fueraPlan.slice(0, 20).map(renderDistrito).join('')}${fueraPlan.length > 20 ? `<div style="font-size:0.65rem;color:var(--text-secondary);text-align:center;padding:4px">... y ${fueraPlan.length - 20} distritos más con impacto bajo</div>` : ''}` : ''}
+      </div>
+    </details>`;
+  }
+  const rosterHtml = rosterSorted.map(([d, info]) => renderRosterBlock(d, info)).join('');
 
   const resultEsc = (v) => v >= 0
     ? `<span style="color:var(--lopez);font-weight:800">🛡️ LA +${fmtV(v)}</span>`
     : `<span style="color:var(--sanchez);font-weight:800">🚩 S +${fmtV(Math.abs(v))}</span>`;
+  const resumenPlan = (p, pp) => p.gana
+    ? `<b>${p.distritos.length} distritos</b> · ${p.distritos.reduce((a,l)=>a+l.jee,0)} actas → LA +${fmtV(p.resultado)}`
+    : `<b style="color:var(--sanchez)">No alcanza</b> · con todos los distritos actuados: S +${fmtV(Math.abs(p.resultado))}`;
 
   document.getElementById('batalla-container').innerHTML = `
-    <!-- MARCADOR + PLAN -->
+    <!-- MARCADOR + PLAN PRINCIPAL -->
     <div class="jee-hero">
-      <div class="jee-hero-title">Plan por Distrito · ${pct.toFixed(2)}%</div>
+      <div class="jee-hero-title">Plan Mínimo para Ganar · ${pct.toFixed(2)}%</div>
       <div style="display:flex;justify-content:space-around;margin:12px 0">
         <div style="text-align:center">
           <div style="font-size:0.65rem;color:var(--text-secondary);font-weight:700">🚩 SÁNCHEZ</div>
@@ -1334,55 +1348,57 @@ function renderBatalla(data) {
           <div style="font-size:1.3rem;font-weight:800;color:var(--lopez)">${fmt(vL)}</div>
         </div>
       </div>
-      <div style="text-align:center;padding:10px;background:var(--sanchez-bg);border-radius:10px;margin-bottom:10px">
-        <div style="font-size:0.72rem;color:var(--text-secondary)">Sánchez lidera por</div>
-        <div style="font-size:1.8rem;font-weight:800;color:var(--sanchez)">${fmt(diff)}</div>
+      <div style="text-align:center;padding:8px;background:var(--sanchez-bg);border-radius:8px;margin-bottom:8px">
+        <div style="font-size:0.68rem;color:var(--text-secondary)">S lidera por ${fmt(diff)} · sin actuar, al final S gana por ${fmtV(Math.abs(baseline))}</div>
+      </div>
+      <div style="background:var(--lopez-bg);padding:12px;border-radius:12px;border:2px solid var(--lopez);text-align:center">
+        <div style="font-size:0.68rem;color:var(--lopez);font-weight:800;letter-spacing:0.05em">PLAN MÍNIMO · Esfuerzo ±${ESFUERZO_PP}pp</div>
+        <div style="font-size:1.8rem;font-weight:900;color:var(--lopez);margin:4px 0">
+          ${planPrincipal.gana ? `LA gana por +${fmtV(planPrincipal.resultado)}` : `No alcanza`}
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-secondary);line-height:1.4">
+          Actuando en <b>${planPrincipal.distritos.length} distritos específicos</b> · ${planPrincipal.distritos.reduce((a,l)=>a+l.jee,0)} actas<br>
+          (95% validación en defensa / 65% en impugnación · resto sigue tasa base 80%)
+        </div>
       </div>
     </div>
 
-    <!-- ESCENARIOS COMPARATIVOS -->
+    <!-- NIVELES DE ESFUERZO -->
     <div class="jee-list">
-      <div class="jee-list-title">¿Cuánto esfuerzo basta?</div>
-      <div style="font-size:0.76rem;color:var(--text-secondary);margin-bottom:10px;line-height:1.5">
-        Supuesto: si LA <b>no actúa</b>, cada acta JEE valida a tasa base ${(RATE_BASE*100).toFixed(0)}%. Si LA <b>ejecuta acción</b> en un distrito (defender→100% valida, anular→0% valida), se captura su impacto completo.
+      <div class="jee-list-title">Niveles de esfuerzo</div>
+      <div style="font-size:0.74rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
+        Cuánto puede mover la aguja un personero depende del esfuerzo (cuánto cambia la tasa de validación del distrito donde actúa). Base histórica ~80%.
       </div>
       <div style="display:grid;grid-template-columns:1fr;gap:6px">
-        <div style="background:var(--card);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)">
-          <div>
-            <div style="font-weight:700;font-size:0.82rem">Escenario A · Sin hacer nada</div>
-            <div style="font-size:0.68rem;color:var(--text-secondary)">Todo queda a tasa base — resultado actual</div>
+        <div style="background:var(--card);padding:10px;border-radius:8px;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-weight:700;font-size:0.82rem">Moderado · 90% / 70% (±10pp)</div>
+            ${plan10.gana ? `<span style="color:var(--lopez);font-weight:800">${plan10.distritos.length} dist · LA +${fmtV(plan10.resultado)}</span>` : `<span style="color:var(--sanchez);font-weight:800">no alcanza</span>`}
           </div>
-          ${resultEsc(escenarioNada)}
+          <div style="font-size:0.68rem;color:var(--text-secondary)">${plan10.gana ? resumenPlan(plan10, 10) : 'Con ±10pp el operativo no es suficiente aunque actúe en los 948 distritos JEE.'}</div>
         </div>
-        <div style="background:var(--card);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)">
-          <div>
-            <div style="font-weight:700;font-size:0.82rem">Escenario B · Solo distritos ALTO</div>
-            <div style="font-size:0.68rem;color:var(--text-secondary)">${defAlto.dist + anuAlto.dist} distritos · ${defAlto.actas + anuAlto.actas} actas</div>
+        <div style="background:var(--lopez-bg);padding:10px;border-radius:8px;border:2px solid var(--lopez)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-weight:800;font-size:0.85rem;color:var(--lopez)">Decidido · 95% / 65% (±15pp) ⭐</div>
+            ${plan15.gana ? `<span style="color:var(--lopez);font-weight:800">${plan15.distritos.length} dist · LA +${fmtV(plan15.resultado)}</span>` : ''}
           </div>
-          ${resultEsc(escenarioAlto)}
+          <div style="font-size:0.68rem;color:var(--text-secondary)">Escenario realista. ${resumenPlan(plan15, 15)} — <b>es el plan principal</b>.</div>
         </div>
-        <div style="background:var(--lopez-bg);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:2px solid var(--lopez)">
-          <div>
-            <div style="font-weight:800;font-size:0.85rem;color:var(--lopez)">Escenario C · ALTO + MEDIO ⭐</div>
-            <div style="font-size:0.68rem;color:var(--text-secondary)">${defAlto.dist + defMedio.dist + anuAlto.dist + anuMedio.dist} distritos · ${defAlto.actas + defMedio.actas + anuAlto.actas + anuMedio.actas} actas — RECOMENDADO</div>
+        <div style="background:var(--card);padding:10px;border-radius:8px;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-weight:700;font-size:0.82rem">Intenso · 100% / 60% (±20pp)</div>
+            ${plan20.gana ? `<span style="color:var(--lopez);font-weight:800">${plan20.distritos.length} dist · LA +${fmtV(plan20.resultado)}</span>` : ''}
           </div>
-          ${resultEsc(escenarioAltoMedio)}
-        </div>
-        <div style="background:var(--card);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)">
-          <div>
-            <div style="font-weight:700;font-size:0.82rem">Escenario D · Todo (techo teórico)</div>
-            <div style="font-size:0.68rem;color:var(--text-secondary)">Cada distrito JEE ejecutado perfecto</div>
-          </div>
-          ${resultEsc(escenarioTodo)}
+          <div style="font-size:0.68rem;color:var(--text-secondary)">Menos distritos pero esfuerzo mayor por cada uno. ${resumenPlan(plan20, 20)}</div>
         </div>
       </div>
     </div>
 
-    <!-- PASO 1: PENDIENTES (automático) -->
+    <!-- PASO 1: PENDIENTES -->
     <div class="jee-list">
-      <div class="jee-list-title">Paso 1 · Las pendientes llegan solas (${fmt(pendActas)} actas)</div>
-      <div style="font-size:0.76rem;color:var(--text-secondary);line-height:1.5;margin-bottom:8px">
-        <b>Sin acción</b>. Votos ya emitidos que ONPE sincronizará.
+      <div class="jee-list-title">Paso 1 · Pendientes automáticas (${fmt(pendActas)} actas)</div>
+      <div style="font-size:0.74rem;color:var(--text-secondary);line-height:1.5;margin-bottom:8px">
+        <b>Sin acción</b>. Votos ya emitidos que ONPE sincroniza.
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
         <div style="background:var(--lopez-bg);padding:8px;border-radius:8px;text-align:center">
@@ -1394,73 +1410,31 @@ function renderBatalla(data) {
           <div style="font-size:1rem;font-weight:800;color:var(--sanchez)">+${fmt(pendS)}</div>
         </div>
         <div style="background:var(--lopez-bg);padding:8px;border-radius:8px;text-align:center;border:1px solid var(--lopez)">
-          <div style="font-size:0.6rem;font-weight:800;color:var(--lopez)">NETO</div>
+          <div style="font-size:0.6rem;font-weight:800;color:var(--lopez)">NETO LA</div>
           <div style="font-size:1rem;font-weight:800;color:var(--lopez)">+${fmt(pendNeto)}</div>
         </div>
       </div>
       <div style="text-align:center;margin-top:8px;font-size:0.74rem">
-        Post-pendientes: <b style="color:var(--sanchez)">S solo +${fmt(gapPost)}</b> · Es lo que el JEE tiene que cerrar
+        Post-pendientes: <b style="color:var(--sanchez)">S solo +${fmt(gapPost)}</b> · Es lo que el plan JEE tiene que cerrar
       </div>
     </div>
 
-    <!-- PASO 2: DEFENDER POR DISTRITO -->
-    <div class="jee-list" style="border-left:4px solid var(--lopez)">
-      <div class="jee-list-title" style="color:var(--lopez)">Paso 2 · DEFENDER — ${totDefender.length} distritos pro-LA</div>
-      <div style="font-size:0.75rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-        Personeros garantizan validación. Si se anulan estas actas, LA pierde votos netos.
+    <!-- PASO 2: EL PLAN - DISTRITOS ESPECIFICOS POR DEPTO -->
+    <div class="jee-list" style="border:2px solid var(--lopez);border-radius:14px">
+      <div class="jee-list-title" style="color:var(--lopez)">Paso 2 · El plan (${planPrincipal.distritos.length} distritos)</div>
+      <div style="font-size:0.74rem;color:var(--text-secondary);line-height:1.55;margin-bottom:10px">
+        Distritos ordenados por impacto, acumulados hasta cerrar el gap. <b>Cada uno aporta +X votos netos LA</b> si el personero lleva la tasa de ese distrito de 80% → ${100 - ESFUERZO_PP}% (impugnar) o 80% → ${80 + ESFUERZO_PP}% (defender). Ejecutar <b>todos los del plan</b> = LA +${fmtV(planPrincipal.resultado)}.
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;font-size:0.72rem">
-        <div style="background:var(--lopez-bg);padding:8px;border-radius:8px;text-align:center">
-          <div style="font-weight:800;color:#dc2626">ALTO</div>
-          <div style="font-weight:800">${defAlto.dist} dist · ${defAlto.actas} actas</div>
-          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(defAlto.imp)} en juego</div>
-        </div>
-        <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center">
-          <div style="font-weight:800;color:#ea580c">MEDIO</div>
-          <div style="font-weight:800">${defMedio.dist} · ${defMedio.actas}</div>
-          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(defMedio.imp)}</div>
-        </div>
-        <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center">
-          <div style="font-weight:800;color:#9ca3af">BAJO</div>
-          <div style="font-weight:800">${defBajo.dist} · ${defBajo.actas}</div>
-          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(defBajo.imp)}</div>
-        </div>
-      </div>
-      ${defenderBlocksHtml}
+      ${deptPlanHtml}
     </div>
 
-    <!-- PASO 3: ANULAR POR DISTRITO -->
-    <div class="jee-list" style="border-left:4px solid var(--lopez)">
-      <div class="jee-list-title" style="color:var(--lopez)">Paso 3 · ANULAR — ${totAnular.length} distritos pro-S</div>
-      <div style="font-size:0.75rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-        Actas rurales con problemas de llenado. Personeros empujan la <b>anulación</b>. Si se validan, S suma.
+    <!-- ROSTER COMPLETO -->
+    <div class="jee-list">
+      <div class="jee-list-title">Roster completo · ${leaves.length} distritos JEE</div>
+      <div style="font-size:0.74rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
+        Todos los distritos JEE agrupados por depto. Click para expandir. Los del <b>plan</b> están marcados; los demás son de bajo impacto — si no actúas ahí, se van a tasa base 80% sin consecuencia material.
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;font-size:0.72rem">
-        <div style="background:var(--lopez-bg);padding:8px;border-radius:8px;text-align:center">
-          <div style="font-weight:800;color:#dc2626">ALTO</div>
-          <div style="font-weight:800">${anuAlto.dist} dist · ${anuAlto.actas} actas</div>
-          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(anuAlto.imp)} en juego</div>
-        </div>
-        <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center">
-          <div style="font-weight:800;color:#ea580c">MEDIO</div>
-          <div style="font-weight:800">${anuMedio.dist} · ${anuMedio.actas}</div>
-          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(anuMedio.imp)}</div>
-        </div>
-        <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center">
-          <div style="font-weight:800;color:#9ca3af">BAJO</div>
-          <div style="font-weight:800">${anuBajo.dist} · ${anuBajo.actas}</div>
-          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(anuBajo.imp)}</div>
-        </div>
-      </div>
-      ${anularBlocksHtml}
-    </div>
-
-    <!-- LEYENDA -->
-    <div class="jee-list" style="background:var(--bg);border:1px dashed var(--border)">
-      <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.55">
-        <b>Criticidad</b> (votos netos en juego): <b style="color:#dc2626">ALTO</b> ≥${TIER_ALTO} · <b style="color:#ea580c">MEDIO</b> ${TIER_MEDIO}-${TIER_ALTO} · <b style="color:#9ca3af">BAJO</b> &lt;${TIER_MEDIO}<br>
-        Distritos <b>BAJO</b> (${defBajo.dist + anuBajo.dist} en total) casi no mueven la aguja — si no actúas ahí da ${'~'}igual. Concentrar en ALTO+MEDIO.
-      </div>
+      ${rosterHtml}
     </div>
   `;
 }
