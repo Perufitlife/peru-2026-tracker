@@ -3447,7 +3447,7 @@
     }
   },
   {
-    "t": "2026-04-17T17:51:32.612Z",
+    "t": "2026-04-17T18:00:42.408Z",
     "pct": 93.349,
     "vS": 1890420,
     "vL": 1877104,
@@ -3459,15 +3459,15 @@
       "nacAct": 92766,
       "nacJee": 5645,
       "nacPend": 525,
-      "sumDeptCont": 86593,
+      "sumDeptCont": 86595,
       "sumDeptJee": 5616,
-      "sumDeptPend": 557,
+      "sumDeptPend": 555,
       "sumDistCont": 86079,
       "sumDistJee": 5203,
       "sumDistPend": 1484,
-      "deptDriftCont": -3,
+      "deptDriftCont": -1,
       "deptDriftJee": -29,
-      "deptDriftPend": 32,
+      "deptDriftPend": 30,
       "distDriftCont": -517,
       "distDriftJee": -442,
       "distDriftPend": 959
@@ -3544,7 +3544,7 @@
         "vL": 54760
       },
       "LIMA": {
-        "pct": 95.121,
+        "pct": 95.128,
         "vS": 189511,
         "vL": 1156352
       },
