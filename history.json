@@ -3447,7 +3447,7 @@
     }
   },
   {
-    "t": "2026-04-17T15:55:20.638Z",
+    "t": "2026-04-17T16:05:14.203Z",
     "pct": 93.346,
     "vS": 1890303,
     "vL": 1877080,
@@ -3459,15 +3459,15 @@
       "nacAct": 92766,
       "nacJee": 5590,
       "nacPend": 583,
-      "sumDeptCont": 86457,
+      "sumDeptCont": 86591,
       "sumDeptJee": 5561,
-      "sumDeptPend": 748,
+      "sumDeptPend": 614,
       "sumDistCont": 86070,
       "sumDistJee": 5128,
       "sumDistPend": 1568,
-      "deptDriftCont": -136,
+      "deptDriftCont": -2,
       "deptDriftJee": -29,
-      "deptDriftPend": 165,
+      "deptDriftPend": 31,
       "distDriftCont": -523,
       "distDriftJee": -462,
       "distDriftPend": 985
@@ -3509,7 +3509,7 @@
         "vL": 82814
       },
       "CUSCO": {
-        "pct": 91.162,
+        "pct": 94.527,
         "vS": 141194,
         "vL": 31378
       },
