@@ -1095,12 +1095,12 @@ window.switchTab = function(tab) {
 }
 
 function renderBatalla(data) {
-  const findCand = (list, n) => (list||[]).find(c => c.nombreCandidato?.includes(n));
-  const nacS = findCand(data.nacional.candidatos, 'SANCHEZ PALOMINO');
-  const nacL = findCand(data.nacional.candidatos, 'LÓPEZ ALIAGA');
-  const diff = nacS.totalVotosValidos - nacL.totalVotosValidos;
+  const fC = (list, n) => (list||[]).find(c => c.nombreCandidato?.includes(n));
+  const nacS = fC(data.nacional.candidatos, 'SANCHEZ PALOMINO');
+  const nacL = fC(data.nacional.candidatos, 'LÓPEZ ALIAGA');
+  const diff = nacS.totalVotosValidos - nacL.totalVotosValidos; // positivo = S adelante
 
-  // Build JEE data per department
+  // JEE data per department
   const jeeRows = [];
   let totalJeeActas = 0;
   data.departamentos.forEach(dep => {
@@ -1108,112 +1108,106 @@ function renderBatalla(data) {
     if (jee === 0) return;
     totalJeeActas += jee;
     const vpa = dep.totales.contabilizadas > 0 ? dep.totales.totalVotosEmitidos / dep.totales.contabilizadas : 0;
-    const s = (findCand(dep.candidatos, 'SANCHEZ PALOMINO') || {}).porcentajeVotosValidos || 0;
-    const l = (findCand(dep.candidatos, 'LÓPEZ ALIAGA') || {}).porcentajeVotosValidos || 0;
-    const impacto = Math.round(vpa * jee * (s - l) / 100);
-    jeeRows.push({ n: dep.nombre, jee, vpa: Math.round(vpa), s, l, impacto });
+    const s = (fC(dep.candidatos,'SANCHEZ PALOMINO')||{}).porcentajeVotosValidos||0;
+    const l = (fC(dep.candidatos,'LÓPEZ ALIAGA')||{}).porcentajeVotosValidos||0;
+    const votosJee = Math.round(vpa * jee);
+    const votosLA = Math.round(votosJee * l / 100);
+    const votosS = Math.round(votosJee * s / 100);
+    const neto = votosLA - votosS; // positivo = LA gana mas en esta zona
+    jeeRows.push({ n: dep.nombre, jee, vpa: Math.round(vpa), s, l, votosJee, votosLA, votosS, neto });
   });
 
-  // Separate pro-LA vs pro-S
-  const proLA = jeeRows.filter(r => r.impacto < 0).sort((a,b) => a.impacto - b.impacto);
-  const proS = jeeRows.filter(r => r.impacto >= 0).sort((a,b) => b.impacto - a.impacto);
-  const totalProLA = proLA.reduce((s,r) => s + Math.abs(r.impacto), 0);
-  const totalProS = proS.reduce((s,r) => s + r.impacto, 0);
-  const maxImpacto = Math.max(totalProLA, totalProS) || 1;
+  // Separate: donde LA gana (neto > 0) vs donde S gana (neto < 0)
+  const zonaLA = jeeRows.filter(r => r.neto > 0).sort((a,b) => b.neto - a.neto);
+  const zonaS = jeeRows.filter(r => r.neto <= 0).sort((a,b) => a.neto - b.neto);
+  const totalNetoLA = zonaLA.reduce((s,r) => s + r.neto, 0);
+  const totalNetoS = Math.abs(zonaS.reduce((s,r) => s + r.neto, 0));
+  const maxNeto = Math.max(...jeeRows.map(r => Math.abs(r.neto)), 1);
 
-  // Build pro-LA list
-  let laListHtml = '';
-  let laAcum = 0;
-  proLA.forEach(r => {
-    laAcum += Math.abs(r.impacto);
-    const w = Math.abs(r.impacto) / maxImpacto * 100;
-    laListHtml += `<div class="jee-item">
-      <div class="jee-item-left">
-        <div class="jee-item-name">${titleCase(r.n)}</div>
-        <div class="jee-item-detail">LA ${r.l.toFixed(1)}% vs S ${r.s.toFixed(1)}% · ${r.vpa} votos/acta</div>
-        <div class="jee-item-bar"><div class="jee-item-fill" style="width:${w.toFixed(0)}%;background:var(--lopez)"></div></div>
+  // Path to victory: what % of LA zones needs to validate + what % of S zones to annul
+  // LA gana si: validados_LA_neto - validados_S_neto > diff
+  // Con X% valida LA y Y% anula S:
+  // totalNetoLA * X - totalNetoS * (1-Y) > diff
+  // O sea: totalNetoLA*X + totalNetoS*Y - totalNetoS > diff
+
+  // Build tracker: acumulado conforme cada region se resuelve
+  let trackerHtml = '';
+  let acum = -diff; // empieza negativo (LA necesita recuperar diff)
+  const allSorted = [...jeeRows].sort((a,b) => b.neto - a.neto); // LA favorites first
+
+  allSorted.forEach((r, i) => {
+    // Si se VALIDA: LA gana r.neto votos (positivo si zona LA, negativo si zona S)
+    // Para el "path to LA": validar zonas LA, anular zonas S
+    const esZonaLA = r.neto > 0;
+    const gananciaLA = esZonaLA
+      ? r.neto // si se valida zona LA: LA gana neto
+      : Math.abs(r.neto); // si se ANULA zona S: LA gana (porque S pierde)
+    acum += gananciaLA;
+    const passed = acum >= 0;
+    const accion = esZonaLA ? 'Validar' : 'Anular';
+    const color = esZonaLA ? 'var(--lopez)' : 'var(--sanchez)';
+    const icon = esZonaLA ? '✅' : '❌';
+    const w = Math.abs(r.neto) / maxNeto * 100;
+
+    trackerHtml += `<div class="jee-item" style="${passed && acum - gananciaLA < 0 ? 'background:var(--lopez-bg);border-radius:8px;padding:8px' : ''}">
+      <div class="jee-item-left" style="flex:1">
+        <div class="jee-item-name">
+          <span style="font-size:0.7rem">${icon}</span> ${accion} <b>${titleCase(r.n)}</b>
+        </div>
+        <div class="jee-item-detail">${r.jee} actas · LA ${r.l.toFixed(1)}% vs S ${r.s.toFixed(1)}%</div>
+        <div class="jee-item-bar"><div class="jee-item-fill" style="width:${w.toFixed(0)}%;background:${color}"></div></div>
       </div>
-      <div class="jee-item-right">
-        <div class="jee-item-impact c-lopez">${fmt(Math.abs(r.impacto))}</div>
-        <div class="jee-item-actas">${r.jee} actas</div>
+      <div class="jee-item-right" style="min-width:90px">
+        <div class="jee-item-impact" style="color:var(--lopez)">+${fmt(gananciaLA)}</div>
+        <div class="jee-item-actas" style="color:${acum >= 0 ? 'var(--lopez)' : 'var(--text-secondary)'};font-weight:${acum >= 0 ? '800' : '400'}">
+          ${acum >= 0 ? '🛡️ LA pasa' : 'Faltan ' + fmt(Math.abs(acum))}
+        </div>
       </div>
     </div>`;
   });
 
-  // Build pro-S list
-  let sListHtml = '';
-  let sAcum = 0;
-  proS.forEach(r => {
-    sAcum += r.impacto;
-    const w = r.impacto / maxImpacto * 100;
-    sListHtml += `<div class="jee-item">
-      <div class="jee-item-left">
-        <div class="jee-item-name">${titleCase(r.n)}</div>
-        <div class="jee-item-detail">S ${r.s.toFixed(1)}% vs LA ${r.l.toFixed(1)}% · ${r.vpa} votos/acta</div>
-        <div class="jee-item-bar"><div class="jee-item-fill" style="width:${w.toFixed(0)}%;background:var(--sanchez)"></div></div>
-      </div>
-      <div class="jee-item-right">
-        <div class="jee-item-impact c-sanchez">${fmt(r.impacto)}</div>
-        <div class="jee-item-actas">${r.jee} actas</div>
-      </div>
-    </div>`;
-  });
-
-  // Scenarios table
-  const jeeImpTotal = jeeRows.reduce((s,r) => s + r.impacto, 0);
-  let scenariosHtml = '';
-  [30, 40, 50, 60, 65, 70, 75, 80, 85, 90, 100].forEach(pct => {
-    const t = pct / 100;
-    const proy = diff + jeeImpTotal * t;
-    // Pendientes puras (already counted separately in the main model)
-    // Here we show ONLY the JEE battle effect
-    const winner = proy >= 0 ? 'S' : 'LA';
-    const winnerC = proy >= 0 ? 'c-sanchez' : 'c-lopez';
-    const highlight = pct === 65 ? 'font-weight:800;background:var(--bg);padding:2px 6px;border-radius:4px' : '';
-    scenariosHtml += `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.78rem;${highlight}">
-      <span>${pct}% se valida${pct === 65 ? ' ← modelo' : ''}</span>
-      <span class="${winnerC}" style="font-weight:700">${winner === 'S' ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(Math.round(proy)))}</span>
-    </div>`;
-  });
+  // What's the minimum LA needs?
+  let minRegiones = 0;
+  let minAcum = -diff;
+  const sortedForMin = [...jeeRows].sort((a,b) => b.neto - a.neto);
+  for (const r of sortedForMin) {
+    const esLA = r.neto > 0;
+    minAcum += esLA ? r.neto : Math.abs(r.neto);
+    minRegiones++;
+    if (minAcum >= 0) break;
+  }
 
   document.getElementById('batalla-container').innerHTML = `
     <div class="jee-hero">
       <div class="jee-hero-title">Batalla JEE — ${fmt(totalJeeActas)} actas en disputa</div>
-      <div class="jee-hero-val" style="color:var(--${diff >= 0 ? 'sanchez' : 'lopez'})">
-        ${diff >= 0 ? 'Sánchez' : 'López A.'} +${fmt(Math.abs(diff))}
-      </div>
-      <div class="jee-hero-sub">diferencia actual · el JEE decide quién pasa</div>
+      <div class="jee-hero-val c-lopez">${fmt(diff)}</div>
+      <div class="jee-hero-sub">votos que López Aliaga necesita recuperar</div>
     </div>
 
     <div class="jee-paths">
       <div class="jee-path path-la">
-        <div class="jee-path-title">🛡️ Esquina Azul — López Aliaga</div>
-        <div class="jee-path-val c-lopez">${fmt(totalProLA)}</div>
-        <div class="jee-path-sub">votos de Lima, Extranjero y costa urbana · ${proLA.reduce((s,r)=>s+r.jee,0)} actas</div>
+        <div class="jee-path-title">🛡️ Munición López Aliaga</div>
+        <div class="jee-path-val c-lopez">${fmt(totalNetoLA)}</div>
+        <div class="jee-path-sub">votos netos si se validan sus ${zonaLA.reduce((s,r)=>s+r.jee,0)} actas (Lima, Ext, Costa)</div>
       </div>
       <div class="jee-path path-s">
-        <div class="jee-path-title">🚩 Esquina Roja — Sánchez</div>
-        <div class="jee-path-val c-sanchez">${fmt(totalProS)}</div>
-        <div class="jee-path-sub">votos de sierra, selva y provincias rurales · ${proS.reduce((s,r)=>s+r.jee,0)} actas</div>
+        <div class="jee-path-title">🚩 Defensa Sánchez</div>
+        <div class="jee-path-val c-sanchez">${fmt(totalNetoS)}</div>
+        <div class="jee-path-sub">votos netos que defiende con sus ${zonaS.reduce((s,r)=>s+r.jee,0)} actas rurales</div>
       </div>
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Actas pro-López Aliaga — Lima, Extranjero, Costa</div>
-      ${laListHtml}
-    </div>
-
-    <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--sanchez)">🚩 Actas pro-Sánchez — Sierra, Selva, Rurales</div>
-      ${sListHtml}
-    </div>
-
-    <div class="jee-list">
-      <div class="jee-list-title">¿A qué tasa el JEE valida?</div>
-      <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">
-        Si el JEE valida X% de TODAS las actas por igual, este sería el resultado:
+      <div class="jee-list-title">🛡️ Camino de López Aliaga a la segunda vuelta</div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:4px;line-height:1.4">
+        Escenario: validar actas de zonas pro-LA + anular actas de zonas pro-Sánchez.
+        Cada fila muestra cuánto gana LA y si ya alcanza para pasar.
+        <b>Solo necesita las primeras ${minRegiones} regiones</b> en el mejor caso.
       </div>
-      ${scenariosHtml}
+      <div style="background:var(--bg);padding:8px 10px;border-radius:8px;margin:8px 0;font-size:0.8rem;text-align:center;font-weight:700">
+        Meta: recuperar <span class="c-lopez">${fmt(diff)}</span> votos
+      </div>
+      ${trackerHtml}
     </div>
   `;
 }
