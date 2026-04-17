@@ -816,12 +816,14 @@ function render(data) {
       const at = item.totales.totalActas;
       const ve = item.totales.totalVotosEmitidos;
       const jee = item.totales.enviadasJee || 0;
+      // Usar campo directo de ONPE si existe, sino calcular
+      const pendActas = item.totales.pendientesJee != null ? item.totales.pendientesJee : Math.max(0, at - ac - jee);
       const vpa = ac > 0 ? ve / ac : 0;
       return {
-        sinJee: Math.round(vpa * Math.max(0, at - ac - jee)),
-        conJee: Math.round(vpa * (at - ac)),
+        sinJee: Math.round(vpa * pendActas),
+        conJee: Math.round(vpa * (pendActas + jee)),
         jeeActas: jee,
-        pendActas: at - ac - jee,
+        pendActas: pendActas,
       };
     }
 
