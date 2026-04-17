@@ -1100,8 +1100,9 @@ function renderBatalla(data) {
   const nacL = fC(data.nacional.candidatos, 'LÓPEZ ALIAGA');
   const vS = nacS.totalVotosValidos;
   const vL = nacL.totalVotosValidos;
-  const diff = vS - vL; // positivo = S adelante
+  const diff = vS - vL;
   const actas = data.nacional.totales;
+  const laGana = diff <= 0;
 
   // JEE por departamento
   const rows = [];
@@ -1162,75 +1163,149 @@ function renderBatalla(data) {
     impactoPend += Math.round(vpa * pend * (l - s) / 100); // positivo = LA gana
   });
 
+  // Lima por distrito
+  const limaP = data.departamentos.find(x => x.nombre === 'LIMA')?.provincias?.find(x => x.nombre === 'LIMA');
+  const goldDists = [];
+  if (limaP?.distritos) {
+    limaP.distritos.forEach(dist => {
+      const jee = dist.totales.enviadasJee || 0;
+      if (jee === 0) return;
+      const ac = dist.totales.contabilizadas;
+      if (ac === 0) return;
+      const vpa = Math.round(dist.totales.totalVotosEmitidos / ac);
+      const s = (fC(dist.candidatos,'SANCHEZ PALOMINO')||{}).porcentajeVotosValidos||0;
+      const l = (fC(dist.candidatos,'LÓPEZ ALIAGA')||{}).porcentajeVotosValidos||0;
+      const netoPorActa = Math.round(vpa * (l - s) / 100);
+      goldDists.push({n: dist.nombre, jee, vpa, l, s, netoPorActa, totalNeto: netoPorActa * jee});
+    });
+    goldDists.sort((a,b) => b.netoPorActa - a.netoPorActa);
+  }
+
+  // Cuantas actas necesita LA de Lima
+  const avgNetoPorActaLima = goldDists.length > 0 ? goldDists.reduce((s,d) => s + d.totalNeto, 0) / goldDists.reduce((s,d) => s + d.jee, 0) : 0;
+  const actasNecesarias = diff > 0 && avgNetoPorActaLima > 0 ? Math.ceil(diff / avgNetoPorActaLima) : 0;
+  const totalActasLimaJee = goldDists.reduce((s,d) => s + d.jee, 0);
+
+  // Danger zones (top rural pro-S to block)
+  const dangers = proS.slice(0, 5);
+
+  // Build gold districts HTML (top 10)
+  const maxGold = goldDists.length > 0 ? goldDists[0].netoPorActa : 1;
+  let goldHtml = goldDists.slice(0, 12).map(d => {
+    const w = d.netoPorActa / maxGold * 100;
+    return `<div class="jee-item">
+      <div class="jee-item-left">
+        <div class="jee-item-name">${titleCase(d.n)}</div>
+        <div class="jee-item-detail">${d.jee} actas · LA ${d.l.toFixed(1)}% · ${d.vpa} vot/acta</div>
+        <div class="jee-item-bar"><div class="jee-item-fill" style="width:${w.toFixed(0)}%;background:var(--lopez)"></div></div>
+      </div>
+      <div class="jee-item-right">
+        <div class="jee-item-impact c-lopez">+${d.netoPorActa}</div>
+        <div class="jee-item-actas">por acta · total ${fmt(d.totalNeto)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Danger zones HTML
+  let dangerHtml = dangers.map(r => {
+    const netoS = Math.abs(r.netoLA);
+    const netoSporActa = r.jee > 0 ? Math.round(netoS / r.jee) : 0;
+    return `<div class="jee-item">
+      <div class="jee-item-left">
+        <div class="jee-item-name">${titleCase(r.n)}</div>
+        <div class="jee-item-detail">${r.jee} actas · S ${r.s.toFixed(1)}% vs LA ${r.l.toFixed(1)}%</div>
+      </div>
+      <div class="jee-item-right">
+        <div class="jee-item-impact c-sanchez">+${netoSporActa}/acta</div>
+        <div class="jee-item-actas">total ${fmt(netoS)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
   document.getElementById('batalla-container').innerHTML = `
     <div class="jee-hero">
-      <div class="jee-hero-title">Batalla por la Segunda Vuelta</div>
+      <div class="jee-hero-title">Batalla por la Segunda Vuelta · ${actas.actasContabilizadas.toFixed(2)}%</div>
       <div style="display:flex;justify-content:space-around;margin:12px 0">
         <div style="text-align:center">
-          <div style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;font-weight:700">Sánchez</div>
+          <div style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;font-weight:700">🚩 Sánchez</div>
           <div style="font-size:1.4rem;font-weight:800;color:var(--sanchez)">${fmt(vS)}</div>
-          <div style="font-size:0.75rem;color:var(--text-secondary)">${nacS.porcentajeVotosValidos.toFixed(2)}%</div>
         </div>
-        <div style="text-align:center;align-self:center">
+        <div style="text-align:center;align-self:center;padding:0 8px">
           <div style="font-size:0.7rem;color:var(--text-secondary);font-weight:800">VS</div>
         </div>
         <div style="text-align:center">
-          <div style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;font-weight:700">López Aliaga</div>
+          <div style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;font-weight:700">🛡️ López Aliaga</div>
           <div style="font-size:1.4rem;font-weight:800;color:var(--lopez)">${fmt(vL)}</div>
-          <div style="font-size:0.75rem;color:var(--text-secondary)">${nacL.porcentajeVotosValidos.toFixed(2)}%</div>
         </div>
       </div>
-      <div style="text-align:center;padding:8px;background:var(--bg);border-radius:10px">
-        <div style="font-size:0.7rem;color:var(--text-secondary)">Conteo al ${actas.actasContabilizadas.toFixed(2)}% · Sánchez lidera por</div>
-        <div style="font-size:1.8rem;font-weight:800;color:var(--sanchez);letter-spacing:-1px">${fmt(diff)} votos</div>
-      </div>
+      ${laGana ? `
+        <div style="text-align:center;padding:10px;background:var(--lopez-bg);border-radius:10px;border:2px solid var(--lopez)">
+          <div style="font-size:0.8rem;font-weight:800;color:var(--lopez)">🛡️ LÓPEZ ALIAGA PASA</div>
+          <div style="font-size:1.5rem;font-weight:800;color:var(--lopez)">+${fmt(Math.abs(diff))} votos</div>
+        </div>
+      ` : `
+        <div style="text-align:center;padding:10px;background:var(--bg);border-radius:10px">
+          <div style="font-size:0.7rem;color:var(--text-secondary)">López Aliaga necesita recuperar</div>
+          <div style="font-size:1.8rem;font-weight:800;color:var(--lopez);letter-spacing:-1px">${fmt(diff)} votos</div>
+          <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">= solo <b>${actasNecesarias}</b> actas de Lima validadas (de ${totalActasLimaJee} disponibles)</div>
+        </div>
+      `}
     </div>
 
     <div class="jee-list" style="margin-bottom:12px">
-      <div class="jee-list-title">📊 Lo que falta por resolver</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div style="background:var(--bg);padding:10px;border-radius:10px;text-align:center">
-          <div style="font-size:0.6rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Pendientes puras</div>
-          <div style="font-size:1.1rem;font-weight:800">${fmt(totalPend)}</div>
-          <div style="font-size:0.7rem;color:var(--text-secondary)">actas por llegar</div>
-          <div style="font-size:0.8rem;font-weight:700;color:${impactoPend >= 0 ? 'var(--lopez)' : 'var(--sanchez)'}; margin-top:4px">
+          <div style="font-size:0.6rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Pendientes</div>
+          <div style="font-size:1.1rem;font-weight:800">${fmt(totalPend)} actas</div>
+          <div style="font-size:0.75rem;font-weight:700;color:${impactoPend >= 0 ? 'var(--lopez)' : 'var(--sanchez)'}">
             ${impactoPend >= 0 ? 'LA' : 'S'} +${fmt(Math.abs(impactoPend))} neto
           </div>
         </div>
         <div style="background:var(--bg);padding:10px;border-radius:10px;text-align:center">
-          <div style="font-size:0.6rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase">En el JEE</div>
-          <div style="font-size:1.1rem;font-weight:800">${fmt(totalJee)}</div>
-          <div style="font-size:0.7rem;color:var(--text-secondary)">actas en disputa</div>
-          <div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-top:4px">
-            el tribunal decide
+          <div style="font-size:0.6rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase">JEE en disputa</div>
+          <div style="font-size:1.1rem;font-weight:800">${fmt(totalJee)} actas</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--lopez)">
+            LA +${fmt(totalMunicionLA)} potencial
           </div>
         </div>
       </div>
     </div>
 
+    <div class="jee-list">
+      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Distritos oro — donde cada acta validada suma más a LA</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">
+        Prioridad para personeros: validar actas aquí. Cada acta = votos netos directos para LA.
+      </div>
+      ${goldHtml}
+    </div>
+
     <div class="jee-paths">
       <div class="jee-path path-la">
-        <div class="jee-path-title">🛡️ Munición LA</div>
+        <div class="jee-path-title">🛡️ Total munición LA</div>
         <div class="jee-path-val c-lopez">${fmt(totalMunicionLA)}</div>
-        <div class="jee-path-sub">votos netos si se validan sus ${proLA.reduce((s,r)=>s+r.jee,0)} actas</div>
+        <div class="jee-path-sub">${proLA.reduce((s,r)=>s+r.jee,0)} actas pro-LA</div>
       </div>
       <div class="jee-path path-s">
-        <div class="jee-path-title">🚩 Defensa S</div>
+        <div class="jee-path-title">🚩 Defensa Sánchez</div>
         <div class="jee-path-val c-sanchez">${fmt(totalDefensaS)}</div>
-        <div class="jee-path-sub">votos netos que defiende con ${proS.reduce((s,r)=>s+r.jee,0)} actas</div>
+        <div class="jee-path-sub">${proS.reduce((s,r)=>s+r.jee,0)} actas pro-S</div>
       </div>
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Donde López Aliaga gana si el JEE valida</div>
-      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">Si estas actas se validan, los votos se suman al conteo. LA gana más votos netos que Sánchez acá.</div>
-      ${buildList(proLA, true)}
+      <div class="jee-list-title" style="color:var(--sanchez)">⚠️ Zonas de peligro — donde Sánchez gana si se valida</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">
+        Personeros LA: impugnar o vigilar estas regiones. Si se validan, Sánchez suma fuerte.
+      </div>
+      ${dangerHtml}
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--sanchez)">🚩 Donde Sánchez defiende si el JEE valida</div>
-      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">Si estas actas se validan, Sánchez gana más votos netos. Si se anulan, Sánchez pierde esos votos.</div>
-      ${buildList(proS, false)}
+      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Por departamento — todo el arsenal LA</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">
+        Cada departamento donde LA gana neto si el JEE valida sus actas.
+      </div>
+      ${buildList(proLA, true)}
     </div>
   `;
 }
