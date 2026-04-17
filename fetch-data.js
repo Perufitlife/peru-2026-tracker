@@ -92,16 +92,26 @@ async function batch(items, fn) {
   }
   console.log(`OK: ${health.data?.nombre || 'connected'}\n`);
 
-  // API helper — runs fetch inside browser context
-  async function api(url) {
-    try {
-      const text = await page.evaluate(async (u) => {
-        const r = await fetch(u);
-        return await r.text();
-      }, url);
-      return JSON.parse(text);
-    } catch {
-      return null;
+  // API helper — runs fetch inside browser context, with retry + backoff
+  let apiFailures = 0;
+  async function api(url, retries = 3) {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const text = await page.evaluate(async (u) => {
+          const r = await fetch(u);
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return await r.text();
+        }, url);
+        return JSON.parse(text);
+      } catch (e) {
+        if (attempt < retries - 1) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        apiFailures++;
+        console.log(`    API fail (after ${retries} retries): ${url.split('?')[0].split('/').pop()} — ${e.message || e}`);
+        return null;
+      }
     }
   }
 
@@ -285,6 +295,27 @@ async function batch(items, fn) {
     };
   });
 
+  // Calcular sumas desde hijos para detectar drift ONPE nacional vs agregado
+  let sumDeptCont = 0, sumDeptAct = 0, sumDeptJee = 0, sumDeptPend = 0;
+  let sumDistCont = 0, sumDistJee = 0, sumDistPend = 0;
+  data.departamentos.forEach(dep => {
+    sumDeptCont += dep.totales.contabilizadas;
+    sumDeptAct += dep.totales.totalActas;
+    sumDeptJee += dep.totales.enviadasJee || 0;
+    sumDeptPend += dep.totales.pendientesJee || 0;
+    (dep.provincias || []).forEach(prov => {
+      if (prov.distritos?.length) prov.distritos.forEach(dis => {
+        sumDistCont += dis.totales.contabilizadas;
+        sumDistJee += dis.totales.enviadasJee || 0;
+        sumDistPend += dis.totales.pendientesJee || 0;
+      }); else {
+        sumDistCont += prov.totales.contabilizadas;
+        sumDistJee += prov.totales.enviadasJee || 0;
+        sumDistPend += prov.totales.pendientesJee || 0;
+      }
+    });
+  });
+
   const point = {
     t: data.timestamp,
     pct: data.nacional.totales.actasContabilizadas,
@@ -293,6 +324,22 @@ async function batch(items, fn) {
     diff: (nacS?.totalVotosValidos || 0) - (nacL?.totalVotosValidos || 0),
     pctS: nacS?.porcentajeVotosValidos || 0,
     pctL: nacL?.porcentajeVotosValidos || 0,
+    // Tracking de sincronización (detectar drift entre niveles ONPE)
+    sync: {
+      nacCont: data.nacional.totales.contabilizadas,
+      nacAct: data.nacional.totales.totalActas,
+      nacJee: data.nacional.totales.enviadasJee || 0,
+      nacPend: data.nacional.totales.pendientesJee || 0,
+      sumDeptCont, sumDeptJee, sumDeptPend,
+      sumDistCont, sumDistJee, sumDistPend,
+      // Δ = cuánto se salen los distritos/deptos vs el nacional (idealmente 0)
+      deptDriftCont: sumDeptCont - data.nacional.totales.contabilizadas,
+      deptDriftJee: sumDeptJee - (data.nacional.totales.enviadasJee || 0),
+      deptDriftPend: sumDeptPend - (data.nacional.totales.pendientesJee || 0),
+      distDriftCont: sumDistCont - data.nacional.totales.contabilizadas,
+      distDriftJee: sumDistJee - (data.nacional.totales.enviadasJee || 0),
+      distDriftPend: sumDistPend - (data.nacional.totales.pendientesJee || 0),
+    },
     deps: deptSnap,
   };
 
@@ -305,6 +352,11 @@ async function batch(items, fn) {
   }
   fs.writeFileSync(historyFile, JSON.stringify(history, null, 2));
 
+  // Log sync drift (cómo de consistente es ONPE entre niveles)
+  console.log(`\nSync drift (sum hijos - nacional):`);
+  console.log(`  Dept level: cont ${point.sync.deptDriftCont>=0?'+':''}${point.sync.deptDriftCont}, jee ${point.sync.deptDriftJee>=0?'+':''}${point.sync.deptDriftJee}, pend ${point.sync.deptDriftPend>=0?'+':''}${point.sync.deptDriftPend}`);
+  console.log(`  Dist level: cont ${point.sync.distDriftCont>=0?'+':''}${point.sync.distDriftCont}, jee ${point.sync.distDriftJee>=0?'+':''}${point.sync.distDriftJee}, pend ${point.sync.distDriftPend>=0?'+':''}${point.sync.distDriftPend}`);
+  if (apiFailures > 0) console.log(`  ⚠ ${apiFailures} API calls failed after retries (data parcial)`);
   console.log(`\nDone in ${((Date.now() - t0) / 1000).toFixed(1)}s — ${departamentos.length} departments — ${data.timestamp}`);
   await browser.close();
 })();

@@ -477,6 +477,21 @@ function render(data) {
     impSinJee += totalImpSinJee;
   });
 
+  // ===== Ajuste C: reconciliar con agregado NACIONAL ONPE =====
+  // El agregado dept suele sobrepasar al nacional en pendientes (ONPE reporta inconsistente).
+  // Escalar la proyección de pendientes puras al nivel nacional.
+  const _nacPend = t.pendientesJee || 0;
+  let _sumDeptPend = 0;
+  depts.forEach(d => {
+    _sumDeptPend += Math.max(0, d.totales.totalActas - d.totales.contabilizadas - (d.totales.enviadasJee || 0));
+  });
+  if (_sumDeptPend > _nacPend && _sumDeptPend > 0) {
+    const f = _nacPend / _sumDeptPend;
+    const jeeOnly = impConJee - impSinJee;  // impacto solo de JEE
+    impSinJee = Math.round(impSinJee * f);
+    impConJee = Math.round(impSinJee + jeeOnly);
+  }
+
   const proyConJee = diffActual + impConJee;
   const proySinJee = diffActual + impSinJee;
 
@@ -1177,6 +1192,30 @@ function renderBatalla(data) {
     }
     pendLA += acc.pendLA; pendS += acc.pendS; pendActas += acc.pendActas;
   });
+
+  // ===== Ajuste C: reconciliar con agregado NACIONAL ONPE =====
+  // ONPE reporta totales nacionales que no cuadran exactamente con la suma de sus deptos.
+  // El nacional es autoritativo (lo que se muestra en onpe.gob.pe). Escalamos las sumas
+  // locales para cuadrar con el nacional si hay exceso.
+  const nacPend = data.nacional.totales.pendientesJee || 0;
+  const nacJee = data.nacional.totales.enviadasJee || 0;
+
+  // Escalar pendientes down si suma > nacional
+  if (pendActas > nacPend && pendActas > 0) {
+    const f = nacPend / pendActas;
+    pendLA *= f; pendS *= f; pendActas = nacPend;
+  }
+
+  // Escalar JEE down si suma > nacional (incluye orfanas)
+  const totJeeActasPre = leaves.reduce((a,l) => a + l.jee, 0) + orfanasGlobalActas;
+  if (totJeeActasPre > nacJee && totJeeActasPre > 0) {
+    const f = nacJee / totJeeActasPre;
+    leaves.forEach(l => {
+      l.votosL *= f; l.votosS *= f;
+      // jee y s/l quedan como referencia visible — el scaling aplica al cómputo
+    });
+    orfanasGlobalLA *= f; orfanasGlobalS *= f; orfanasGlobalActas = Math.round(orfanasGlobalActas * f);
+  }
 
   pendLA = Math.round(pendLA); pendS = Math.round(pendS);
   const pendNeto = pendLA - pendS;
