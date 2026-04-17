@@ -3447,7 +3447,7 @@
     }
   },
   {
-    "t": "2026-04-17T19:31:05.657Z",
+    "t": "2026-04-17T19:40:50.072Z",
     "pct": 93.359,
     "vS": 1890544,
     "vL": 1877454,
@@ -3457,8 +3457,8 @@
     "sync": {
       "nacCont": 86605,
       "nacAct": 92766,
-      "nacJee": 5645,
-      "nacPend": 516,
+      "nacJee": 5646,
+      "nacPend": 515,
       "sumDeptCont": 86601,
       "sumDeptJee": 5617,
       "sumDeptPend": 548,
@@ -3466,11 +3466,11 @@
       "sumDistJee": 5224,
       "sumDistPend": 1456,
       "deptDriftCont": -4,
-      "deptDriftJee": -28,
-      "deptDriftPend": 32,
+      "deptDriftJee": -29,
+      "deptDriftPend": 33,
       "distDriftCont": -519,
-      "distDriftJee": -421,
-      "distDriftPend": 940
+      "distDriftJee": -422,
+      "distDriftPend": 941
     },
     "deps": {
       "AMAZONAS": {
