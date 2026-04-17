@@ -1163,7 +1163,93 @@ function renderBatalla(data) {
     impactoPend += Math.round(vpa * pend * (l - s) / 100); // positivo = LA gana
   });
 
-  // Lima por distrito
+  // === PLAN DE BATALLA: distrito por distrito ===
+  // Todos los distritos con JEE, con ganancia para LA
+  const allBattle = [];
+  data.departamentos.forEach(dep => {
+    (dep.provincias||[]).forEach(prov => {
+      const items = prov.distritos?.length ? prov.distritos : [prov];
+      items.forEach(dist => {
+        const jee = dist.totales.enviadasJee || 0;
+        if (jee === 0) return;
+        const ac = dist.totales.contabilizadas;
+        if (ac === 0) return;
+        const vpa = Math.round(dist.totales.totalVotosEmitidos / ac);
+        const s = (fC(dist.candidatos,'SANCHEZ PALOMINO')||{}).porcentajeVotosValidos||0;
+        const l = (fC(dist.candidatos,'LÓPEZ ALIAGA')||{}).porcentajeVotosValidos||0;
+        const esProLA = l > s;
+        const gananciaLA = Math.round(vpa * jee * Math.abs(l - s) / 100);
+        const porActa = jee > 0 ? Math.round(gananciaLA / jee) : 0;
+        allBattle.push({
+          dept: dep.nombre, dist: dist.nombre, jee, vpa, s, l,
+          accion: esProLA ? 'VALIDAR' : 'ANULAR',
+          gananciaLA, porActa
+        });
+      });
+    });
+  });
+  allBattle.sort((a,b) => b.gananciaLA - a.gananciaLA);
+
+  // Path: acumulado hasta que LA pase
+  let pathHtml = '';
+  let pathAcum = 0;
+  let alreadyPassed = false;
+  const pathItems = allBattle.slice(0, 15);
+  pathItems.forEach((d, i) => {
+    pathAcum += d.gananciaLA;
+    const resta = diff - pathAcum;
+    const pasaAqui = resta <= 0 && !alreadyPassed;
+    if (pasaAqui) alreadyPassed = true;
+    const icon = d.accion === 'VALIDAR' ? '✅' : '❌';
+    const accionColor = d.accion === 'VALIDAR' ? 'var(--lopez)' : 'var(--sanchez)';
+    pathHtml += `<div class="jee-item" style="${pasaAqui ? 'background:var(--lopez-bg);border-radius:8px;padding:8px 8px 8px 12px;border-left:3px solid var(--lopez)' : ''}">
+      <div class="jee-item-left">
+        <div class="jee-item-name" style="font-size:0.8rem">
+          ${icon} <span style="color:${accionColor};font-size:0.65rem;font-weight:800">${d.accion}</span>
+          ${titleCase(d.dept)} > ${titleCase(d.dist)}
+        </div>
+        <div class="jee-item-detail">${d.jee} actas · S ${d.s.toFixed(1)}% vs LA ${d.l.toFixed(1)}% · +${d.porActa}/acta</div>
+      </div>
+      <div class="jee-item-right" style="min-width:80px">
+        <div class="jee-item-impact c-lopez">+${fmt(d.gananciaLA)}</div>
+        <div class="jee-item-actas" style="font-weight:700;color:${resta <= 0 ? 'var(--lopez)' : 'var(--text-secondary)'}">
+          ${resta <= 0 ? '🛡️ LA +' + fmt(Math.abs(resta)) : 'faltan ' + fmt(resta)}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  // Top ANULAR (zonas S) por valor/acta
+  const topAnular = allBattle.filter(d => d.accion === 'ANULAR').sort((a,b) => b.porActa - a.porActa).slice(0, 10);
+  let anularHtml = topAnular.map(d => `<div class="jee-item">
+    <div class="jee-item-left">
+      <div class="jee-item-name" style="font-size:0.8rem">${titleCase(d.dept)} > ${titleCase(d.dist)}</div>
+      <div class="jee-item-detail">${d.jee} actas · S ${d.s.toFixed(1)}% vs LA ${d.l.toFixed(1)}%</div>
+    </div>
+    <div class="jee-item-right">
+      <div class="jee-item-impact c-sanchez">-${d.porActa}/acta</div>
+      <div class="jee-item-actas">S pierde ${fmt(d.gananciaLA)}</div>
+    </div>
+  </div>`).join('');
+
+  // Top VALIDAR (zonas LA) por valor/acta
+  const topValidar = allBattle.filter(d => d.accion === 'VALIDAR').sort((a,b) => b.porActa - a.porActa).slice(0, 10);
+  let validarHtml = topValidar.map(d => `<div class="jee-item">
+    <div class="jee-item-left">
+      <div class="jee-item-name" style="font-size:0.8rem">${titleCase(d.dept)} > ${titleCase(d.dist)}</div>
+      <div class="jee-item-detail">${d.jee} actas · LA ${d.l.toFixed(1)}% · +${d.porActa} neto/acta</div>
+    </div>
+    <div class="jee-item-right">
+      <div class="jee-item-impact c-lopez">+${fmt(d.gananciaLA)}</div>
+      <div class="jee-item-actas">${d.jee} actas</div>
+    </div>
+  </div>`).join('');
+
+  // Fastest single action
+  const fastest = allBattle[0];
+  const fastestCovers = fastest.gananciaLA >= diff;
+
+  // Lima districts only
   const limaP = data.departamentos.find(x => x.nombre === 'LIMA')?.provincias?.find(x => x.nombre === 'LIMA');
   const goldDists = [];
   if (limaP?.distritos) {
@@ -1272,40 +1358,40 @@ function renderBatalla(data) {
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Distritos oro — donde cada acta validada suma más a LA</div>
-      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">
-        Prioridad para personeros: validar actas aquí. Cada acta = votos netos directos para LA.
+      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Plan de batalla — paso a paso</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:4px;line-height:1.4">
+        Top 15 acciones por impacto. ✅ Validar actas pro-LA ❌ Anular actas pro-S.
+        ${fastestCovers ? `<b style="color:var(--lopez)">Solo ${titleCase(fastest.dept)} > ${titleCase(fastest.dist)} (${fastest.jee} actas) cubre todo el gap.</b>` : ''}
       </div>
-      ${goldHtml}
+      <div style="background:var(--bg);padding:6px 10px;border-radius:8px;margin:8px 0;font-size:0.8rem;text-align:center;font-weight:700">
+        Meta: <span class="c-lopez">${fmt(diff)}</span> votos
+      </div>
+      ${pathHtml}
     </div>
 
     <div class="jee-paths">
       <div class="jee-path path-la">
-        <div class="jee-path-title">🛡️ Total munición LA</div>
+        <div class="jee-path-title">🛡️ Arsenal LA</div>
         <div class="jee-path-val c-lopez">${fmt(totalMunicionLA)}</div>
-        <div class="jee-path-sub">${proLA.reduce((s,r)=>s+r.jee,0)} actas pro-LA</div>
+        <div class="jee-path-sub">${proLA.reduce((s,r)=>s+r.jee,0)} actas · ${proLA.length} zonas</div>
       </div>
       <div class="jee-path path-s">
-        <div class="jee-path-title">🚩 Defensa Sánchez</div>
+        <div class="jee-path-title">🚩 Defensa S</div>
         <div class="jee-path-val c-sanchez">${fmt(totalDefensaS)}</div>
-        <div class="jee-path-sub">${proS.reduce((s,r)=>s+r.jee,0)} actas pro-S</div>
+        <div class="jee-path-sub">${proS.reduce((s,r)=>s+r.jee,0)} actas · ${proS.length} zonas</div>
       </div>
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--sanchez)">⚠️ Zonas de peligro — donde Sánchez gana si se valida</div>
-      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">
-        Personeros LA: impugnar o vigilar estas regiones. Si se validan, Sánchez suma fuerte.
-      </div>
-      ${dangerHtml}
+      <div class="jee-list-title" style="color:var(--lopez)">✅ Top distritos donde VALIDAR — más votos/acta para LA</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">Prioridad personeros: defender estas actas ante el JEE.</div>
+      ${validarHtml}
     </div>
 
     <div class="jee-list">
-      <div class="jee-list-title" style="color:var(--lopez)">🛡️ Por departamento — todo el arsenal LA</div>
-      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">
-        Cada departamento donde LA gana neto si el JEE valida sus actas.
-      </div>
-      ${buildList(proLA, true)}
+      <div class="jee-list-title" style="color:var(--sanchez)">❌ Top distritos donde ANULAR — más daño a Sánchez/acta</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">Distritos donde S saca 50-70%. Cada acta anulada quita votos a Sánchez.</div>
+      ${anularHtml}
     </div>
   `;
 }
