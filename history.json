@@ -3447,30 +3447,30 @@
     }
   },
   {
-    "t": "2026-04-17T18:20:38.635Z",
-    "pct": 93.351,
-    "vS": 1890424,
-    "vL": 1877193,
-    "diff": 13231,
+    "t": "2026-04-17T18:30:57.302Z",
+    "pct": 93.352,
+    "vS": 1890425,
+    "vL": 1877257,
+    "diff": 13168,
     "pctS": 12.004,
-    "pctL": 11.92,
+    "pctL": 11.921,
     "sync": {
-      "nacCont": 86598,
+      "nacCont": 86599,
       "nacAct": 92766,
       "nacJee": 5645,
-      "nacPend": 523,
-      "sumDeptCont": 86595,
+      "nacPend": 522,
+      "sumDeptCont": 86596,
       "sumDeptJee": 5616,
-      "sumDeptPend": 555,
+      "sumDeptPend": 554,
       "sumDistCont": 86079,
       "sumDistJee": 5203,
       "sumDistPend": 1484,
       "deptDriftCont": -3,
       "deptDriftJee": -29,
       "deptDriftPend": 32,
-      "distDriftCont": -519,
+      "distDriftCont": -520,
       "distDriftJee": -442,
-      "distDriftPend": 961
+      "distDriftPend": 962
     },
     "deps": {
       "AMAZONAS": {
@@ -3544,9 +3544,9 @@
         "vL": 54760
       },
       "LIMA": {
-        "pct": 95.128,
-        "vS": 189515,
-        "vL": 1156441
+        "pct": 95.131,
+        "vS": 189516,
+        "vL": 1156505
       },
       "LORETO": {
         "pct": 84.538,
