@@ -303,7 +303,7 @@ function render(data) {
 
   // Calcular Proyecciones GRANULAR (a nivel distrito cuando hay data)
   let impConJee = 0, impSinJee = 0;
-  const depts = data.departamentos.sort((a, b) => (b.totales.totalActas - b.totales.contabilizadas) - (a.totales.totalActas - a.totales.contabilizadas));
+  const depts = data.departamentos.sort((a, b) => (b.totales.totalActas - b.totales.contabilizadas - (b.totales.enviadasJee||0)) - (a.totales.totalActas - a.totales.contabilizadas - (a.totales.enviadasJee||0)));
 
   // Helper: calcular impacto granular de un item con sus propios %
   // Si no tiene data (0% contado), usa fallback (provincia o departamento)
