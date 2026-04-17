@@ -3447,7 +3447,7 @@
     }
   },
   {
-    "t": "2026-04-17T16:35:03.140Z",
+    "t": "2026-04-17T16:45:24.315Z",
     "pct": 93.347,
     "vS": 1890327,
     "vL": 1877087,
@@ -3463,14 +3463,14 @@
       "sumDeptJee": 5616,
       "sumDeptPend": 559,
       "sumDistCont": 86070,
-      "sumDistJee": 5130,
-      "sumDistPend": 1566,
+      "sumDistJee": 5177,
+      "sumDistPend": 1519,
       "deptDriftCont": -3,
       "deptDriftJee": -29,
       "deptDriftPend": 32,
       "distDriftCont": -524,
-      "distDriftJee": -515,
-      "distDriftPend": 1039
+      "distDriftJee": -468,
+      "distDriftPend": 992
     },
     "deps": {
       "AMAZONAS": {
