@@ -3447,7 +3447,7 @@
     }
   },
   {
-    "t": "2026-04-17T16:45:24.315Z",
+    "t": "2026-04-17T16:55:08.865Z",
     "pct": 93.347,
     "vS": 1890327,
     "vL": 1877087,
@@ -3459,15 +3459,15 @@
       "nacAct": 92766,
       "nacJee": 5645,
       "nacPend": 527,
-      "sumDeptCont": 86591,
+      "sumDeptCont": 86592,
       "sumDeptJee": 5616,
-      "sumDeptPend": 559,
+      "sumDeptPend": 558,
       "sumDistCont": 86070,
       "sumDistJee": 5177,
       "sumDistPend": 1519,
-      "deptDriftCont": -3,
+      "deptDriftCont": -2,
       "deptDriftJee": -29,
-      "deptDriftPend": 32,
+      "deptDriftPend": 31,
       "distDriftCont": -524,
       "distDriftJee": -468,
       "distDriftPend": 992
@@ -3549,7 +3549,7 @@
         "vL": 1156337
       },
       "LORETO": {
-        "pct": 84.501,
+        "pct": 84.538,
         "vS": 28778,
         "vL": 19638
       },
