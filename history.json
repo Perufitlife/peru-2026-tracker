@@ -3447,7 +3447,7 @@
     }
   },
   {
-    "t": "2026-04-17T16:55:08.865Z",
+    "t": "2026-04-17T17:05:24.336Z",
     "pct": 93.347,
     "vS": 1890327,
     "vL": 1877087,
@@ -3462,15 +3462,15 @@
       "sumDeptCont": 86592,
       "sumDeptJee": 5616,
       "sumDeptPend": 558,
-      "sumDistCont": 86070,
-      "sumDistJee": 5177,
-      "sumDistPend": 1519,
+      "sumDistCont": 86079,
+      "sumDistJee": 5203,
+      "sumDistPend": 1484,
       "deptDriftCont": -2,
       "deptDriftJee": -29,
       "deptDriftPend": 31,
-      "distDriftCont": -524,
-      "distDriftJee": -468,
-      "distDriftPend": 992
+      "distDriftCont": -515,
+      "distDriftJee": -442,
+      "distDriftPend": 957
     },
     "deps": {
       "AMAZONAS": {
@@ -3550,8 +3550,8 @@
       },
       "LORETO": {
         "pct": 84.538,
-        "vS": 28778,
-        "vL": 19638
+        "vS": 28802,
+        "vL": 19645
       },
       "MADRE DE DIOS": {
         "pct": 89.349,
