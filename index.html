@@ -1187,104 +1187,142 @@ function renderBatalla(data) {
   const totJeeS = leaves.reduce((a,l) => a + l.votosS, 0) + orfanasGlobalS;
   const jeeNetoAllValida = totJeeL - totJeeS;
 
-  // ===== PATH 1: BREAK-EVEN por impugnación selectiva (resto valida 100%) =====
-  // Anular top-N actas más pro-S hasta cubrir el gap post-pendientes
-  leaves.sort((a,b) => b.netIfAnulan - a.netIfAnulan);
-  let breakevenActas = 0, breakevenVotos = 0, breakevenDistritos = 0, foundBE = false;
-  let acumNet = 0;
-  for (const l of leaves) {
-    if (l.netIfAnulan <= 0) break;
-    breakevenActas += l.jee; breakevenDistritos += 1;
-    acumNet += l.netIfAnulan;
-    const finalBE = pendNeto + jeeNetoAllValida + acumNet - diff;
-    if (finalBE >= 0) { breakevenVotos = finalBE; foundBE = true; break; }
-  }
-
-  // ===== PATH REALISTA: mixto (pro-LA 95% + anular top 500 + pro-S 75%) =====
-  const TOP_IMPUG_TARGET = 500;
-  const RATE_DEFENSA_LA = 0.95;
-  const RATE_ANULAR_OBJETIVO = 0.00;
-  const RATE_RESTO_S = 0.75;
-  const anularSet = new Set();
-  let countActasAnul = 0;
-  for (const l of leaves) {
-    if (l.netIfAnulan <= 0) break;
-    if (countActasAnul >= TOP_IMPUG_TARGET) break;
-    anularSet.add(l);
-    countActasAnul += l.jee;
-  }
-  let realJeeNet = 0;
+  // ===== CLASIFICAR CADA DISTRITO POR CRITICIDAD =====
+  // impacto = |votosL - votosS|. Si se ejecuta la accion (defender valida/anular se anula) se
+  // capturan esos votos netos para LA. Si no, LA los pierde (asumiendo tasa base).
+  const TIER_ALTO = 200, TIER_MEDIO = 50;
+  const tierOf = imp => imp >= TIER_ALTO ? 'ALTO' : imp >= TIER_MEDIO ? 'MEDIO' : 'BAJO';
   leaves.forEach(l => {
-    if (l.zonaProLA) realJeeNet += RATE_DEFENSA_LA * (l.votosL - l.votosS);
-    else if (anularSet.has(l)) realJeeNet += RATE_ANULAR_OBJETIVO * (l.votosL - l.votosS);
-    else realJeeNet += RATE_RESTO_S * (l.votosL - l.votosS);
+    l.impacto = Math.abs(l.votosL - l.votosS);
+    l.accion = l.zonaProLA ? 'DEFENDER' : 'ANULAR';
+    l.tier = tierOf(l.impacto);
+    l.impactoPorActa = l.impacto / l.jee;
   });
-  // Orfanas: tratamos como zona-pro-S al 75% (default conservador)
-  realJeeNet += RATE_RESTO_S * (orfanasGlobalLA - orfanasGlobalS);
-  const finalRealista = pendNeto + realJeeNet - diff;
 
-  // ===== Top objetivos =====
-  const topDefender = leaves.filter(l => l.zonaProLA).sort((a,b) => b.netIfValidan - a.netIfValidan).slice(0, 12);
-  const defenderActas = leaves.filter(l => l.zonaProLA).reduce((a,l) => a + l.jee, 0);
-  const defenderNetoMax = leaves.filter(l => l.zonaProLA).reduce((a,l) => a + l.netIfValidan, 0);
-
-  const impugnarList = leaves.filter(l => l.netIfAnulan > 0).sort((a,b) => b.netIfAnulan - a.netIfAnulan);
-  const byDept = {};
-  let taken = 0;
-  for (const l of impugnarList) {
-    if (taken >= TOP_IMPUG_TARGET) break;
-    if (!byDept[l.dept]) byDept[l.dept] = { actas:0, distritos:0, neto:0, localidades:[] };
-    byDept[l.dept].actas += l.jee;
-    byDept[l.dept].distritos += 1;
-    byDept[l.dept].neto += l.netIfAnulan;
-    byDept[l.dept].localidades.push(l);
-    taken += l.jee;
+  // ===== ESCENARIOS (tasas base: zonas pro-LA 80%, zonas pro-S 80% — baseline neutral) =====
+  const RATE_BASE = 0.80;  // tasa asumida cuando no hay accion personero
+  // Accion "ejecutada": defender = 100% valida (sumamos completo votosL-votosS);
+  //                    anular = 0% valida (sumamos 0).
+  // Sin accion: tasa base × (votosL - votosS). Para zonas pro-LA esto suma algo <100%;
+  //            para zonas pro-S esto suma algo negativo (S gana).
+  function evaluarEscenario(tiersEjecutados) {
+    let netJEE = 0;
+    leaves.forEach(l => {
+      if (tiersEjecutados.has(l.tier)) {
+        // Accion ejecutada: DEFENDER valida 100% (capturamos vL - vS);
+        // ANULAR anula 100% (capturamos 0 — evitamos que pro-S sume para S).
+        if (l.accion === 'DEFENDER') netJEE += (l.votosL - l.votosS);
+        // ANULAR → 0 votos en juego, no suma nada
+      } else {
+        // Sin accion: tasa base
+        netJEE += RATE_BASE * (l.votosL - l.votosS);
+      }
+    });
+    // Orfanas: tasa base (no accionables)
+    netJEE += RATE_BASE * (orfanasGlobalLA - orfanasGlobalS);
+    return pendNeto + netJEE - diff;
   }
-  const deptImpugnar = Object.entries(byDept).sort((a,b) => b[1].neto - a[1].neto);
-  const topImpugnarDist = impugnarList.slice(0, 15);
 
-  // ===== Render =====
+  const escenarioNada = evaluarEscenario(new Set());
+  const escenarioAlto = evaluarEscenario(new Set(['ALTO']));
+  const escenarioAltoMedio = evaluarEscenario(new Set(['ALTO', 'MEDIO']));
+  const escenarioTodo = evaluarEscenario(new Set(['ALTO', 'MEDIO', 'BAJO']));
+
+  // ===== AGRUPAR POR DEPTO para el roster de acciones =====
+  // Dos grupos: DEFENDER (zonas pro-LA) y ANULAR (zonas pro-S)
+  function buildDeptGroups(filterFn) {
+    const g = {};
+    leaves.filter(filterFn).forEach(l => {
+      if (!g[l.dept]) g[l.dept] = { totalImpacto:0, actas:0, distritosAlto:0, distritosMedio:0, distritosBajo:0, leaves:[], actasAlto:0, actasMedio:0, actasBajo:0 };
+      const d = g[l.dept];
+      d.totalImpacto += l.impacto;
+      d.actas += l.jee;
+      d.leaves.push(l);
+      if (l.tier === 'ALTO') { d.distritosAlto++; d.actasAlto += l.jee; }
+      else if (l.tier === 'MEDIO') { d.distritosMedio++; d.actasMedio += l.jee; }
+      else { d.distritosBajo++; d.actasBajo += l.jee; }
+    });
+    return Object.entries(g).sort((a,b) => b[1].totalImpacto - a[1].totalImpacto);
+  }
+  const deptDefender = buildDeptGroups(l => l.zonaProLA);
+  const deptAnular = buildDeptGroups(l => !l.zonaProLA);
+
+  // Totales globales
+  const totDefender = leaves.filter(l => l.zonaProLA);
+  const totAnular = leaves.filter(l => !l.zonaProLA);
+  const sumBy = (arr, tier) => {
+    const f = arr.filter(l => tier ? l.tier === tier : true);
+    return { dist: f.length, actas: f.reduce((a,l)=>a+l.jee,0), imp: f.reduce((a,l)=>a+l.impacto,0) };
+  };
+  const defAlto = sumBy(totDefender, 'ALTO'), defMedio = sumBy(totDefender, 'MEDIO'), defBajo = sumBy(totDefender, 'BAJO');
+  const anuAlto = sumBy(totAnular, 'ALTO'), anuMedio = sumBy(totAnular, 'MEDIO'), anuBajo = sumBy(totAnular, 'BAJO');
+
+  // ===== Render helpers =====
   const fmtV = v => fmt(Math.round(v));
+  const tierBadge = (tier) => {
+    const colors = { ALTO: '#dc2626', MEDIO: '#ea580c', BAJO: '#9ca3af' };
+    return `<span style="background:${colors[tier]};color:white;padding:1px 6px;border-radius:4px;font-size:0.6rem;font-weight:800;letter-spacing:0.03em">${tier}</span>`;
+  };
 
-  const defenderHtml = topDefender.map(l => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.78rem">
-    <div style="flex:1;min-width:0">
-      <b>${titleCase(l.leaf)}</b> <span style="color:var(--text-secondary);font-size:0.7rem">· ${titleCase(l.dept)}</span>
-      <div style="font-size:0.68rem;color:var(--text-secondary)">${l.jee} actas · LA ${l.l.toFixed(1)}% vs S ${l.s.toFixed(1)}%</div>
-    </div>
-    <div style="color:var(--lopez);font-weight:800;text-align:right;min-width:80px">
-      +${fmtV(l.netIfValidan)}
-      <div style="font-size:0.62rem;color:var(--text-secondary);font-weight:600">si validan</div>
-    </div>
-  </div>`).join('');
+  function renderDistrito(l) {
+    const accionColor = l.accion === 'DEFENDER' ? 'var(--lopez)' : 'var(--lopez)';
+    const ppa = Math.round(l.impactoPorActa);
+    const hint = l.accion === 'DEFENDER'
+      ? `si valida todo → LA +${fmtV(l.impacto)} · si todo se anula → S +${fmtV(l.impacto)}`
+      : `si valida todo → S +${fmtV(l.impacto)} · si todo se anula → ${ppa >= 0 ? 'empate' : ''} (LA neutraliza)`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:0.75rem">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;gap:6px;align-items:center">
+          <b>${titleCase(l.leaf)}</b>
+          ${tierBadge(l.tier)}
+        </div>
+        <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:2px">
+          ${l.jee} actas · ${ppa} votos/acta · LA ${l.l.toFixed(1)}% vs S ${l.s.toFixed(1)}%
+        </div>
+      </div>
+      <div style="color:${accionColor};text-align:right;min-width:75px">
+        <div style="font-weight:800;font-size:0.9rem">±${fmtV(l.impacto)}</div>
+        <div style="font-size:0.6rem;color:var(--text-secondary);font-weight:700">${l.accion}</div>
+      </div>
+    </div>`;
+  }
 
-  const deptImpugnarHtml = deptImpugnar.map(([d, info]) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem">
-    <div>
-      <b>${titleCase(d)}</b>
-      <div style="font-size:0.7rem;color:var(--text-secondary)">${info.actas} actas · ${info.distritos} distrito${info.distritos>1?'s':''}</div>
-    </div>
-    <div style="color:var(--lopez);font-weight:800;min-width:80px;text-align:right">
-      +${fmtV(info.neto)}
-      <div style="font-size:0.62rem;color:var(--text-secondary);font-weight:600">si se anulan</div>
-    </div>
-  </div>`).join('');
+  function renderDeptBlock(dept, info, accion) {
+    const criticos = info.leaves.filter(l => l.tier === 'ALTO').sort((a,b) => b.impacto - a.impacto);
+    const medios = info.leaves.filter(l => l.tier === 'MEDIO').sort((a,b) => b.impacto - a.impacto);
+    const bajos = info.leaves.filter(l => l.tier === 'BAJO').sort((a,b) => b.impacto - a.impacto);
+    return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <div style="font-weight:800;font-size:0.9rem">${titleCase(dept)}</div>
+          <div style="font-size:0.68rem;color:var(--text-secondary)">
+            ${info.distritosAlto ? info.distritosAlto + ' ALTO (' + info.actasAlto + ' actas) · ' : ''}
+            ${info.distritosMedio ? info.distritosMedio + ' MEDIO (' + info.actasMedio + ') · ' : ''}
+            ${info.distritosBajo ? info.distritosBajo + ' BAJO' : ''}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:0.95rem;font-weight:800;color:var(--lopez)">±${fmtV(info.totalImpacto)}</div>
+          <div style="font-size:0.6rem;color:var(--text-secondary);font-weight:700">impacto total</div>
+        </div>
+      </div>
+      ${criticos.map(renderDistrito).join('')}
+      ${medios.length ? `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.7rem;color:var(--text-secondary);padding:4px 0">${medios.length} distrito${medios.length>1?'s':''} MEDIO (click)</summary><div style="margin-top:4px">${medios.map(renderDistrito).join('')}</div></details>` : ''}
+      ${bajos.length ? `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:0.7rem;color:var(--text-secondary);padding:4px 0">${bajos.length} distrito${bajos.length>1?'s':''} BAJO — no crítico (click)</summary><div style="margin-top:4px">${bajos.map(renderDistrito).join('')}</div></details>` : ''}
+    </div>`;
+  }
 
-  const topImpugnarHtml = topImpugnarDist.map(l => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.78rem">
-    <div style="flex:1;min-width:0">
-      <b>${titleCase(l.leaf)}</b> <span style="color:var(--text-secondary);font-size:0.7rem">· ${titleCase(l.dept)}</span>
-      <div style="font-size:0.68rem;color:var(--text-secondary)">${l.jee} actas · S ${l.s.toFixed(1)}% vs LA ${l.l.toFixed(1)}%</div>
-    </div>
-    <div style="color:var(--lopez);font-weight:800;text-align:right;min-width:80px">
-      +${fmtV(l.netIfAnulan)}
-      <div style="font-size:0.62rem;color:var(--text-secondary);font-weight:600">si se anula</div>
-    </div>
-  </div>`).join('');
+  const defenderBlocksHtml = deptDefender.map(([d, info]) => renderDeptBlock(d, info, 'DEFENDER')).join('');
+  const anularBlocksHtml = deptAnular.map(([d, info]) => renderDeptBlock(d, info, 'ANULAR')).join('');
 
-  const defenderValidan95 = Math.round(defenderNetoMax * RATE_DEFENSA_LA);
+  const resultEsc = (v) => v >= 0
+    ? `<span style="color:var(--lopez);font-weight:800">🛡️ LA +${fmtV(v)}</span>`
+    : `<span style="color:var(--sanchez);font-weight:800">🚩 S +${fmtV(Math.abs(v))}</span>`;
 
   document.getElementById('batalla-container').innerHTML = `
     <!-- MARCADOR + PLAN -->
     <div class="jee-hero">
-      <div class="jee-hero-title">Plan Operacional López Aliaga · ${pct.toFixed(2)}%</div>
+      <div class="jee-hero-title">Plan por Distrito · ${pct.toFixed(2)}%</div>
       <div style="display:flex;justify-content:space-around;margin:12px 0">
         <div style="text-align:center">
           <div style="font-size:0.65rem;color:var(--text-secondary);font-weight:700">🚩 SÁNCHEZ</div>
@@ -1300,99 +1338,128 @@ function renderBatalla(data) {
         <div style="font-size:0.72rem;color:var(--text-secondary)">Sánchez lidera por</div>
         <div style="font-size:1.8rem;font-weight:800;color:var(--sanchez)">${fmt(diff)}</div>
       </div>
-      <div style="background:var(--lopez-bg);padding:12px;border-radius:12px;border:2px solid var(--lopez);text-align:center">
-        <div style="font-size:0.68rem;color:var(--lopez);font-weight:800;letter-spacing:0.05em">EJECUTANDO EL PLAN, LA GANA POR</div>
-        <div style="font-size:2.2rem;font-weight:900;color:var(--lopez);margin:4px 0">+${fmtV(finalRealista)}</div>
-        <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.4">
-          Defender ${defenderActas} actas pro-LA al 95% + anular las ~${TOP_IMPUG_TARGET} actas rurales clave
+    </div>
+
+    <!-- ESCENARIOS COMPARATIVOS -->
+    <div class="jee-list">
+      <div class="jee-list-title">¿Cuánto esfuerzo basta?</div>
+      <div style="font-size:0.76rem;color:var(--text-secondary);margin-bottom:10px;line-height:1.5">
+        Supuesto: si LA <b>no actúa</b>, cada acta JEE valida a tasa base ${(RATE_BASE*100).toFixed(0)}%. Si LA <b>ejecuta acción</b> en un distrito (defender→100% valida, anular→0% valida), se captura su impacto completo.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:6px">
+        <div style="background:var(--card);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)">
+          <div>
+            <div style="font-weight:700;font-size:0.82rem">Escenario A · Sin hacer nada</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary)">Todo queda a tasa base — resultado actual</div>
+          </div>
+          ${resultEsc(escenarioNada)}
+        </div>
+        <div style="background:var(--card);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)">
+          <div>
+            <div style="font-weight:700;font-size:0.82rem">Escenario B · Solo distritos ALTO</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary)">${defAlto.dist + anuAlto.dist} distritos · ${defAlto.actas + anuAlto.actas} actas</div>
+          </div>
+          ${resultEsc(escenarioAlto)}
+        </div>
+        <div style="background:var(--lopez-bg);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:2px solid var(--lopez)">
+          <div>
+            <div style="font-weight:800;font-size:0.85rem;color:var(--lopez)">Escenario C · ALTO + MEDIO ⭐</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary)">${defAlto.dist + defMedio.dist + anuAlto.dist + anuMedio.dist} distritos · ${defAlto.actas + defMedio.actas + anuAlto.actas + anuMedio.actas} actas — RECOMENDADO</div>
+          </div>
+          ${resultEsc(escenarioAltoMedio)}
+        </div>
+        <div style="background:var(--card);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)">
+          <div>
+            <div style="font-weight:700;font-size:0.82rem">Escenario D · Todo (techo teórico)</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary)">Cada distrito JEE ejecutado perfecto</div>
+          </div>
+          ${resultEsc(escenarioTodo)}
         </div>
       </div>
     </div>
 
     <!-- PASO 1: PENDIENTES (automático) -->
     <div class="jee-list">
-      <div class="jee-list-title">Paso 1 · Esperar las pendientes (${fmt(pendActas)} actas)</div>
-      <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-        Estas actas llegan solas. <b>No requieren acción</b>. Son votos ya emitidos, solo falta que ONPE los sincronice.
+      <div class="jee-list-title">Paso 1 · Las pendientes llegan solas (${fmt(pendActas)} actas)</div>
+      <div style="font-size:0.76rem;color:var(--text-secondary);line-height:1.5;margin-bottom:8px">
+        <b>Sin acción</b>. Votos ya emitidos que ONPE sincronizará.
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-        <div style="background:var(--lopez-bg);padding:10px;border-radius:10px;text-align:center">
-          <div style="font-size:0.6rem;font-weight:800;color:var(--lopez)">LA RECIBE</div>
-          <div style="font-size:1.1rem;font-weight:800;color:var(--lopez)">+${fmt(pendLA)}</div>
+        <div style="background:var(--lopez-bg);padding:8px;border-radius:8px;text-align:center">
+          <div style="font-size:0.6rem;font-weight:800;color:var(--lopez)">LA</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--lopez)">+${fmt(pendLA)}</div>
         </div>
-        <div style="background:var(--sanchez-bg);padding:10px;border-radius:10px;text-align:center">
-          <div style="font-size:0.6rem;font-weight:800;color:var(--sanchez)">S RECIBE</div>
-          <div style="font-size:1.1rem;font-weight:800;color:var(--sanchez)">+${fmt(pendS)}</div>
+        <div style="background:var(--sanchez-bg);padding:8px;border-radius:8px;text-align:center">
+          <div style="font-size:0.6rem;font-weight:800;color:var(--sanchez)">S</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--sanchez)">+${fmt(pendS)}</div>
         </div>
-        <div style="background:var(--lopez-bg);padding:10px;border-radius:10px;text-align:center;border:1px solid var(--lopez)">
-          <div style="font-size:0.6rem;font-weight:800;color:var(--lopez)">NETO LA</div>
-          <div style="font-size:1.1rem;font-weight:800;color:var(--lopez)">+${fmt(pendNeto)}</div>
+        <div style="background:var(--lopez-bg);padding:8px;border-radius:8px;text-align:center;border:1px solid var(--lopez)">
+          <div style="font-size:0.6rem;font-weight:800;color:var(--lopez)">NETO</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--lopez)">+${fmt(pendNeto)}</div>
         </div>
       </div>
-      <div style="text-align:center;margin-top:10px;padding:8px;background:var(--bg);border-radius:8px;font-size:0.78rem">
-        Gap post-pendientes: <b style="color:var(--sanchez)">S solo +${fmt(gapPost)}</b> · Es lo que el plan JEE tiene que cerrar
+      <div style="text-align:center;margin-top:8px;font-size:0.74rem">
+        Post-pendientes: <b style="color:var(--sanchez)">S solo +${fmt(gapPost)}</b> · Es lo que el JEE tiene que cerrar
       </div>
     </div>
 
-    <!-- PASO 2: DEFENDER FORTALEZAS -->
+    <!-- PASO 2: DEFENDER POR DISTRITO -->
     <div class="jee-list" style="border-left:4px solid var(--lopez)">
-      <div class="jee-list-title" style="color:var(--lopez)">Paso 2 · Defender fortalezas (${fmt(defenderActas)} actas pro-LA)</div>
-      <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-        Concentradas en <b>Lima, Extranjero, Arequipa, La Libertad costera</b>. Personeros LA tienen que garantizar que se validen estas actas.
+      <div class="jee-list-title" style="color:var(--lopez)">Paso 2 · DEFENDER — ${totDefender.length} distritos pro-LA</div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
+        Personeros garantizan validación. Si se anulan estas actas, LA pierde votos netos.
       </div>
-      <div style="background:var(--lopez-bg);padding:10px;border-radius:10px;text-align:center;margin-bottom:10px">
-        <div style="font-size:0.65rem;color:var(--lopez);font-weight:800">SI VALIDAN AL 95%</div>
-        <div style="font-size:1.4rem;font-weight:800;color:var(--lopez)">+${fmt(defenderValidan95)} votos netos LA</div>
-        <div style="font-size:0.68rem;color:var(--text-secondary)">máximo teórico (100%): +${fmtV(defenderNetoMax)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;font-size:0.72rem">
+        <div style="background:var(--lopez-bg);padding:8px;border-radius:8px;text-align:center">
+          <div style="font-weight:800;color:#dc2626">ALTO</div>
+          <div style="font-weight:800">${defAlto.dist} dist · ${defAlto.actas} actas</div>
+          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(defAlto.imp)} en juego</div>
+        </div>
+        <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center">
+          <div style="font-weight:800;color:#ea580c">MEDIO</div>
+          <div style="font-weight:800">${defMedio.dist} · ${defMedio.actas}</div>
+          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(defMedio.imp)}</div>
+        </div>
+        <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center">
+          <div style="font-weight:800;color:#9ca3af">BAJO</div>
+          <div style="font-weight:800">${defBajo.dist} · ${defBajo.actas}</div>
+          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(defBajo.imp)}</div>
+        </div>
       </div>
-      <div style="font-size:0.7rem;color:var(--text-secondary);font-weight:700;margin:12px 0 6px">TOP 12 DISTRITOS A DEFENDER</div>
-      ${defenderHtml}
+      ${defenderBlocksHtml}
     </div>
 
-    <!-- PASO 3: IMPUGNAR ZONA CRÍTICA -->
+    <!-- PASO 3: ANULAR POR DISTRITO -->
     <div class="jee-list" style="border-left:4px solid var(--lopez)">
-      <div class="jee-list-title" style="color:var(--lopez)">Paso 3 · Impugnar zona crítica (objetivo ~${TOP_IMPUG_TARGET} actas)</div>
-      <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-        Las actas JEE <b>ya tienen problemas</b> (tachaduras, sumas mal, impugnaciones existentes). Mesas rurales con improvisación logística = más errores. Personeros LA empujan la <b>anulación</b> de las más pro-S.
+      <div class="jee-list-title" style="color:var(--lopez)">Paso 3 · ANULAR — ${totAnular.length} distritos pro-S</div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
+        Actas rurales con problemas de llenado. Personeros empujan la <b>anulación</b>. Si se validan, S suma.
       </div>
-      <div style="background:var(--lopez-bg);padding:10px;border-radius:10px;text-align:center;margin-bottom:10px">
-        <div style="font-size:0.65rem;color:var(--lopez);font-weight:800">BREAK-EVEN MATEMÁTICO</div>
-        ${foundBE
-          ? `<div style="font-size:0.95rem;font-weight:800;color:var(--lopez);line-height:1.3">
-              Anular ${breakevenActas} actas en ${breakevenDistritos} distritos
-              <div style="font-size:0.72rem;color:var(--text-secondary);font-weight:600;margin-top:3px">
-                (${(breakevenActas/totJeeActas*100).toFixed(1)}% de todas las JEE — asumiendo el resto valida al 100%)
-              </div>
-            </div>`
-          : `<div style="color:var(--sanchez);font-weight:800">No alcanza con impugnación selectiva</div>`
-        }
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;font-size:0.72rem">
+        <div style="background:var(--lopez-bg);padding:8px;border-radius:8px;text-align:center">
+          <div style="font-weight:800;color:#dc2626">ALTO</div>
+          <div style="font-weight:800">${anuAlto.dist} dist · ${anuAlto.actas} actas</div>
+          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(anuAlto.imp)} en juego</div>
+        </div>
+        <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center">
+          <div style="font-weight:800;color:#ea580c">MEDIO</div>
+          <div style="font-weight:800">${anuMedio.dist} · ${anuMedio.actas}</div>
+          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(anuMedio.imp)}</div>
+        </div>
+        <div style="background:var(--bg);padding:8px;border-radius:8px;text-align:center">
+          <div style="font-weight:800;color:#9ca3af">BAJO</div>
+          <div style="font-weight:800">${anuBajo.dist} · ${anuBajo.actas}</div>
+          <div style="font-size:0.66rem;color:var(--text-secondary)">±${fmtV(anuBajo.imp)}</div>
+        </div>
       </div>
-      <div style="font-size:0.72rem;color:var(--text-secondary);font-weight:700;margin:12px 0 6px;letter-spacing:0.04em">DISTRIBUCIÓN POR DEPARTAMENTO (logística personeros)</div>
-      ${deptImpugnarHtml}
-      <div style="font-size:0.72rem;color:var(--text-secondary);font-weight:700;margin:16px 0 6px;letter-spacing:0.04em">TOP 15 DISTRITOS ESPECÍFICOS A IMPUGNAR</div>
-      ${topImpugnarHtml}
+      ${anularBlocksHtml}
     </div>
 
-    <!-- PASO 4: PROYECCIÓN FINAL -->
-    <div class="jee-list" style="border:2px solid var(--lopez);border-radius:18px;background:var(--lopez-bg)">
-      <div class="jee-list-title" style="color:var(--lopez)">Paso 4 · Proyección Final Realista</div>
-      <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-        Supuestos del plan completo:
-        <ul style="margin:6px 0 0 18px;padding:0;font-size:0.75rem">
-          <li>Pendientes llegan automáticas (sin acción)</li>
-          <li>Zonas pro-LA (Lima/Extranjero) validan al <b>95%</b></li>
-          <li>Top ~${TOP_IMPUG_TARGET} actas rurales pro-S se <b>anulan</b> (personeros las impugnan exitosamente)</li>
-          <li>Resto actas pro-S validan al <b>75%</b> (tasa histórica en mesas con problemas)</li>
-        </ul>
-      </div>
-      <div style="background:var(--card);padding:14px;border-radius:12px;text-align:center">
-        <div style="font-size:0.7rem;color:var(--lopez);font-weight:800;letter-spacing:0.05em">RESULTADO PROYECTADO</div>
-        <div style="font-size:2.4rem;font-weight:900;color:var(--${finalRealista >= 0 ? 'lopez' : 'sanchez'});margin:6px 0">
-          ${finalRealista >= 0 ? '🛡️ LA gana por ' + fmtV(finalRealista) : '🚩 S mantiene por ' + fmtV(Math.abs(finalRealista))}
-        </div>
-        <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.4">
-          Pendientes LA +${fmt(pendNeto)} · JEE neto ${realJeeNet >= 0 ? 'LA +' : 'S +'}${fmtV(Math.abs(realJeeNet))} · Gap inicial ${fmt(diff)}
-        </div>
+    <!-- LEYENDA -->
+    <div class="jee-list" style="background:var(--bg);border:1px dashed var(--border)">
+      <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.55">
+        <b>Criticidad</b> (votos netos en juego): <b style="color:#dc2626">ALTO</b> ≥${TIER_ALTO} · <b style="color:#ea580c">MEDIO</b> ${TIER_MEDIO}-${TIER_ALTO} · <b style="color:#9ca3af">BAJO</b> &lt;${TIER_MEDIO}<br>
+        Distritos <b>BAJO</b> (${defBajo.dist + anuBajo.dist} en total) casi no mueven la aguja — si no actúas ahí da ${'~'}igual. Concentrar en ALTO+MEDIO.
       </div>
     </div>
   `;
