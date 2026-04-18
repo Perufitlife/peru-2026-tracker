@@ -232,6 +232,26 @@
   .desg-bar-l { background: var(--lopez); }
   .desg-detail { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .desg-note { font-size: 0.65rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.4; }
+
+  /* Explorador JEE drill-down */
+  .jee-tree details { border-bottom: 1px solid var(--border); }
+  .jee-tree details > summary { list-style: none; cursor: pointer; user-select: none; }
+  .jee-tree details > summary::-webkit-details-marker { display: none; }
+  .jee-tree details > summary::marker { display: none; }
+  .jee-tree details[open] > summary .chev { transform: rotate(90deg); }
+  .jee-tree .chev { display: inline-block; width: 10px; color: var(--text-secondary); font-size: 0.65rem; transition: transform 0.12s; }
+  .jee-tree .row { display: grid; grid-template-columns: 12px 1fr auto auto auto auto; gap: 8px; align-items: center; font-size: 0.72rem; padding: 6px 8px; font-variant-numeric: tabular-nums; }
+  .jee-tree .row:hover { background: var(--bg); }
+  .jee-tree .col-jee { font-weight: 800; min-width: 42px; text-align: right; }
+  .jee-tree .col-delta { font-weight: 700; min-width: 52px; text-align: right; }
+  .jee-tree .col-votos { color: var(--text-secondary); min-width: 60px; text-align: right; }
+  .jee-tree .col-neto { font-weight: 800; min-width: 60px; text-align: right; }
+  .jee-tree .leaf { border-bottom: 1px solid var(--border); }
+  .jee-tree .huerfana .col-name { color: var(--text-secondary); font-style: italic; }
+  .jee-cand-btn { flex: 1; padding: 8px 10px; border: none; border-radius: 6px; font-weight: 800; font-size: 0.76rem; cursor: pointer; transition: all 0.12s; }
+  .jee-cand-btn.active-la { background: var(--lopez); color: white; }
+  .jee-cand-btn.active-s { background: var(--sanchez); color: white; }
+  .jee-cand-btn.inactive { background: transparent; color: var(--text-secondary); }
 </style>
 </head>
 <body>
@@ -290,6 +310,406 @@ const badgeClass = p => p >= 90 ? 'b-green' : p >= 80 ? 'b-blue' : p >= 70 ? 'b-
 
 function findCand(list, needle) {
   return (list || []).find(c => c.nombreCandidato && c.nombreCandidato.includes(needle));
+}
+
+// ===== Explorador JEE drill-down =====
+window._jeeTreeData = null;
+window._jeeCandidate = 'LA';
+window._jeeRateLE = 98;   // % validación Lima + Extranjero (default: escenario LA-gana)
+window._jeeRatePV = 60;   // % validación Provincias (default: escenario LA-gana)
+window._jeeDiffActual = 0;      // diff ONPE (S - L)
+window._jeeVotosActualesL = 0;  // votos LA contados hoy
+window._jeeVotosActualesS = 0;  // votos S  contados hoy
+window._jeeJeeLE_L = 0;         // JEE Lima+Ext pool LA al 100%
+window._jeeJeeLE_S = 0;         // JEE Lima+Ext pool S  al 100%
+window._jeeJeePV_L = 0;         // JEE Provincias pool LA al 100%
+window._jeeJeePV_S = 0;         // JEE Provincias pool S  al 100%
+window._jeePendLE_L = 0;        // pendientes puras Lima+Ext pool LA
+window._jeePendLE_S = 0;        // pendientes puras Lima+Ext pool S
+window._jeePendPV_L = 0;        // pendientes puras Provincias pool LA
+window._jeePendPV_S = 0;        // pendientes puras Provincias pool S
+
+function buildJeeTree(data) {
+  const fC = (list, n) => (list||[]).find(c => c.nombreCandidato?.includes(n));
+  const getPct = (item, name) => (fC(item.candidatos, name) || {}).porcentajeVotosValidos || 0;
+
+  const mkLeaf = (item, tipo, fbVpa, fbL, fbS) => {
+    const jee = item.totales.enviadasJee || 0;
+    const ac = item.totales.contabilizadas;
+    const vpa = ac > 0 ? item.totales.totalVotosEmitidos / ac : fbVpa;
+    const pctL = ac > 0 ? getPct(item, 'LÓPEZ ALIAGA') : fbL;
+    const pctS = ac > 0 ? getPct(item, 'SANCHEZ PALOMINO') : fbS;
+    return {
+      nombre: item.nombre, tipo, jee, vpa, pctL, pctS,
+      votos: vpa * jee,
+      votosLA: vpa * jee * pctL / 100,
+      votosS: vpa * jee * pctS / 100,
+      hijos: [],
+    };
+  };
+
+  const rollup = (n) => {
+    if (!n.hijos.length) return;
+    n.jee = n.hijos.reduce((a,h) => a + h.jee, 0);
+    n.votos = n.hijos.reduce((a,h) => a + h.votos, 0);
+    n.votosLA = n.hijos.reduce((a,h) => a + h.votosLA, 0);
+    n.votosS = n.hijos.reduce((a,h) => a + h.votosS, 0);
+    n.pctL = n.votos > 0 ? (n.votosLA / n.votos) * 100 : 0;
+    n.pctS = n.votos > 0 ? (n.votosS / n.votos) * 100 : 0;
+    n.hijos.sort((a,b) => b.jee - a.jee);
+  };
+
+  const addOrfana = (nodo, expected, vpa, pctL, pctS) => {
+    const sum = nodo.hijos.reduce((a,h) => a + h.jee, 0);
+    const orf = Math.max(0, expected - sum);
+    if (orf > 0) {
+      nodo.hijos.push({
+        nombre: '(Sin desglose)', tipo: 'huerfana', jee: orf,
+        vpa, pctL, pctS,
+        votos: vpa * orf,
+        votosLA: vpa * orf * pctL / 100,
+        votosS: vpa * orf * pctS / 100,
+        hijos: [],
+      });
+    }
+  };
+
+  const peru = { nombre: 'PERÚ', tipo: 'raiz', icon: '🇵🇪', hijos: [] };
+  const extranjero = { nombre: 'EXTRANJERO', tipo: 'raiz', icon: '🌎', hijos: [] };
+
+  // Acumuladores para el escenario diferencial
+  let jeeLE_L = 0, jeeLE_S = 0;    // JEE Lima+Extranjero al 100%
+  let jeePV_L = 0, jeePV_S = 0;    // JEE resto de provincias (todos los deptos menos Lima y Extranjero)
+  let pendLE_L = 0, pendLE_S = 0;  // pendientes puras Lima+Ext
+  let pendPV_L = 0, pendPV_S = 0;  // pendientes puras provincias
+
+  const addPend = (item, esLE, fbVpa, fbL, fbS) => {
+    const ac = item.totales.contabilizadas;
+    const at = item.totales.totalActas;
+    const jee = item.totales.enviadasJee || 0;
+    const pend = Math.max(0, at - ac - jee);
+    if (pend === 0) return;
+    const vpa = ac > 0 ? item.totales.totalVotosEmitidos / ac : fbVpa;
+    const pctL = ac > 0 ? getPct(item, 'LÓPEZ ALIAGA') : fbL;
+    const pctS = ac > 0 ? getPct(item, 'SANCHEZ PALOMINO') : fbS;
+    const vL = vpa * pend * pctL / 100;
+    const vS = vpa * pend * pctS / 100;
+    if (esLE) { pendLE_L += vL; pendLE_S += vS; }
+    else { pendPV_L += vL; pendPV_S += vS; }
+  };
+
+  data.departamentos.forEach(dep => {
+    const depJee = dep.totales.enviadasJee || 0;
+    const dac = dep.totales.contabilizadas;
+    const deptVpa = dac > 0 ? dep.totales.totalVotosEmitidos / dac : 0;
+    const deptL = getPct(dep, 'LÓPEZ ALIAGA');
+    const deptS = getPct(dep, 'SANCHEZ PALOMINO');
+    const esExt = dep.nombre === 'EXTRANJERO';
+    const esLima = dep.nombre === 'LIMA';
+    const esLE = esExt || esLima;
+
+    // Pendientes puras a nivel hoja
+    (dep.provincias || []).forEach(prov => {
+      const pac = prov.totales.contabilizadas;
+      const provVpa = pac > 0 ? prov.totales.totalVotosEmitidos / pac : deptVpa;
+      const provL = pac > 0 ? getPct(prov, 'LÓPEZ ALIAGA') : deptL;
+      const provS = pac > 0 ? getPct(prov, 'SANCHEZ PALOMINO') : deptS;
+      if (prov.distritos?.length) prov.distritos.forEach(d => addPend(d, esLE, provVpa, provL, provS));
+      else addPend(prov, esLE, deptVpa, deptL, deptS);
+    });
+
+    if (depJee === 0) return;
+
+    if (esExt) {
+      (dep.provincias || []).forEach(prov => {
+        if ((prov.totales.enviadasJee || 0) === 0) return;
+        const node = mkLeaf(prov, 'pais', deptVpa, deptL, deptS);
+        jeeLE_L += node.votosLA; jeeLE_S += node.votosS;
+        extranjero.hijos.push(node);
+      });
+      const sumHijos = extranjero.hijos.reduce((a,h)=>a+h.jee,0);
+      const orf = Math.max(0, depJee - sumHijos);
+      if (orf > 0) {
+        const vL = deptVpa * orf * deptL / 100;
+        const vS = deptVpa * orf * deptS / 100;
+        jeeLE_L += vL; jeeLE_S += vS;
+        extranjero.hijos.push({
+          nombre: '(Sin desglose)', tipo: 'huerfana', jee: orf,
+          vpa: deptVpa, pctL: deptL, pctS: deptS,
+          votos: deptVpa * orf, votosLA: vL, votosS: vS, hijos: [],
+        });
+      }
+    } else {
+      const depNode = mkLeaf(dep, 'depto', deptVpa, deptL, deptS);
+      depNode.hijos = [];
+      (dep.provincias || []).forEach(prov => {
+        if ((prov.totales.enviadasJee || 0) === 0) return;
+        const pac = prov.totales.contabilizadas;
+        const provVpa = pac > 0 ? prov.totales.totalVotosEmitidos / pac : deptVpa;
+        const provL = pac > 0 ? getPct(prov, 'LÓPEZ ALIAGA') : deptL;
+        const provS = pac > 0 ? getPct(prov, 'SANCHEZ PALOMINO') : deptS;
+        const provNode = mkLeaf(prov, 'provincia', deptVpa, deptL, deptS);
+        provNode.hijos = [];
+        (prov.distritos || []).forEach(d => {
+          if ((d.totales.enviadasJee || 0) === 0) return;
+          const node = mkLeaf(d, 'distrito', provVpa, provL, provS);
+          if (esLima) { jeeLE_L += node.votosLA; jeeLE_S += node.votosS; }
+          else { jeePV_L += node.votosLA; jeePV_S += node.votosS; }
+          provNode.hijos.push(node);
+        });
+        const sumH = provNode.hijos.reduce((a,h)=>a+h.jee,0);
+        const orfP = Math.max(0, (prov.totales.enviadasJee || 0) - sumH);
+        if (orfP > 0) {
+          const vL = provVpa * orfP * provL / 100;
+          const vS = provVpa * orfP * provS / 100;
+          if (esLima) { jeeLE_L += vL; jeeLE_S += vS; }
+          else { jeePV_L += vL; jeePV_S += vS; }
+          provNode.hijos.push({
+            nombre: '(Sin desglose)', tipo: 'huerfana', jee: orfP,
+            vpa: provVpa, pctL: provL, pctS: provS,
+            votos: provVpa * orfP, votosLA: vL, votosS: vS, hijos: [],
+          });
+        }
+        rollup(provNode);
+        depNode.hijos.push(provNode);
+      });
+      const sumD = depNode.hijos.reduce((a,h)=>a+h.jee,0);
+      const orfD = Math.max(0, depJee - sumD);
+      if (orfD > 0) {
+        const vL = deptVpa * orfD * deptL / 100;
+        const vS = deptVpa * orfD * deptS / 100;
+        if (esLima) { jeeLE_L += vL; jeeLE_S += vS; }
+        else { jeePV_L += vL; jeePV_S += vS; }
+        depNode.hijos.push({
+          nombre: '(Sin desglose)', tipo: 'huerfana', jee: orfD,
+          vpa: deptVpa, pctL: deptL, pctS: deptS,
+          votos: deptVpa * orfD, votosLA: vL, votosS: vS, hijos: [],
+        });
+      }
+      rollup(depNode);
+      peru.hijos.push(depNode);
+    }
+  });
+
+  rollup(peru); rollup(extranjero);
+
+  // Guardar pools absolutos para escenarios
+  window._jeeJeeLE_L = jeeLE_L; window._jeeJeeLE_S = jeeLE_S;
+  window._jeeJeePV_L = jeePV_L; window._jeeJeePV_S = jeePV_S;
+  window._jeePendLE_L = pendLE_L; window._jeePendLE_S = pendLE_S;
+  window._jeePendPV_L = pendPV_L; window._jeePendPV_S = pendPV_S;
+
+  // Votos actuales ONPE
+  const nS = (fC(data.nacional.candidatos, 'SANCHEZ PALOMINO') || {}).totalVotosValidos || 0;
+  const nL = (fC(data.nacional.candidatos, 'LÓPEZ ALIAGA') || {}).totalVotosValidos || 0;
+  window._jeeVotosActualesS = nS;
+  window._jeeVotosActualesL = nL;
+  window._jeeDiffActual = nS - nL;
+
+  return { peru, extranjero };
+}
+
+function renderJeeNode(n, depth) {
+  const cand = window._jeeCandidate;
+  const neto = cand === 'LA' ? (n.votosLA - n.votosS) : (n.votosS - n.votosLA);
+  const netoColor = neto >= 0
+    ? (cand === 'LA' ? 'var(--lopez)' : 'var(--sanchez)')
+    : (cand === 'LA' ? 'var(--sanchez)' : 'var(--lopez)');
+  const delta = (n.pctL || 0) - (n.pctS || 0);
+  const deltaColor = delta >= 0 ? 'var(--lopez)' : 'var(--sanchez)';
+  const hasChildren = n.hijos && n.hijos.length > 0;
+
+  const tipoIcon = {
+    raiz: n.icon || '',
+    depto: '🏛',
+    provincia: '🏘',
+    distrito: '📍',
+    pais: '🌐',
+    huerfana: '⚠️'
+  }[n.tipo] || '';
+
+  const weight = n.tipo === 'raiz' ? 900 : (n.tipo === 'depto' ? 800 : (n.tipo === 'provincia' ? 700 : 500));
+  const padLeft = 8 + depth * 14;
+
+  const content = `
+    <span class="chev">${hasChildren ? '▸' : ''}</span>
+    <span class="col-name" style="font-weight:${weight};padding-left:${padLeft}px">${tipoIcon} ${titleCase(n.nombre)}</span>
+    <span class="col-jee">${fmt(Math.round(n.jee || 0))}</span>
+    <span class="col-delta" style="color:${deltaColor}">${delta >= 0 ? '+' : ''}${delta.toFixed(1)}pp</span>
+    <span class="col-votos">~${fmt(Math.round(n.votos || 0))}</span>
+    <span class="col-neto" style="color:${netoColor}">${neto >= 0 ? '+' : ''}${fmt(Math.round(neto))}</span>
+  `;
+
+  if (!hasChildren) {
+    return `<div class="row leaf ${n.tipo === 'huerfana' ? 'huerfana' : ''}">${content}</div>`;
+  }
+
+  const openAttr = n.tipo === 'raiz' ? ' open' : '';
+  return `<details${openAttr}>
+    <summary><div class="row">${content}</div></summary>
+    <div>${n.hijos.map(h => renderJeeNode(h, depth + 1)).join('')}</div>
+  </details>`;
+}
+
+function renderJeeTree() {
+  const t = window._jeeTreeData;
+  if (!t) return;
+  const root = document.getElementById('jee-tree-root');
+  const resumen = document.getElementById('jee-resumen');
+  if (!root) return;
+
+  const cand = window._jeeCandidate;
+  const rLE = window._jeeRateLE / 100;
+  const rPV = window._jeeRatePV / 100;
+
+  // Totales pool
+  const totActas = t.peru.jee + t.extranjero.jee;
+  const totVotos = t.peru.votos + t.extranjero.votos;
+
+  // Votos que suma cada candidato por zona (con tasas del escenario)
+  const sumaL_LE_jee = rLE * window._jeeJeeLE_L;
+  const sumaS_LE_jee = rLE * window._jeeJeeLE_S;
+  const sumaL_PV_jee = rPV * window._jeeJeePV_L;
+  const sumaS_PV_jee = rPV * window._jeeJeePV_S;
+  // Pendientes puras (cuentan 100%)
+  const sumaL_pend = window._jeePendLE_L + window._jeePendPV_L;
+  const sumaS_pend = window._jeePendLE_S + window._jeePendPV_S;
+
+  const totSumaL = sumaL_LE_jee + sumaL_PV_jee + sumaL_pend;
+  const totSumaS = sumaS_LE_jee + sumaS_PV_jee + sumaS_pend;
+
+  const finalL = window._jeeVotosActualesL + totSumaL;
+  const finalS = window._jeeVotosActualesS + totSumaS;
+  const resultadoFinal = finalS - finalL;  // >0 S gana · <0 LA gana
+  const ganador = resultadoFinal >= 0 ? 'SÁNCHEZ' : 'LÓPEZ ALIAGA';
+  const ganadorColor = resultadoFinal >= 0 ? 'var(--sanchez)' : 'var(--lopez)';
+  const ganadorIcon = resultadoFinal >= 0 ? '🚩' : '🛡️';
+  const margen = Math.abs(Math.round(resultadoFinal));
+
+  // Actas perdidas (no validadas en JEE) para LA y para S
+  const actasLE = (window._jeeJeeLE_L + window._jeeJeeLE_S) > 0 ? (1 - rLE) : 0;
+  const actasPV = (window._jeeJeePV_L + window._jeeJeePV_S) > 0 ? (1 - rPV) : 0;
+
+  if (resumen) {
+    resumen.innerHTML = `
+      <!-- Stats globales del pool -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:0.55rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.05em">ACTAS JEE</div>
+          <div style="font-size:1.05rem;font-weight:800">${fmt(Math.round(totActas))}</div>
+        </div>
+        <div>
+          <div style="font-size:0.55rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.05em">VOTOS EN POOL</div>
+          <div style="font-size:1.05rem;font-weight:800">~${fmt(Math.round(totVotos))}</div>
+        </div>
+        <div>
+          <div style="font-size:0.55rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.05em">DIFF ACTUAL ONPE</div>
+          <div style="font-size:1.05rem;font-weight:800;color:${window._jeeDiffActual >= 0 ? 'var(--sanchez)' : 'var(--lopez)'}">${window._jeeDiffActual >= 0 ? 'S' : 'LA'} +${fmt(Math.abs(window._jeeDiffActual))}</div>
+        </div>
+      </div>
+
+      <!-- Sliders escenario -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="font-size:0.62rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em;margin-bottom:8px">ESCENARIO · TASA DE VALIDACIÓN POR ZONA</div>
+
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+          <button onclick="setJeePreset(85,85)" style="flex:1;min-width:90px;padding:6px;border:1px solid var(--border);background:var(--bg);border-radius:6px;font-size:0.62rem;font-weight:700;cursor:pointer">Paridad 85/85</button>
+          <button onclick="setJeePreset(95,80)" style="flex:1;min-width:90px;padding:6px;border:1px solid var(--border);background:var(--bg);border-radius:6px;font-size:0.62rem;font-weight:700;cursor:pointer">LA +95/80</button>
+          <button onclick="setJeePreset(98,60)" style="flex:1;min-width:90px;padding:6px;border:1px solid var(--lopez);background:var(--lopez-bg);color:var(--lopez);border-radius:6px;font-size:0.62rem;font-weight:800;cursor:pointer">LA gana 98/60</button>
+          <button onclick="setJeePreset(70,95)" style="flex:1;min-width:90px;padding:6px;border:1px solid var(--sanchez);background:var(--sanchez-bg);color:var(--sanchez);border-radius:6px;font-size:0.62rem;font-weight:800;cursor:pointer">S domina 70/95</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr;gap:8px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.65rem;margin-bottom:2px">
+              <span style="font-weight:700">🛡️ Lima + Extranjero (pro-LA)</span>
+              <span style="font-weight:800;color:var(--lopez)">${window._jeeRateLE}%</span>
+            </div>
+            <input type="range" min="0" max="100" step="1" value="${window._jeeRateLE}" oninput="setJeeRate('LE', this.value)" style="width:100%;accent-color:var(--lopez)">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.65rem;margin-bottom:2px">
+              <span style="font-weight:700">⚔️ Resto provincias (pro-S)</span>
+              <span style="font-weight:800;color:var(--sanchez)">${window._jeeRatePV}%</span>
+            </div>
+            <input type="range" min="0" max="100" step="1" value="${window._jeeRatePV}" oninput="setJeeRate('PV', this.value)" style="width:100%;accent-color:var(--sanchez)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Breakdown del cálculo: cada candidato suma sus votos -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;font-size:0.68rem;line-height:1.55">
+        <div style="font-size:0.58rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em;margin-bottom:6px">CÁLCULO PASO A PASO · VOTOS QUE SUMA CADA CANDIDATO</div>
+
+        <!-- Tabla comparativa -->
+        <div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;font-variant-numeric:tabular-nums">
+          <div style="font-weight:700;font-size:0.6rem;color:var(--text-secondary);border-bottom:1px solid var(--border);padding-bottom:2px">ORIGEN</div>
+          <div style="font-weight:700;font-size:0.6rem;color:var(--lopez);text-align:right;border-bottom:1px solid var(--border);padding-bottom:2px">🛡️ L. ALIAGA</div>
+          <div style="font-weight:700;font-size:0.6rem;color:var(--sanchez);text-align:right;border-bottom:1px solid var(--border);padding-bottom:2px">🚩 SÁNCHEZ</div>
+
+          <div>Votos actuales ONPE</div>
+          <div style="text-align:right">${fmt(Math.round(window._jeeVotosActualesL))}</div>
+          <div style="text-align:right">${fmt(Math.round(window._jeeVotosActualesS))}</div>
+
+          <div style="color:var(--text-secondary)">JEE Lima+Ext × ${window._jeeRateLE}%</div>
+          <div style="text-align:right;color:var(--lopez)">+${fmt(Math.round(sumaL_LE_jee))}</div>
+          <div style="text-align:right;color:var(--sanchez)">+${fmt(Math.round(sumaS_LE_jee))}</div>
+
+          <div style="color:var(--text-secondary)">JEE Provincias × ${window._jeeRatePV}%</div>
+          <div style="text-align:right;color:var(--lopez)">+${fmt(Math.round(sumaL_PV_jee))}</div>
+          <div style="text-align:right;color:var(--sanchez)">+${fmt(Math.round(sumaS_PV_jee))}</div>
+
+          <div style="color:var(--text-secondary)">Pendientes puras (100%)</div>
+          <div style="text-align:right;color:var(--lopez)">+${fmt(Math.round(sumaL_pend))}</div>
+          <div style="text-align:right;color:var(--sanchez)">+${fmt(Math.round(sumaS_pend))}</div>
+
+          <div style="font-weight:800;border-top:1px solid var(--border);padding-top:3px;margin-top:2px">TOTAL PROYECTADO</div>
+          <div style="text-align:right;font-weight:800;color:var(--lopez);border-top:1px solid var(--border);padding-top:3px;margin-top:2px">${fmt(Math.round(finalL))}</div>
+          <div style="text-align:right;font-weight:800;color:var(--sanchez);border-top:1px solid var(--border);padding-top:3px;margin-top:2px">${fmt(Math.round(finalS))}</div>
+        </div>
+
+        <div style="font-size:0.58rem;color:var(--text-secondary);margin-top:8px;font-style:italic;line-height:1.4">
+          Las actas NO validadas (${Math.round(actasLE*100)}% Lima+Ext, ${Math.round(actasPV*100)}% provincias) no suman a nadie.
+          Ambos candidatos sí reciben votos absolutos del pool — lo que decide es la proporción.
+        </div>
+      </div>
+
+      <!-- Ganador proyectado -->
+      <div style="background:${ganadorColor};color:white;padding:14px;border-radius:10px;text-align:center">
+        <div style="font-size:0.62rem;font-weight:700;letter-spacing:0.08em;opacity:0.9">GANADOR PROYECTADO ESTE ESCENARIO</div>
+        <div style="font-size:1.3rem;font-weight:900;margin-top:4px">${ganadorIcon} ${ganador}</div>
+        <div style="font-size:0.82rem;font-weight:700;margin-top:2px;opacity:0.95">gana por ${fmt(margen)} votos</div>
+      </div>
+    `;
+  }
+
+  root.innerHTML = renderJeeNode(t.peru, 0) + renderJeeNode(t.extranjero, 0);
+
+  // actualizar estilos tabs
+  document.querySelectorAll('.jee-cand-btn').forEach(b => {
+    const isActive = b.dataset.cand === cand;
+    b.classList.remove('active-la', 'active-s', 'inactive');
+    if (isActive) b.classList.add(cand === 'LA' ? 'active-la' : 'active-s');
+    else b.classList.add('inactive');
+  });
+}
+
+function setJeeCand(c) {
+  window._jeeCandidate = c;
+  renderJeeTree();
+}
+
+function setJeeRate(zona, val) {
+  const v = Math.max(0, Math.min(100, parseInt(val, 10) || 0));
+  if (zona === 'LE') window._jeeRateLE = v;
+  else window._jeeRatePV = v;
+  renderJeeTree();
+}
+
+function setJeePreset(le, pv) {
+  window._jeeRateLE = le;
+  window._jeeRatePV = pv;
+  renderJeeTree();
 }
 
 let historyData = [];
@@ -1540,52 +1960,35 @@ function renderBatalla(data) {
       </div>
     </div>
 
-    <!-- PROYECCIÓN MONTECARLO -->
+    <!-- EXPLORADOR JEE DRILL-DOWN -->
     <div class="jee-list">
-      <div class="jee-list-title">Proyección Montecarlo · ${N_SIMS} simulaciones</div>
-      <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-        Modelo: tasa base JEE 85% (calibrada con 2021), ruido σ=4pp por distrito, efecto operativo ±3-6pp según escenario.
-        Supuesto clave: actas JEE votan como el distrito que las envía (<i>limitación: sesgo de selección no modelado</i>).
-      </div>
-      <div style="display:grid;grid-template-columns:1fr;gap:6px">
-        ${renderEscenarioCard(simFavorable, false)}
-        ${renderEscenarioCard(simParidad, true)}
-        ${renderEscenarioCard(simAdverso, false)}
-      </div>
-      <div style="background:var(--bg);padding:10px;border-radius:8px;margin-top:10px;font-size:0.7rem;line-height:1.55">
-        <b>Interpretación:</b> el pool JEE 2026 es estructuralmente pro-S (${fmt(Math.round(totJeeS))} votos S vs ${fmt(Math.round(totJeeL))} votos LA al 100% validación).
-        Si las ${fmt(totJeeNac)} actas se resuelven a tasa uniforme, S amplía ventaja ~${fmt(Math.abs(Math.round(totJeeL - totJeeS)))} votos.
-        Variables no modeladas (sesgo selección, tasa diferencial por tipo de causal, decisiones JNE no predecibles) pueden alterar sustancialmente el resultado.
-      </div>
-    </div>
-
-    <!-- COMPOSICIÓN DEL POOL JEE POR DEPTO -->
-    <div class="jee-list">
-      <div class="jee-list-title">Composición del pool JEE · ${Object.keys(porDepto).length} deptos</div>
-      <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-        ${leaves.length} distritos con actas JEE identificables + ${Math.round(orfanasGlobalActas)} actas huérfanas.
-        ${focusSet.size} distritos concentran ${Math.round(planPrincipal.cobertura*100)}% del impacto absoluto.
+      <div class="jee-list-title">Explorador de actas JEE · ${fmt(Math.round(totJeeNac))} actas totales</div>
+      <div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
+        Navega por ubicación: Perú / Extranjero → Depto → Provincia → Distrito. Ordenado por actas JEE enviadas (DESC). Filas con 0 actas ocultas.
+        Selecciona candidato para ver votos netos si las actas se validan.
       </div>
 
-      <div style="display:flex;align-items:center;gap:6px;margin:10px 0 6px;padding-left:4px">
-        <span style="font-size:0.9rem">🛡️</span>
-        <b style="font-size:0.82rem;color:#2563EB">Zonas pro-LA (Lima, Extranjero, costa)</b>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:700">
-          ${deptosDefender.reduce((a,d)=>a+d.actasJee,0)} actas
-        </span>
+      <!-- Tabs candidato -->
+      <div id="jee-cand-tabs" style="display:flex;gap:6px;margin-bottom:10px;background:var(--bg);padding:4px;border-radius:8px">
+        <button class="jee-cand-btn active-la" data-cand="LA" onclick="setJeeCand('LA')">🛡️ López Aliaga</button>
+        <button class="jee-cand-btn inactive" data-cand="S" onclick="setJeeCand('S')">🚩 Sánchez P.</button>
       </div>
-      ${deptosDefender.map(renderDeptoRow).join('')}
 
-      <div style="display:flex;align-items:center;gap:6px;margin:16px 0 6px;padding-left:4px">
-        <span style="font-size:0.9rem">⚔️</span>
-        <b style="font-size:0.82rem;color:#DC2626">Zonas pro-S (sierra, selva rural)</b>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:700">
-          ${deptosImpugnar.reduce((a,d)=>a+d.actasJee,0)} actas
-        </span>
+      <!-- Resumen superior -->
+      <div id="jee-resumen" style="background:var(--bg);padding:10px;border-radius:8px;margin-bottom:10px;font-size:0.72rem;line-height:1.5"></div>
+
+      <!-- Leyenda columnas -->
+      <div style="display:grid;grid-template-columns:12px 1fr auto auto auto auto;gap:8px;padding:4px 8px;font-size:0.58rem;color:var(--text-secondary);font-weight:700;letter-spacing:0.04em;border-bottom:2px solid var(--border)">
+        <span></span>
+        <span>UBICACIÓN</span>
+        <span style="min-width:42px;text-align:right">ACTAS</span>
+        <span style="min-width:52px;text-align:right">Δ LA-S</span>
+        <span style="min-width:60px;text-align:right">VOTOS</span>
+        <span style="min-width:60px;text-align:right">NETO 100%</span>
       </div>
-      ${deptosImpugnar.map(renderDeptoRow).join('')}
+
+      <!-- Árbol -->
+      <div class="jee-tree" id="jee-tree-root"></div>
     </div>
 
     <!-- METODOLOGÍA Y FUENTES -->
@@ -1621,6 +2024,10 @@ function renderBatalla(data) {
       </div>
     </details>
   `;
+
+  // Construir y renderizar el explorador JEE (drill-down)
+  window._jeeTreeData = buildJeeTree(data);
+  renderJeeTree();
 }
 
 load();
