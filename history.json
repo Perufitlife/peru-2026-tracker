@@ -3765,24 +3765,24 @@
     }
   },
   {
-    "t": "2026-04-19T00:04:19.883Z",
-    "pct": 93.475,
-    "vS": 1891841,
-    "vL": 1878258,
-    "diff": 13583,
-    "pctS": 12.007,
+    "t": "2026-04-19T04:28:53.757Z",
+    "pct": 93.483,
+    "vS": 1891906,
+    "vL": 1878493,
+    "diff": 13413,
+    "pctS": 12.006,
     "pctL": 11.921,
     "sync": {
-      "nacCont": 86713,
+      "nacCont": 86720,
       "nacAct": 92766,
       "nacJee": 5763,
-      "nacPend": 290,
-      "sumDeptCont": 86713,
+      "nacPend": 283,
+      "sumDeptCont": 86720,
       "sumDeptJee": 5763,
-      "sumDeptPend": 290,
-      "sumDistCont": 86713,
+      "sumDeptPend": 283,
+      "sumDistCont": 86720,
       "sumDistJee": 5763,
-      "sumDistPend": 290,
+      "sumDistPend": 283,
       "deptDriftCont": 0,
       "deptDriftJee": 0,
       "deptDriftPend": 0,
@@ -3862,9 +3862,9 @@
         "vL": 54760
       },
       "LIMA": {
-        "pct": 95.196,
-        "vS": 189607,
-        "vL": 1157402
+        "pct": 95.22,
+        "vS": 189672,
+        "vL": 1157637
       },
       "LORETO": {
         "pct": 84.538,
