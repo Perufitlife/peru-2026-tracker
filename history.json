@@ -3924,20 +3924,20 @@
     }
   },
   {
-    "t": "2026-04-22T16:25:35.893Z",
-    "pct": 94.302,
-    "vS": 1908780,
-    "vL": 1891535,
-    "diff": 17245,
+    "t": "2026-04-22T16:35:11.553Z",
+    "pct": 94.307,
+    "vS": 1908908,
+    "vL": 1891604,
+    "diff": 17304,
     "pctS": 12.019,
     "pctL": 11.91,
     "sync": {
-      "nacCont": 87480,
+      "nacCont": 87485,
       "nacAct": 92766,
-      "nacJee": 5227,
+      "nacJee": 5222,
       "nacPend": 59,
-      "sumDeptCont": 87480,
-      "sumDeptJee": 5227,
+      "sumDeptCont": 87485,
+      "sumDeptJee": 5222,
       "sumDeptPend": 59,
       "sumDistCont": 87480,
       "sumDistJee": 5227,
@@ -3945,8 +3945,8 @@
       "deptDriftCont": 0,
       "deptDriftJee": 0,
       "deptDriftPend": 0,
-      "distDriftCont": 0,
-      "distDriftJee": 0,
+      "distDriftCont": -5,
+      "distDriftJee": 5,
       "distDriftPend": 0
     },
     "deps": {
@@ -3976,7 +3976,7 @@
         "vL": 7496
       },
       "CAJAMARCA": {
-        "pct": 95.92,
+        "pct": 95.943,
         "vS": 258499,
         "vL": 20020
       },
@@ -4011,12 +4011,12 @@
         "vL": 46246
       },
       "LA LIBERTAD": {
-        "pct": 95.417,
+        "pct": 95.473,
         "vS": 83131,
         "vL": 73867
       },
       "LAMBAYEQUE": {
-        "pct": 97.242,
+        "pct": 97.27,
         "vS": 69081,
         "vL": 56170
       },
