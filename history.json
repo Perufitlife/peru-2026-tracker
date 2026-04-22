@@ -3924,7 +3924,7 @@
     }
   },
   {
-    "t": "2026-04-22T16:35:11.553Z",
+    "t": "2026-04-22T16:45:33.436Z",
     "pct": 94.307,
     "vS": 1908908,
     "vL": 1891604,
@@ -3939,14 +3939,14 @@
       "sumDeptCont": 87485,
       "sumDeptJee": 5222,
       "sumDeptPend": 59,
-      "sumDistCont": 87480,
-      "sumDistJee": 5227,
+      "sumDistCont": 87485,
+      "sumDistJee": 5222,
       "sumDistPend": 59,
       "deptDriftCont": 0,
       "deptDriftJee": 0,
       "deptDriftPend": 0,
-      "distDriftCont": -5,
-      "distDriftJee": 5,
+      "distDriftCont": 0,
+      "distDriftJee": 0,
       "distDriftPend": 0
     },
     "deps": {
@@ -3977,8 +3977,8 @@
       },
       "CAJAMARCA": {
         "pct": 95.943,
-        "vS": 258499,
-        "vL": 20020
+        "vS": 258584,
+        "vL": 20025
       },
       "CALLAO": {
         "pct": 96.066,
@@ -4012,13 +4012,13 @@
       },
       "LA LIBERTAD": {
         "pct": 95.473,
-        "vS": 83131,
-        "vL": 73867
+        "vS": 83164,
+        "vL": 73895
       },
       "LAMBAYEQUE": {
         "pct": 97.27,
-        "vS": 69081,
-        "vL": 56170
+        "vS": 69091,
+        "vL": 56206
       },
       "LIMA": {
         "pct": 95.435,
