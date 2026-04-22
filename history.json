@@ -3924,24 +3924,24 @@
     }
   },
   {
-    "t": "2026-04-22T13:56:07.732Z",
-    "pct": 94.294,
-    "vS": 1908702,
-    "vL": 1891479,
-    "diff": 17223,
+    "t": "2026-04-22T16:25:35.893Z",
+    "pct": 94.302,
+    "vS": 1908780,
+    "vL": 1891535,
+    "diff": 17245,
     "pctS": 12.019,
-    "pctL": 11.911,
+    "pctL": 11.91,
     "sync": {
-      "nacCont": 87473,
+      "nacCont": 87480,
       "nacAct": 92766,
-      "nacJee": 5230,
-      "nacPend": 63,
-      "sumDeptCont": 87473,
-      "sumDeptJee": 5230,
-      "sumDeptPend": 63,
-      "sumDistCont": 87473,
-      "sumDistJee": 5230,
-      "sumDistPend": 63,
+      "nacJee": 5227,
+      "nacPend": 59,
+      "sumDeptCont": 87480,
+      "sumDeptJee": 5227,
+      "sumDeptPend": 59,
+      "sumDistCont": 87480,
+      "sumDistJee": 5227,
+      "sumDistPend": 59,
       "deptDriftCont": 0,
       "deptDriftJee": 0,
       "deptDriftPend": 0,
@@ -4011,14 +4011,14 @@
         "vL": 46246
       },
       "LA LIBERTAD": {
-        "pct": 95.304,
-        "vS": 83053,
-        "vL": 73829
+        "pct": 95.417,
+        "vS": 83131,
+        "vL": 73867
       },
       "LAMBAYEQUE": {
-        "pct": 97.214,
+        "pct": 97.242,
         "vS": 69081,
-        "vL": 56152
+        "vL": 56170
       },
       "LIMA": {
         "pct": 95.435,
