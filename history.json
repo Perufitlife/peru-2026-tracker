@@ -4719,7 +4719,7 @@
     }
   },
   {
-    "t": "2026-04-25T21:55:10.198Z",
+    "t": "2026-04-25T22:05:12.697Z",
     "pct": 95.645,
     "vS": 1937166,
     "vL": 1913578,
@@ -4731,17 +4731,17 @@
       "nacAct": 92766,
       "nacJee": 4040,
       "nacPend": 0,
-      "sumDeptCont": 88725,
-      "sumDeptJee": 4041,
+      "sumDeptCont": 88726,
+      "sumDeptJee": 4040,
       "sumDeptPend": 0,
-      "sumDistCont": 88725,
-      "sumDistJee": 4041,
+      "sumDistCont": 88726,
+      "sumDistJee": 4040,
       "sumDistPend": 0,
-      "deptDriftCont": -1,
-      "deptDriftJee": 1,
+      "deptDriftCont": 0,
+      "deptDriftJee": 0,
       "deptDriftPend": 0,
-      "distDriftCont": -1,
-      "distDriftJee": 1,
+      "distDriftCont": 0,
+      "distDriftJee": 0,
       "distDriftPend": 0
     },
     "deps": {
@@ -4761,9 +4761,9 @@
         "vL": 6206
       },
       "AREQUIPA": {
-        "pct": 99.122,
-        "vS": 87881,
-        "vL": 92548
+        "pct": 99.146,
+        "vS": 87911,
+        "vL": 92569
       },
       "AYACUCHO": {
         "pct": 98.737,
