@@ -4717,5 +4717,164 @@
         "vL": 68570
       }
     }
+  },
+  {
+    "t": "2026-04-25T21:55:10.198Z",
+    "pct": 95.645,
+    "vS": 1937166,
+    "vL": 1913578,
+    "diff": 23588,
+    "pctS": 12.046,
+    "pctL": 11.899,
+    "sync": {
+      "nacCont": 88726,
+      "nacAct": 92766,
+      "nacJee": 4040,
+      "nacPend": 0,
+      "sumDeptCont": 88725,
+      "sumDeptJee": 4041,
+      "sumDeptPend": 0,
+      "sumDistCont": 88725,
+      "sumDistJee": 4041,
+      "sumDistPend": 0,
+      "deptDriftCont": -1,
+      "deptDriftJee": 1,
+      "deptDriftPend": 0,
+      "distDriftCont": -1,
+      "distDriftJee": 1,
+      "distDriftPend": 0
+    },
+    "deps": {
+      "AMAZONAS": {
+        "pct": 96.87,
+        "vS": 57617,
+        "vL": 5826
+      },
+      "ÁNCASH": {
+        "pct": 95.392,
+        "vS": 77352,
+        "vL": 31336
+      },
+      "APURÍMAC": {
+        "pct": 97.874,
+        "vS": 80873,
+        "vL": 6206
+      },
+      "AREQUIPA": {
+        "pct": 99.122,
+        "vS": 87881,
+        "vL": 92548
+      },
+      "AYACUCHO": {
+        "pct": 98.737,
+        "vS": 87888,
+        "vL": 7643
+      },
+      "CAJAMARCA": {
+        "pct": 97.146,
+        "vS": 261327,
+        "vL": 20389
+      },
+      "CALLAO": {
+        "pct": 96.101,
+        "vS": 16730,
+        "vL": 83460
+      },
+      "CUSCO": {
+        "pct": 96.234,
+        "vS": 152081,
+        "vL": 31829
+      },
+      "HUANCAVELICA": {
+        "pct": 95.287,
+        "vS": 71625,
+        "vL": 3880
+      },
+      "HUÁNUCO": {
+        "pct": 94.789,
+        "vS": 96201,
+        "vL": 19354
+      },
+      "ICA": {
+        "pct": 95.334,
+        "vS": 35547,
+        "vL": 43303
+      },
+      "JUNÍN": {
+        "pct": 96.803,
+        "vS": 75589,
+        "vL": 46839
+      },
+      "LA LIBERTAD": {
+        "pct": 97.227,
+        "vS": 85333,
+        "vL": 74996
+      },
+      "LAMBAYEQUE": {
+        "pct": 98.747,
+        "vS": 70846,
+        "vL": 56553
+      },
+      "LIMA": {
+        "pct": 95.815,
+        "vS": 190975,
+        "vL": 1163819
+      },
+      "LORETO": {
+        "pct": 87.319,
+        "vS": 31121,
+        "vL": 20062
+      },
+      "MADRE DE DIOS": {
+        "pct": 90.927,
+        "vS": 17130,
+        "vL": 2504
+      },
+      "MOQUEGUA": {
+        "pct": 96.194,
+        "vS": 14160,
+        "vL": 6349
+      },
+      "PASCO": {
+        "pct": 95.511,
+        "vS": 20747,
+        "vL": 7211
+      },
+      "PIURA": {
+        "pct": 93.391,
+        "vS": 93052,
+        "vL": 55894
+      },
+      "PUNO": {
+        "pct": 98.911,
+        "vS": 160370,
+        "vL": 12354
+      },
+      "SAN MARTÍN": {
+        "pct": 93.607,
+        "vS": 86916,
+        "vL": 21517
+      },
+      "TACNA": {
+        "pct": 98.463,
+        "vS": 25791,
+        "vL": 13541
+      },
+      "TUMBES": {
+        "pct": 90.665,
+        "vS": 6916,
+        "vL": 5956
+      },
+      "UCAYALI": {
+        "pct": 90.026,
+        "vS": 26110,
+        "vL": 11618
+      },
+      "EXTRANJERO": {
+        "pct": 87.692,
+        "vS": 6958,
+        "vL": 68570
+      }
+    }
   }
 ]
