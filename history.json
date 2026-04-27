@@ -5037,30 +5037,30 @@
     }
   },
   {
-    "t": "2026-04-27T18:20:38.547Z",
-    "pct": 96.151,
+    "t": "2026-04-27T18:30:28.101Z",
+    "pct": 96.153,
     "vS": 1945394,
     "vL": 1922213,
     "diff": 23181,
     "pctS": 12.04,
     "pctL": 11.896,
     "sync": {
-      "nacCont": 89195,
+      "nacCont": 89197,
       "nacAct": 92766,
-      "nacJee": 3569,
-      "nacPend": 2,
-      "sumDeptCont": 89195,
-      "sumDeptJee": 3569,
+      "nacJee": 3568,
+      "nacPend": 1,
+      "sumDeptCont": 89196,
+      "sumDeptJee": 3568,
       "sumDeptPend": 2,
       "sumDistCont": 89196,
       "sumDistJee": 3569,
       "sumDistPend": 1,
-      "deptDriftCont": 0,
+      "deptDriftCont": -1,
       "deptDriftJee": 0,
-      "deptDriftPend": 0,
-      "distDriftCont": 1,
-      "distDriftJee": 0,
-      "distDriftPend": -1
+      "deptDriftPend": 1,
+      "distDriftCont": -1,
+      "distDriftJee": 1,
+      "distDriftPend": 0
     },
     "deps": {
       "AMAZONAS": {
@@ -5089,7 +5089,7 @@
         "vL": 7701
       },
       "CAJAMARCA": {
-        "pct": 97.335,
+        "pct": 97.358,
         "vS": 261699,
         "vL": 20415
       },
@@ -5120,8 +5120,8 @@
       },
       "JUNÍN": {
         "pct": 97.318,
-        "vS": 75928,
-        "vL": 47126
+        "vS": 75942,
+        "vL": 47132
       },
       "LA LIBERTAD": {
         "pct": 98.095,
