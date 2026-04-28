@@ -5196,29 +5196,29 @@
     }
   },
   {
-    "t": "2026-04-28T14:39:30.516Z",
+    "t": "2026-04-28T14:49:45.792Z",
     "pct": 96.333,
-    "vS": 1949304,
-    "vL": 1924998,
-    "diff": 24306,
-    "pctS": 12.041,
-    "pctL": 11.891,
+    "vS": 1949457,
+    "vL": 1925144,
+    "diff": 24313,
+    "pctS": 12.04,
+    "pctL": 11.89,
     "sync": {
       "nacCont": 89364,
       "nacAct": 92766,
       "nacJee": 3401,
       "nacPend": 1,
-      "sumDeptCont": 89364,
-      "sumDeptJee": 3401,
+      "sumDeptCont": 89374,
+      "sumDeptJee": 3391,
       "sumDeptPend": 1,
-      "sumDistCont": 89364,
-      "sumDistJee": 3401,
+      "sumDistCont": 89374,
+      "sumDistJee": 3391,
       "sumDistPend": 1,
-      "deptDriftCont": 0,
-      "deptDriftJee": 0,
+      "deptDriftCont": 10,
+      "deptDriftJee": -10,
       "deptDriftPend": 0,
-      "distDriftCont": 0,
-      "distDriftJee": 0,
+      "distDriftCont": 10,
+      "distDriftJee": -10,
       "distDriftPend": 0
     },
     "deps": {
@@ -5293,9 +5293,9 @@
         "vL": 56757
       },
       "LIMA": {
-        "pct": 96.543,
-        "vS": 193312,
-        "vL": 1169427
+        "pct": 96.577,
+        "vS": 193465,
+        "vL": 1169573
       },
       "LORETO": {
         "pct": 87.319,
