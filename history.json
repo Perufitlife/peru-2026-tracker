@@ -6468,7 +6468,7 @@
     }
   },
   {
-    "t": "2026-05-08T03:02:07.810Z",
+    "t": "2026-05-08T03:11:46.179Z",
     "pct": 98.72,
     "vS": 1993696,
     "vL": 1970196,
@@ -6480,14 +6480,14 @@
       "nacAct": 92766,
       "nacJee": 1187,
       "nacPend": 0,
-      "sumDeptCont": 91576,
-      "sumDeptJee": 1190,
+      "sumDeptCont": 91579,
+      "sumDeptJee": 1187,
       "sumDeptPend": 0,
       "sumDistCont": 91579,
       "sumDistJee": 1187,
       "sumDistPend": 0,
-      "deptDriftCont": -3,
-      "deptDriftJee": 3,
+      "deptDriftCont": 0,
+      "deptDriftJee": 0,
       "deptDriftPend": 0,
       "distDriftCont": 0,
       "distDriftJee": 0,
@@ -6600,7 +6600,7 @@
         "vL": 12441
       },
       "SAN MARTÍN": {
-        "pct": 97.79,
+        "pct": 97.908,
         "vS": 90841,
         "vL": 22498
       },
