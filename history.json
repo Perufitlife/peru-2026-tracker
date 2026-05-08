@@ -6309,7 +6309,7 @@
     }
   },
   {
-    "t": "2026-05-08T02:22:16.939Z",
+    "t": "2026-05-08T02:31:50.949Z",
     "pct": 98.703,
     "vS": 1993276,
     "vL": 1969751,
@@ -6321,17 +6321,17 @@
       "nacAct": 92766,
       "nacJee": 1203,
       "nacPend": 0,
-      "sumDeptCont": 89674,
-      "sumDeptJee": 1192,
+      "sumDeptCont": 91563,
+      "sumDeptJee": 1203,
       "sumDeptPend": 0,
-      "sumDistCont": 89674,
-      "sumDistJee": 1192,
+      "sumDistCont": 91563,
+      "sumDistJee": 1203,
       "sumDistPend": 0,
-      "deptDriftCont": -1889,
-      "deptDriftJee": -11,
+      "deptDriftCont": 0,
+      "deptDriftJee": 0,
       "deptDriftPend": 0,
-      "distDriftCont": -1889,
-      "distDriftJee": -11,
+      "distDriftCont": 0,
+      "distDriftJee": 0,
       "distDriftPend": 0
     },
     "deps": {
@@ -6354,6 +6354,11 @@
         "pct": 99.976,
         "vS": 88762,
         "vL": 93146
+      },
+      "AYACUCHO": {
+        "pct": 99.421,
+        "vS": 88549,
+        "vL": 7726
       },
       "CAJAMARCA": {
         "pct": 99.08,
