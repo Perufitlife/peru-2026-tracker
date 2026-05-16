@@ -448,6 +448,191 @@ out.escenarios.ENCUESTAS = {
   }])),
 };
 
+// ============================================================
+// ESCENARIO MAS_PROBABLE — integra encuestas + todas las señales
+// ============================================================
+//
+// Ajustes sobre ENCUESTAS para reflejar lo que sabemos del 16-may (3 semanas a la votación):
+//
+//   1. Momentum antivoto K: cayó 11pp en 3 semanas (59% → 48%).
+//      Si sigue a la mitad de esa velocidad: -3pp más en 3 semanas → favorece K ~+1.5pp
+//      Pero los modelos de antivoto suelen estabilizarse al acercarse el día D.
+//      Net: +1.0pp K
+//
+//   2. Anti-momentum recta final (efecto 2016): el antifujimorismo histórico se moviliza
+//      en la última semana. En 2016 Keiko cayó 10pp en 2 semanas (de Keiko+10 a PPK+0.25).
+//      No será tan brutal porque rechazo S también subió, pero hay riesgo.
+//      Net: -1.5pp K
+//
+//   3. Voto extranjero: ~500K votos exterior, en 2V 2026 entre K vs S, perfil urbano
+//      educado fuera del país → ~72% K (vs 50/50 asumido en ENCUESTAS).
+//      Diferencia: 500K * (0.72 - 0.50) = +110K margen a K = +0.7pp nacional
+//
+//   4. Voto del miedo a Castillo 2.0: Sánchez se autodefine castillista. Una parte
+//      del centro/centro-izq que en encuestas dice "blanco/nulo" termina votando K
+//      por miedo a régimen castillista en el día D.
+//      Net: +0.5pp K
+//
+//   Total ajuste neto: +0.7pp K sobre ENCUESTAS (50.80% → ~51.5%)
+//
+// Estos números están redondeados y son mi mejor estimación. La incertidumbre real
+// se mide via Monte Carlo más abajo.
+
+function aplicarMasProbable(encDistritos) {
+  // Ajustes globales (sobre share_otros, no shift directo del %K)
+  const SHIFT_MOMENTUM_ANTIVOTO_K = +0.010;   // +1pp K
+  const SHIFT_RECTA_FINAL_2016    = -0.015;   // -1.5pp K (efecto histórico)
+  const SHIFT_MIEDO_CASTILLO_20   = +0.005;   // +0.5pp K (voto del miedo)
+  // Voto extranjero se aplica como overlay a distritos con dep=EXTRANJERO
+
+  const NET_SHIFT_NACIONAL = SHIFT_MOMENTUM_ANTIVOTO_K + SHIFT_RECTA_FINAL_2016 + SHIFT_MIEDO_CASTILLO_20;
+  // = 0.000 (se cancelan en promedio). Pero NO se cancelan por distrito por la dirección.
+
+  // Implementación: el net shift se reparte como un % de "otros" desde abst+S hacia K.
+  // Por simpleza, lo aplicamos como una transferencia del share_S al share_K en cada distrito.
+  return encDistritos.map(d => {
+    let shareK = d.share_otros_a_K;
+    let shareS = d.share_otros_a_S;
+    let shareAbst = d.share_otros_abst;
+
+    // Aplicar net shift: si net positivo → muevo de abst hacia K. Si negativo → de K hacia abst.
+    if (NET_SHIFT_NACIONAL > 0) {
+      const mv = Math.min(shareAbst, NET_SHIFT_NACIONAL * 2.5); // factor 2.5 porque shift es nacional sobre 1.0 ≈ 70% del electorado
+      shareK += mv;
+      shareAbst -= mv;
+    } else if (NET_SHIFT_NACIONAL < 0) {
+      const mv = Math.min(shareK, -NET_SHIFT_NACIONAL * 2.5);
+      shareK -= mv;
+      shareAbst += mv;
+    }
+
+    // Voto extranjero: si dep = EXTRANJERO, override con 72% K / 28% S
+    const isExtranjero = d.departamento === "EXTRANJERO";
+
+    const fromOtros_K = d.otros_1v * shareK;
+    const fromOtros_S = d.otros_1v * shareS;
+    const abst = d.otros_1v * shareAbst;
+    let kProy = d.keiko_base + fromOtros_K;
+    let sProy = d.sanchez_base + fromOtros_S;
+
+    if (isExtranjero) {
+      // Override: total válido proyectado se asigna 72/28
+      const validosExt = kProy + sProy;
+      kProy = validosExt * 0.72;
+      sProy = validosExt * 0.28;
+    }
+
+    const validos = kProy + sProy;
+    return {
+      ...d,
+      share_otros_a_K: +shareK.toFixed(4),
+      share_otros_a_S: +shareS.toFixed(4),
+      share_otros_abst: +shareAbst.toFixed(4),
+      keiko_proy: Math.round(kProy),
+      sanchez_proy: Math.round(sProy),
+      abstencion_inducida: Math.round(abst),
+      validos_proy: Math.round(validos),
+      pct_keiko: +(kProy / validos * 100).toFixed(2),
+      pct_sanchez: +(sProy / validos * 100).toFixed(2),
+      margen: Math.round(kProy - sProy),
+      ganador: kProy > sProy ? "K" : "S",
+    };
+  });
+}
+
+// ============================================================
+// MONTE CARLO — distribución de probabilidad
+// ============================================================
+//
+// Modelo: cada simulación perturba 4 parámetros con ruido normal y calcula resultado nacional.
+//   ε1 = shift_antivoto_3sem  ~ Normal(0,    σ=0.015)   incertidumbre tendencia antivoto
+//   ε2 = shock_late_camp      ~ Normal(-0.005, σ=0.012) efecto recta final (sesgo histórico)
+//   ε3 = voto_ext_K           ~ Normal(0.72, σ=0.05)    voto extranjero
+//   ε4 = correlacion_zonal    ~ Normal(0,    σ=0.020)   ruido por zona IEP
+//
+// 5000 corridas. Output: P(K gana), mediana K%, CI80, CI95.
+
+function gaussian(mu = 0, sigma = 1) {
+  // Box-Muller
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return mu + sigma * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+function correrMonteCarlo(encDistritos, nSims = 5000) {
+  const results = [];
+  for (let i = 0; i < nSims; i++) {
+    const e1 = gaussian(0, 0.015);
+    const e2 = gaussian(-0.005, 0.012);
+    const e3 = gaussian(0.72, 0.05);
+    const e4_byZone = {
+      LIMA_METRO: gaussian(0, 0.020),
+      COSTA_NORTE: gaussian(0, 0.020),
+      COSTA_SUR: gaussian(0, 0.020),
+      SIERRA_CENTRO: gaussian(0, 0.020),
+      SIERRA_SUR: gaussian(0, 0.020),
+      ORIENTE: gaussian(0, 0.020),
+    };
+    const shiftGlobal = e1 + e2 + 0.005; // +0.5pp miedo Castillo fijo
+
+    let totK = 0, totS = 0;
+    for (const d of encDistritos) {
+      let sK = d.share_otros_a_K;
+      let sS = d.share_otros_a_S;
+      let sA = d.share_otros_abst;
+
+      // Aplicar shift global (desde abst a K si positivo)
+      const totalShift = shiftGlobal * 2.5 + (e4_byZone[d.zona] || 0) * 2.0;
+      if (totalShift > 0) {
+        const mv = Math.min(sA, totalShift);
+        sK += mv; sA -= mv;
+      } else if (totalShift < 0) {
+        const mv = Math.min(sK, -totalShift);
+        sK -= mv; sA += mv;
+      }
+      sK = Math.max(0, Math.min(1, sK));
+      sS = Math.max(0, Math.min(1, sS));
+
+      let kProy = d.keiko_base + d.otros_1v * sK;
+      let sProy = d.sanchez_base + d.otros_1v * sS;
+
+      if (d.departamento === "EXTRANJERO") {
+        const v = kProy + sProy;
+        kProy = v * e3;
+        sProy = v * (1 - e3);
+      }
+      totK += kProy;
+      totS += sProy;
+    }
+    const pctK = totK / (totK + totS) * 100;
+    results.push(pctK);
+  }
+  results.sort((a, b) => a - b);
+  const median = results[Math.floor(nSims * 0.5)];
+  const p10 = results[Math.floor(nSims * 0.10)];
+  const p90 = results[Math.floor(nSims * 0.90)];
+  const p025 = results[Math.floor(nSims * 0.025)];
+  const p975 = results[Math.floor(nSims * 0.975)];
+  const pKwins = results.filter(r => r > 50).length / nSims * 100;
+  return {
+    n_sims: nSims,
+    mediana_pct_keiko: +median.toFixed(2),
+    mediana_pct_sanchez: +(100 - median).toFixed(2),
+    prob_keiko_gana: +pKwins.toFixed(1),
+    prob_sanchez_gana: +(100 - pKwins).toFixed(1),
+    ci80_keiko: [+p10.toFixed(2), +p90.toFixed(2)],
+    ci95_keiko: [+p025.toFixed(2), +p975.toFixed(2)],
+    parametros: {
+      momentum_antivoto_k: { mu: 0, sigma: 0.015 },
+      late_campaign_2016_effect: { mu: -0.005, sigma: 0.012 },
+      voto_extranjero_k: { mu: 0.72, sigma: 0.05 },
+      ruido_zonal: { mu: 0, sigma: 0.020 },
+      shift_miedo_castillo: 0.005,
+    },
+  };
+}
+
 // Sensibilidades
 const opt = aplicarPerturbacion({ distritos: enc.distritos }, "OPTIMISTA_K");
 out.escenarios.OPTIMISTA_K = {
@@ -461,6 +646,26 @@ out.escenarios.PESIMISTA_K = {
   ...agregarProvinciaYDepartamento(pes),
   distritos: pes,
 };
+
+// MAS_PROBABLE — encuestas + integración de todas las señales
+const mp = aplicarMasProbable(enc.distritos);
+out.escenarios.MAS_PROBABLE = {
+  label: "Más probable (encuestas + momentum antivoto + voto extranjero + efecto 2016)",
+  ...agregarProvinciaYDepartamento(mp),
+  distritos: mp,
+  ajustes_aplicados: {
+    momentum_antivoto_k: "+1.0pp K (antivoto K cayó 11pp en 3 sem, asume continúa)",
+    efecto_recta_final_2016: "-1.5pp K (antifujimorismo se moviliza última semana, ref PPK 2016)",
+    voto_extranjero: "Exterior asignado 72% K (perfil urbano educado anti-izquierda)",
+    miedo_castillo_2_0: "+0.5pp K (Sánchez autodefinido castillista → voto del miedo)",
+    net_pre_extranjero: "~0pp (momentum + recta final se cancelan)",
+    voto_extranjero_efecto_real_pct: "+0.5pp K nacional (~500K votos asignados 72/28 vs ~52/48 base)",
+  },
+};
+
+// Monte Carlo — distribución de probabilidad
+console.log("Corriendo Monte Carlo 5,000 simulaciones...");
+out.monte_carlo = correrMonteCarlo(enc.distritos, 5000);
 
 // ===== Provincias bisagra (margen <8pp en escenario ENCUESTAS) =====
 out.bisagra = enc.distritos
@@ -518,6 +723,13 @@ for (const [name, esc] of Object.entries(out.escenarios)) {
   const n = esc.nacional;
   console.log(`  ${name.padEnd(15)} K=${String(n.pct_keiko).padStart(6)}% S=${String(n.pct_sanchez).padStart(6)}% margen=${n.margen.toLocaleString().padStart(11)} → ${n.ganador}`);
 }
+
+console.log("\nMonte Carlo (5,000 sims):");
+console.log(`  mediana K: ${out.monte_carlo.mediana_pct_keiko}%   mediana S: ${out.monte_carlo.mediana_pct_sanchez}%`);
+console.log(`  P(Keiko gana): ${out.monte_carlo.prob_keiko_gana}%`);
+console.log(`  P(Sánchez gana): ${out.monte_carlo.prob_sanchez_gana}%`);
+console.log(`  CI 80% Keiko: [${out.monte_carlo.ci80_keiko[0]}%, ${out.monte_carlo.ci80_keiko[1]}%]`);
+console.log(`  CI 95% Keiko: [${out.monte_carlo.ci95_keiko[0]}%, ${out.monte_carlo.ci95_keiko[1]}%]`);
 console.log("\nDepartamentos (escenario ENCUESTAS) — top:");
 out.escenarios.ENCUESTAS.departamentos.sort((a,b) => b.pct_keiko - a.pct_keiko).forEach(d => {
   console.log(`  ${d.departamento.padEnd(20)} K=${String(d.pct_keiko).padStart(5)}% S=${String(d.pct_sanchez).padStart(5)}% margen=${d.margen.toLocaleString().padStart(10)} → ${d.ganador}`);
