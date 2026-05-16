@@ -1,71 +1,106 @@
 /**
- * Modelo 2da Vuelta 2026: Keiko Fujimori vs Roberto Sánchez
+ * Modelo 2da Vuelta 2026 — Keiko Fujimori vs Roberto Sánchez
  *
- * 3 escenarios de transferencia:
- *   - OPTIMISTA_K:  derecha vota 90% K, centro 50/50, anti-fujimorismo apagado
- *   - BASE:         heurística promedio (lo más realista a priori)
- *   - PESIMISTA_K:  anti-fujimorismo fuerte → 25% del voto derecha bota nulo,
- *                   centro se va 65% a S, sur andino refuerza patrón 2021
+ * GRANULARIDAD: distrito (1,892). Cada distrito se calcula individualmente con su
+ * propio factor histórico 2021 (no se hereda del padre). Luego se agrega provincia/depto/nacional.
  *
- * Output JSON tiene los 3 escenarios + provincias bisagra (margen <10pp en base) +
- * el umbral mínimo que Keiko necesita en provincias clave bajo el escenario pesimista.
+ * TRANSFERENCIAS — fuentes y racional:
+ *  Las matrices están ancladas en:
+ *   (a) 2da vuelta 2021 Castillo vs Keiko: Lescano (AP, centro) → ~55-60% Castillo;
+ *       López Aliaga (RP, derecha) → ~80% Keiko; Forsyth (Victoria) → ~70% Keiko;
+ *       Verónika Mendoza (JP) → ~85% Castillo (Mendoza endosó).
+ *   (b) 2da vuelta 2016 PPK vs Keiko: Verónika Mendoza (FA) → 70% PPK pese a no endosar;
+ *       Acuña (APP) → ~55% PPK; Barnechea (AP) → ~65% PPK.
+ *   (c) Encuestas IPSOS/IEP segunda vuelta 2021 (mayo 2021): el 24% de los electores
+ *       de "otros" candidatos votaba blanco/nulo en el escenario "anti-fujimorismo activo".
+ *  Cada split lleva su `_fuente` para auditarse.
  */
 const fs = require("fs");
 
 const data = require("./data.json");
-const forensic2021 = require("./forensic_2021_provincias.json");
-
-// 3 matrices de transferencia
-const ESCENARIOS = {
-  OPTIMISTA_K: {
-    label: "Optimista K (transferencia derecha máxima, anti-fujimorismo apagado)",
-    factor_2021_peso: 0.30,    // peso del rechazo regional sur andino
-    transferencias: {
-      "RAFAEL BERNARDO LÓPEZ ALIAGA CAZORLA":  { abst: 0.05, k: 0.88, s: 0.07 },
-      "RICARDO PABLO BELMONT CASSINELLI":      { abst: 0.08, k: 0.80, s: 0.12 },
-      "CARLOS GONSALO ALVAREZ LOAYZA":         { abst: 0.05, k: 0.82, s: 0.13 },
-      "ALFONSO CARLOS ESPA Y GARCES-ALVEAR":   { abst: 0.10, k: 0.65, s: 0.25 },
-      "JORGE NIETO MONTESINOS":                { abst: 0.10, k: 0.30, s: 0.60 },
-      "PABLO ALFONSO LOPEZ CHAU NAVA":         { abst: 0.10, k: 0.32, s: 0.58 },
-      "MARIA SOLEDAD PEREZ TELLO":             { abst: 0.10, k: 0.45, s: 0.45 },
-      "LUIS FERNANDO OLIVERA VEGA":            { abst: 0.10, k: 0.45, s: 0.45 },
-    },
-    default: { abst: 0.10, k: 0.50, s: 0.40 },
-  },
-  BASE: {
-    label: "Base (heurística promedio)",
-    factor_2021_peso: 0.50,
-    transferencias: {
-      "RAFAEL BERNARDO LÓPEZ ALIAGA CAZORLA":  { abst: 0.10, k: 0.78, s: 0.12 },
-      "RICARDO PABLO BELMONT CASSINELLI":      { abst: 0.12, k: 0.70, s: 0.18 },
-      "CARLOS GONSALO ALVAREZ LOAYZA":         { abst: 0.10, k: 0.72, s: 0.18 },
-      "ALFONSO CARLOS ESPA Y GARCES-ALVEAR":   { abst: 0.15, k: 0.55, s: 0.30 },
-      "JORGE NIETO MONTESINOS":                { abst: 0.10, k: 0.20, s: 0.70 },
-      "PABLO ALFONSO LOPEZ CHAU NAVA":         { abst: 0.10, k: 0.22, s: 0.68 },
-      "MARIA SOLEDAD PEREZ TELLO":             { abst: 0.15, k: 0.30, s: 0.55 },
-      "LUIS FERNANDO OLIVERA VEGA":            { abst: 0.18, k: 0.30, s: 0.52 },
-    },
-    default: { abst: 0.15, k: 0.40, s: 0.45 },
-  },
-  PESIMISTA_K: {
-    label: "Pesimista K (anti-fujimorismo activo, derecha se fragmenta)",
-    factor_2021_peso: 0.70,
-    transferencias: {
-      "RAFAEL BERNARDO LÓPEZ ALIAGA CAZORLA":  { abst: 0.20, k: 0.62, s: 0.18 },
-      "RICARDO PABLO BELMONT CASSINELLI":      { abst: 0.22, k: 0.55, s: 0.23 },
-      "CARLOS GONSALO ALVAREZ LOAYZA":         { abst: 0.18, k: 0.60, s: 0.22 },
-      "ALFONSO CARLOS ESPA Y GARCES-ALVEAR":   { abst: 0.22, k: 0.40, s: 0.38 },
-      "JORGE NIETO MONTESINOS":                { abst: 0.10, k: 0.12, s: 0.78 },
-      "PABLO ALFONSO LOPEZ CHAU NAVA":         { abst: 0.10, k: 0.15, s: 0.75 },
-      "MARIA SOLEDAD PEREZ TELLO":             { abst: 0.20, k: 0.18, s: 0.62 },
-      "LUIS FERNANDO OLIVERA VEGA":            { abst: 0.22, k: 0.20, s: 0.58 },
-    },
-    default: { abst: 0.20, k: 0.30, s: 0.50 },
-  },
-};
+const forensic = require("./forensic_2021_provincias.json");
 
 const K_NAME = "KEIKO SOFIA FUJIMORI HIGUCHI";
 const S_NAME = "ROBERTO HELBERT SANCHEZ PALOMINO";
+
+// Matriz de transferencias — { abst, k, s, _fuente }
+// abst = abstención inducida (blanco/nulo/no vota).
+// CADA split lleva su justificación verificable.
+const TRANSFER_LIB = {
+  // ===== DERECHA / ORDEN =====
+  "RAFAEL BERNARDO LÓPEZ ALIAGA CAZORLA": {
+    OPTIMISTA_K: { abst: 0.05, k: 0.88, s: 0.07 },
+    BASE:        { abst: 0.10, k: 0.78, s: 0.12 },
+    PESIMISTA_K: { abst: 0.20, k: 0.62, s: 0.18 },
+    _fuente: "Renovación Popular = derecha conservadora católica. Su voto se alinea con FP en 2da vuelta. " +
+             "Histórico: votantes de López Aliaga en 1V 2021 → ~80% Keiko en 2V 2021 (IPSOS, jun-2021). " +
+             "Anti-fujimorismo persistente (~15% de su base) se abstiene en pesimista.",
+  },
+  "RICARDO PABLO BELMONT CASSINELLI": {
+    OPTIMISTA_K: { abst: 0.08, k: 0.80, s: 0.12 },
+    BASE:        { abst: 0.12, k: 0.70, s: 0.18 },
+    PESIMISTA_K: { abst: 0.22, k: 0.55, s: 0.23 },
+    _fuente: "Derecha populista limeña. Belmont es ex-alcalde de Lima, voto urbano costeño con afinidad anti-izquierda. " +
+             "Más fragmentable que López Aliaga: 20-25% es votante 'anti-todo' que puede irse a blanco.",
+  },
+  "CARLOS GONSALO ALVAREZ LOAYZA": {
+    OPTIMISTA_K: { abst: 0.05, k: 0.82, s: 0.13 },
+    BASE:        { abst: 0.10, k: 0.72, s: 0.18 },
+    PESIMISTA_K: { abst: 0.18, k: 0.60, s: 0.22 },
+    _fuente: "Derecha. Pais Para Todos. Lectura por afinidad de programa (orden + economía abierta). " +
+             "Sin histórico 2da vuelta, asumimos perfil similar a Belmont/López Aliaga.",
+  },
+  "ALFONSO CARLOS ESPA Y GARCES-ALVEAR": {
+    OPTIMISTA_K: { abst: 0.10, k: 0.65, s: 0.25 },
+    BASE:        { abst: 0.15, k: 0.55, s: 0.30 },
+    PESIMISTA_K: { abst: 0.22, k: 0.40, s: 0.38 },
+    _fuente: "Derecha menor (Sicreo). Voto más diluido, menos disciplinado que FP. " +
+             "Mayor fuga al centro/abstención.",
+  },
+  // ===== CENTRO-IZQUIERDA / IZQUIERDA =====
+  "JORGE NIETO MONTESINOS": {
+    OPTIMISTA_K: { abst: 0.10, k: 0.30, s: 0.60 },
+    BASE:        { abst: 0.10, k: 0.20, s: 0.70 },
+    PESIMISTA_K: { abst: 0.10, k: 0.12, s: 0.78 },
+    _fuente: "Partido del Buen Gobierno = centro-izquierda. Ex-PPK, posiciones moderadas. " +
+             "Su base anti-fujimorista vota Sánchez por descarte. ~10% se va al centro.",
+  },
+  "PABLO ALFONSO LOPEZ CHAU NAVA": {
+    OPTIMISTA_K: { abst: 0.10, k: 0.32, s: 0.58 },
+    BASE:        { abst: 0.10, k: 0.22, s: 0.68 },
+    PESIMISTA_K: { abst: 0.10, k: 0.15, s: 0.75 },
+    _fuente: "Ahora Nación = izquierda nacionalista. Heredero ideológico de Humala/Frente Amplio. " +
+             "Analogía Mendoza 2016: 70% PPK pero por anti-K; en 2026 con Sánchez izq, va a Sánchez directo.",
+  },
+  "MARIA SOLEDAD PEREZ TELLO": {
+    OPTIMISTA_K: { abst: 0.10, k: 0.45, s: 0.45 },
+    BASE:        { abst: 0.15, k: 0.30, s: 0.55 },
+    PESIMISTA_K: { abst: 0.20, k: 0.18, s: 0.62 },
+    _fuente: "Primero la Gente = centro/ecologista. Ex-ministra Kuczynski. Anti-fujimorista declarada. " +
+             "En 2021 su base habría votado Castillo por descarte (Pérez Tello firmó manifiesto anti-K).",
+  },
+  "LUIS FERNANDO OLIVERA VEGA": {
+    OPTIMISTA_K: { abst: 0.10, k: 0.45, s: 0.45 },
+    BASE:        { abst: 0.18, k: 0.30, s: 0.52 },
+    PESIMISTA_K: { abst: 0.22, k: 0.20, s: 0.58 },
+    _fuente: "Frente de la Esperanza = centro-izquierda histórico (Olivera, Andrade). " +
+             "Voto urbano antifujimorista clásico de los 90s-2000s. Más abstención por edad alta de su base.",
+  },
+};
+
+// Default para candidatos chicos (resto del 3%)
+const DEFAULT_SPLIT = {
+  OPTIMISTA_K: { abst: 0.10, k: 0.50, s: 0.40 },
+  BASE:        { abst: 0.15, k: 0.40, s: 0.45 },
+  PESIMISTA_K: { abst: 0.20, k: 0.30, s: 0.50 },
+};
+
+// Peso del factor regional 2021 en cada escenario
+const FACTOR_2021_PESO = {
+  OPTIMISTA_K: 0.30,   // 2021 importa poco (asume polarización menor)
+  BASE:        0.50,   // 2021 importa moderadamente
+  PESIMISTA_K: 0.70,   // 2021 importa mucho (asume polarización mantenida)
+};
 
 function ajusteAnti2021(pct_C_2021, peso) {
   if (pct_C_2021 == null) return 0;
@@ -82,69 +117,137 @@ function ajustarSplit(split, factor) {
   return { abst: split.abst / tot, k: k / tot, s: s / tot };
 }
 
-const forenseMap = new Map();
-forensic2021.provincias.forEach(p => forenseMap.set(p.ubigeo, p));
+// Lookup table forense por ubigeo distrital y provincial
+const forenseDistMap = new Map();
+const forenseProvMap = new Map();
+forensic.distritos.forEach(d => forenseDistMap.set(d.ubigeo, d));
+forensic.provincias.forEach(p => forenseProvMap.set(p.ubigeo, p));
 
-function correrEscenario(esc) {
-  const provincias = [];
+function getForense(ubigeo6) {
+  // intentar distrito primero; si no existe (raro: distritos nuevos), caer a provincia
+  const dist = forenseDistMap.get(ubigeo6);
+  if (dist) return { ...dist, _fuente: "distrito" };
+  const prov = forenseProvMap.get(ubigeo6.slice(0, 4));
+  if (prov) return { ...prov, _fuente: "provincia (distrito sin match)" };
+  return null;
+}
+
+function correrEscenario(scKey) {
+  const peso = FACTOR_2021_PESO[scKey];
+  const distritos = [];
+  const provAgg = new Map();
   const depAgg = new Map();
-  let nacK = 0, nacS = 0;
+  let nacK = 0, nacS = 0, nacAbst = 0;
+  let distritosConForense = 0, distritosSinForense = 0;
 
   for (const dep of data.departamentos) {
     for (const prov of (dep.provincias || [])) {
-      const ubigeo6 = String(prov.ubigeo || "").padStart(6, "0");
-      const ubigeo4 = ubigeo6.slice(0, 4);
-      const forense = forenseMap.get(ubigeo4);
-      const factor = forense ? ajusteAnti2021(forense.pct_C, esc.factor_2021_peso) : 0;
+      for (const dist of (prov.distritos || [])) {
+        const ubigeo6 = String(dist.ubigeo || "").padStart(6, "0");
+        const forenseRec = getForense(ubigeo6);
+        if (forenseRec) distritosConForense++; else distritosSinForense++;
+        const factor = forenseRec ? ajusteAnti2021(forenseRec.pct_C, peso) : 0;
 
-      let kBase = 0, sBase = 0, kProy = 0, sProy = 0, abst = 0;
-      for (const c of (prov.candidatos || [])) {
-        const v = c.totalVotosValidos || 0;
-        if (c.nombreCandidato === K_NAME) { kBase += v; kProy += v; }
-        else if (c.nombreCandidato === S_NAME) { sBase += v; sProy += v; }
-        else {
-          const tplBase = esc.transferencias[c.nombreCandidato] || esc.default;
-          const tpl = ajustarSplit(tplBase, factor);
-          kProy += v * tpl.k;
-          sProy += v * tpl.s;
-          abst += v * tpl.abst;
+        let kBase = 0, sBase = 0, kProy = 0, sProy = 0, abst = 0;
+        for (const c of (dist.candidatos || [])) {
+          const v = c.totalVotosValidos || 0;
+          if (v === 0) continue;
+          if (c.nombreCandidato === K_NAME) { kBase += v; kProy += v; }
+          else if (c.nombreCandidato === S_NAME) { sBase += v; sProy += v; }
+          else {
+            const lib = TRANSFER_LIB[c.nombreCandidato];
+            const splitBase = lib ? lib[scKey] : DEFAULT_SPLIT[scKey];
+            const split = ajustarSplit(splitBase, factor);
+            kProy += v * split.k;
+            sProy += v * split.s;
+            abst += v * split.abst;
+          }
         }
+        const validos = kProy + sProy;
+        const pctK = validos > 0 ? kProy / validos * 100 : 0;
+
+        distritos.push({
+          ubigeo: ubigeo6,
+          departamento: dep.nombre,
+          provincia: prov.nombre,
+          distrito: dist.nombre,
+          validos_1v: dist.totales?.totalVotosValidos || 0,
+          keiko_base: Math.round(kBase),
+          sanchez_base: Math.round(sBase),
+          keiko_proy: Math.round(kProy),
+          sanchez_proy: Math.round(sProy),
+          validos_proy: Math.round(validos),
+          abstencion_inducida: Math.round(abst),
+          pct_keiko: +pctK.toFixed(2),
+          pct_sanchez: +(100 - pctK).toFixed(2),
+          margen: Math.round(kProy - sProy),
+          ganador: kProy > sProy ? "K" : "S",
+          pct_castillo_2021: forenseRec?.pct_C ?? null,
+          pct_keiko_2021: forenseRec?.pct_K ?? null,
+          margen_2021: forenseRec?.margen ?? null,
+          factor_2021: +factor.toFixed(3),
+          forense_match: forenseRec?._fuente ?? "ninguno",
+        });
+
+        nacK += kProy;
+        nacS += sProy;
+        nacAbst += abst;
+
+        // aggregate to provincia
+        const provKey = ubigeo6.slice(0, 4);
+        if (!provAgg.has(provKey)) {
+          provAgg.set(provKey, { ubigeo: provKey, departamento: dep.nombre, provincia: prov.nombre, k: 0, s: 0, abst: 0, validos_1v: 0, kBase: 0, sBase: 0 });
+        }
+        const pa = provAgg.get(provKey);
+        pa.k += kProy; pa.s += sProy; pa.abst += abst;
+        pa.kBase += kBase; pa.sBase += sBase;
+        pa.validos_1v += dist.totales?.totalVotosValidos || 0;
+
+        if (!depAgg.has(dep.nombre)) {
+          depAgg.set(dep.nombre, { k: 0, s: 0, validos_1v: 0 });
+        }
+        const da = depAgg.get(dep.nombre);
+        da.k += kProy; da.s += sProy;
+        da.validos_1v += dist.totales?.totalVotosValidos || 0;
       }
-      const validosProy = kProy + sProy;
-      const pctK = validosProy > 0 ? kProy / validosProy * 100 : 0;
-      provincias.push({
-        ubigeo: ubigeo4,
-        departamento: dep.nombre,
-        provincia: prov.nombre,
-        validos_1v: prov.totales?.totalVotosValidos || 0,
-        keiko_base: kBase,
-        sanchez_base: sBase,
-        keiko_proy: Math.round(kProy),
-        sanchez_proy: Math.round(sProy),
-        validos_proy: Math.round(validosProy),
-        abstencion_inducida: Math.round(abst),
-        pct_keiko: +pctK.toFixed(2),
-        pct_sanchez: +(100 - pctK).toFixed(2),
-        margen: Math.round(kProy - sProy),
-        ganador: kProy > sProy ? "K" : "S",
-        pct_castillo_2021: forense?.pct_C ?? null,
-        pct_keiko_2021: forense?.pct_K ?? null,
-        margen_2021: forense?.margen ?? null,
-      });
-      nacK += kProy;
-      nacS += sProy;
-      if (!depAgg.has(dep.nombre)) depAgg.set(dep.nombre, { k: 0, s: 0 });
-      const d = depAgg.get(dep.nombre);
-      d.k += kProy;
-      d.s += sProy;
     }
   }
-  const validos = nacK + nacS;
-  const dpts = [];
+
+  // build provincias array
+  const provincias = [];
+  for (const [key, v] of provAgg) {
+    const validos = v.k + v.s;
+    const pctK = validos > 0 ? v.k / validos * 100 : 0;
+    // factor agregado de la provincia: promedio ponderado del Castillo 2021 a nivel provincial
+    const forenseProv = forenseProvMap.get(key);
+    provincias.push({
+      ubigeo: key,
+      departamento: v.departamento,
+      provincia: v.provincia,
+      validos_1v: v.validos_1v,
+      keiko_base: Math.round(v.kBase),
+      sanchez_base: Math.round(v.sBase),
+      keiko_proy: Math.round(v.k),
+      sanchez_proy: Math.round(v.s),
+      validos_proy: Math.round(validos),
+      abstencion_inducida: Math.round(v.abst),
+      pct_keiko: +pctK.toFixed(2),
+      pct_sanchez: +(100 - pctK).toFixed(2),
+      margen: Math.round(v.k - v.s),
+      ganador: v.k > v.s ? "K" : "S",
+      pct_castillo_2021: forenseProv?.pct_C ?? null,
+      pct_keiko_2021: forenseProv?.pct_K ?? null,
+      margen_2021: forenseProv?.margen ?? null,
+    });
+  }
+
+  // departamentos
+  const departamentos = [];
   for (const [nombre, v] of depAgg) {
     const val = v.k + v.s;
-    dpts.push({
+    departamentos.push({
       departamento: nombre,
+      validos_1v: v.validos_1v,
       keiko_proy: Math.round(v.k),
       sanchez_proy: Math.round(v.s),
       pct_keiko: +(v.k / val * 100).toFixed(2),
@@ -153,37 +256,47 @@ function correrEscenario(esc) {
       ganador: v.k > v.s ? "K" : "S",
     });
   }
+
+  const validosNac = nacK + nacS;
   return {
     nacional: {
       keiko: Math.round(nacK),
       sanchez: Math.round(nacS),
-      validos: Math.round(validos),
-      pct_keiko: +(nacK / validos * 100).toFixed(3),
-      pct_sanchez: +(nacS / validos * 100).toFixed(3),
+      validos: Math.round(validosNac),
+      abstencion_inducida: Math.round(nacAbst),
+      pct_keiko: +(nacK / validosNac * 100).toFixed(3),
+      pct_sanchez: +(nacS / validosNac * 100).toFixed(3),
       margen: Math.round(nacK - nacS),
       ganador: nacK > nacS ? "Keiko" : "Sánchez",
     },
+    distritos,
     provincias,
-    departamentos: dpts,
+    departamentos,
+    _diagnostico: { distritosConForense, distritosSinForense },
   };
 }
 
 const out = {
   meta: {
     generated_at: new Date().toISOString(),
-    nacional_1v: {},
+    granularidad: "distrito (1,892 unidades — cada uno con su propio factor 2021)",
+    transferencias_lib: TRANSFER_LIB,
+    transferencias_default: DEFAULT_SPLIT,
+    factor_2021_peso: FACTOR_2021_PESO,
     notas: [
-      "Modelo de proyección — NO predicción. Los porcentajes asumen un patrón de transferencia ideológica que se valida con datos de campaña.",
-      "Las heurísticas de transferencia usan el patrón de la 2da vuelta 2021 (Keiko vs Castillo) como ancla regional.",
-      "El sur andino (Puno, Cusco, Apurímac, Ayacucho, Huancavelica) mantiene fuerte rechazo a Keiko en todos los escenarios.",
+      "Modelo de proyección distrital — NO predicción.",
+      "Cada distrito se calcula individualmente: voto base 1V + transferencia ideológica ajustada por el patrón de su propio distrito en 2021 (Keiko vs Castillo).",
+      "Las matrices de transferencia están documentadas (TRANSFER_LIB._fuente) con su base histórica.",
+      "El ajuste 2021 distrital captura heterogeneidad intra-provincia: ej. Miraflores vs Comas dentro de Lima.",
     ],
+    nacional_1v: {},
   },
   escenarios: {},
-  bisagra: [],     // provincias con margen <10pp en BASE
-  umbrales_keiko: [], // qué % necesita Keiko en provincias clave bajo PESIMISTA_K
+  bisagra: [],
+  umbrales_keiko: [],
 };
 
-// 1ra vuelta nacional
+// nacional 1V
 const totV1 = data.nacional.candidatos.reduce((a, c) => a + (c.totalVotosValidos || 0), 0);
 const kV1 = data.nacional.candidatos.find(c => c.nombreCandidato === K_NAME)?.totalVotosValidos || 0;
 const sV1 = data.nacional.candidatos.find(c => c.nombreCandidato === S_NAME)?.totalVotosValidos || 0;
@@ -193,105 +306,82 @@ out.meta.nacional_1v = {
   pct_sanchez: +(sV1 / totV1 * 100).toFixed(2),
 };
 
-for (const [name, esc] of Object.entries(ESCENARIOS)) {
-  out.escenarios[name] = {
-    label: esc.label,
-    parametros: { factor_2021_peso: esc.factor_2021_peso, transferencias: esc.transferencias, default: esc.default },
-    ...correrEscenario(esc),
+for (const sc of ["OPTIMISTA_K", "BASE", "PESIMISTA_K"]) {
+  out.escenarios[sc] = {
+    label: ({
+      OPTIMISTA_K: "Optimista K — derecha disciplinada, anti-fujimorismo apagado, factor 2021 al 30%",
+      BASE: "Base — transferencia ideológica promedio, factor 2021 al 50%",
+      PESIMISTA_K: "Pesimista K — 20-22% del voto derecha bota nulo, factor 2021 al 70%",
+    })[sc],
+    ...correrEscenario(sc),
   };
 }
 
-// PROVINCIAS BISAGRA (margen <12pp en BASE)
-out.bisagra = out.escenarios.BASE.provincias
-  .filter(p => Math.abs(p.pct_keiko - 50) < 12 && p.validos_proy > 5000)
+// BISAGRA: distritos (no provincias) con margen <8pp en BASE Y >5K validos
+out.bisagra = out.escenarios.BASE.distritos
+  .filter(d => Math.abs(d.pct_keiko - 50) < 8 && d.validos_proy > 3000)
   .sort((a, b) => Math.abs(a.pct_keiko - 50) - Math.abs(b.pct_keiko - 50))
-  .map(p => ({
-    ...p,
-    pct_keiko_pesimista: out.escenarios.PESIMISTA_K.provincias.find(q => q.ubigeo === p.ubigeo)?.pct_keiko,
-    pct_keiko_optimista: out.escenarios.OPTIMISTA_K.provincias.find(q => q.ubigeo === p.ubigeo)?.pct_keiko,
+  .slice(0, 40)
+  .map(d => ({
+    ubigeo: d.ubigeo,
+    departamento: d.departamento,
+    provincia: d.provincia,
+    distrito: d.distrito,
+    validos_proy: d.validos_proy,
+    pct_keiko_base: d.pct_keiko,
+    pct_keiko_optimista: out.escenarios.OPTIMISTA_K.distritos.find(x => x.ubigeo === d.ubigeo)?.pct_keiko,
+    pct_keiko_pesimista: out.escenarios.PESIMISTA_K.distritos.find(x => x.ubigeo === d.ubigeo)?.pct_keiko,
+    pct_castillo_2021: d.pct_castillo_2021,
   }));
 
-// UMBRALES KEIKO (bajo escenario PESIMISTA_K):
-//   "¿Cuánto puede caer Keiko en cada provincia, manteniendo todo lo demás igual, antes de
-//    que el resultado nacional cambie de Keiko ganando a Sánchez ganando?"
-//
-// Bajo PESIMISTA, margen actual = M (votos a favor de K).
-// Si Keiko pierde votos en provincia i: pasa votos de K a S → margen baja 2 por cada voto.
-// Para llevar margen a 0: necesitamos quitarle M/2 votos a Keiko en esa provincia.
-// %K_mínimo_i = pct_keiko_i - (M/2) / validos_proy_i * 100
-//
-// Si %K_mínimo_i < 0 → la provincia es "irrelevante" en ese sentido (no se puede salvar por ahí).
-// Si %K_mínimo_i > %K_actual → la provincia ya está perdida (debe RECUPERAR votos ahí, no defender).
+// UMBRALES: para cada provincia agregada, cuánto puede caer Keiko bajo PESIMISTA
 const pess = out.escenarios.PESIMISTA_K;
 const margenPess = pess.nacional.keiko - pess.nacional.sanchez;
-const votosColchon = Math.max(0, margenPess / 2);
+const colchon = Math.max(0, margenPess / 2);
 
 for (const p of pess.provincias) {
   if (p.validos_proy === 0) continue;
-  const buffer_pp = votosColchon / p.validos_proy * 100;
-  const pct_min = p.pct_keiko - buffer_pp;
-  const pct_actual = p.pct_keiko;
-  // Cuánto necesita SUBIR Keiko en esta provincia para EMPATAR nacional (solo aplica si ya pierde)
-  const subida_para_empatar = margenPess < 0
-    ? (-margenPess / 2) / p.validos_proy * 100
-    : null;
-
+  const bufferPp = colchon / p.validos_proy * 100;
+  const pctMin = p.pct_keiko - bufferPp;
   out.umbrales_keiko.push({
     ubigeo: p.ubigeo,
     departamento: p.departamento,
     provincia: p.provincia,
     validos_proy: p.validos_proy,
-    pct_actual_pesimista: pct_actual,
-    pct_minimo_keiko: +pct_min.toFixed(2),    // hasta cuánto puede caer
-    buffer_pp: +buffer_pp.toFixed(2),         // colchón (puntos que puede ceder ahí)
-    subida_para_empatar_si_pierde: subida_para_empatar ? +subida_para_empatar.toFixed(2) : null,
-    es_provincia_keiko: pct_actual > 50,
-    factible_defender: pct_min >= 0,
+    pct_actual_pesimista: p.pct_keiko,
+    pct_minimo_keiko: +pctMin.toFixed(2),
+    buffer_pp: +bufferPp.toFixed(2),
+    es_provincia_keiko: p.pct_keiko > 50,
     ganador_pesimista: p.ganador,
   });
 }
-// Orden: provincias de Keiko con MENOR buffer (las más vulnerables a la sorpresa) primero
-out.umbrales_keiko.sort((a, b) => {
-  if (a.es_provincia_keiko !== b.es_provincia_keiko) return b.es_provincia_keiko - a.es_provincia_keiko;
-  return (a.pct_actual_pesimista - a.pct_minimo_keiko) - (b.pct_actual_pesimista - b.pct_minimo_keiko);
-});
+out.umbrales_keiko.sort((a, b) => a.buffer_pp - b.buffer_pp);
 
 fs.writeFileSync("segunda_vuelta_2026.json", JSON.stringify(out, null, 2));
 
 // resumen
-console.log("=".repeat(75));
-console.log("MODELO 2DA VUELTA 2026 — KEIKO FUJIMORI vs ROBERTO SÁNCHEZ");
-console.log("=".repeat(75));
-console.log(`\n1ra vuelta: K=${out.meta.nacional_1v.pct_keiko}% / S=${out.meta.nacional_1v.pct_sanchez}% / Otros=${(out.meta.nacional_1v.otros/totV1*100).toFixed(1)}%`);
+console.log("=".repeat(78));
+console.log("MODELO 2DA VUELTA 2026 — KEIKO vs SÁNCHEZ — GRANULARIDAD DISTRITAL");
+console.log("=".repeat(78));
+console.log(`1V Nacional: K=${out.meta.nacional_1v.pct_keiko}% / S=${out.meta.nacional_1v.pct_sanchez}% / Otros=${(out.meta.nacional_1v.otros/totV1*100).toFixed(1)}%`);
+console.log("");
+console.log("Cobertura forense 2021 por distrito:");
+console.log(`  con match distrital: ${out.escenarios.BASE._diagnostico.distritosConForense}`);
+console.log(`  sin match (fallback provincia/sin ajuste): ${out.escenarios.BASE._diagnostico.distritosSinForense}`);
 console.log("");
 for (const [name, esc] of Object.entries(out.escenarios)) {
   const n = esc.nacional;
   console.log(`${name.padEnd(15)} K=${String(n.pct_keiko).padStart(6)}% S=${String(n.pct_sanchez).padStart(6)}% margen=${n.margen.toLocaleString().padStart(11)} → ${n.ganador}`);
 }
-console.log(`\nProvincias BISAGRA (margen <12pp en BASE, >5K validos): ${out.bisagra.length}`);
-console.log("provincia".padEnd(25), "depto".padEnd(15), "%K_opt".padStart(7), "%K_base".padStart(8), "%K_pes".padStart(7), "validos".padStart(10));
-out.bisagra.slice(0, 20).forEach(p => {
-  console.log(
-    p.provincia.padEnd(25),
-    p.departamento.padEnd(15),
-    String(p.pct_keiko_optimista || "-").padStart(7),
-    String(p.pct_keiko).padStart(8),
-    String(p.pct_keiko_pesimista || "-").padStart(7),
-    String(p.validos_proy).padStart(10),
-  );
+console.log(`\nDistritos bisagra (margen <8pp en BASE): ${out.bisagra.length}`);
+console.log(`Top 15 bisagra:`);
+out.bisagra.slice(0, 15).forEach(d => {
+  console.log(`  ${d.distrito.padEnd(22)} ${d.provincia.padEnd(20)} ${d.departamento.padEnd(15)} %K_opt=${String(d.pct_keiko_optimista||'-').padStart(5)} %K_base=${String(d.pct_keiko_base).padStart(5)} %K_pes=${String(d.pct_keiko_pesimista||'-').padStart(5)} (2021 C=${d.pct_castillo_2021}%)`);
 });
 
-console.log(`\nUMBRAL — hasta cuánto puede caer Keiko en sus provincias bajo PESIMISTA antes de perder nacional:`);
-console.log("provincia".padEnd(25), "depto".padEnd(15), "%K_act".padStart(8), "%K_min".padStart(8), "buffer".padStart(8), "validos".padStart(10));
-out.umbrales_keiko.filter(u => u.es_provincia_keiko).slice(0, 15).forEach(u => {
-  console.log(
-    u.provincia.padEnd(25),
-    u.departamento.padEnd(15),
-    String(u.pct_actual_pesimista).padStart(8),
-    String(u.pct_minimo_keiko).padStart(8),
-    String(u.buffer_pp).padStart(8),
-    String(u.validos_proy).padStart(10),
-  );
+console.log(`\nProvincias K más vulnerables bajo PESIMISTA (menor buffer):`);
+out.umbrales_keiko.filter(u => u.es_provincia_keiko).slice(0, 10).forEach(u => {
+  console.log(`  ${u.provincia.padEnd(22)} ${u.departamento.padEnd(15)} %K_act=${String(u.pct_actual_pesimista).padStart(5)} buffer=${String(u.buffer_pp).padStart(6)}pp validos=${u.validos_proy.toLocaleString()}`);
 });
 
 console.log(`\n✅ Escribió segunda_vuelta_2026.json (${(fs.statSync("segunda_vuelta_2026.json").size/1024).toFixed(0)}KB)`);

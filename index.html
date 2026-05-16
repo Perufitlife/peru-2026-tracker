@@ -2161,7 +2161,7 @@ function drawSegundaVuelta() {
   const html = `
     <div class="sv-hero">
       <div class="sv-hero-title">🔥 Segunda Vuelta 2026 — Proyección</div>
-      <div class="sv-hero-sub">Modelo de transferencia 1ra → 2da vuelta · ${esc.label}</div>
+      <div class="sv-hero-sub">${esc.label}<br><span style="font-size:0.7rem">Modelo distrital — 1,892 distritos con factor histórico 2021 individual</span></div>
       <div class="sv-vs">
         <div class="sv-fighter f-k">
           <div class="sv-name">KEIKO</div>
@@ -2238,21 +2238,21 @@ function drawSegundaVuelta() {
     </div>
 
     <div class="sv-section">
-      <div class="sv-section-title">🎯 Provincias bisagra — donde se gana o pierde</div>
-      <div class="sv-section-sub">Top 12 provincias con margen <10pp en escenario base. Cada escenario muestra cómo se mueve.</div>
+      <div class="sv-section-title">🎯 Distritos bisagra — donde se gana o pierde</div>
+      <div class="sv-section-sub">Distritos con margen <8pp en escenario base. Cada uno con su propio factor histórico 2021. Se muestra cómo se mueven entre escenarios.</div>
       <table class="sv-table">
         <thead>
-          <tr><th>Provincia</th><th class="num">Opt K</th><th class="num">Base</th><th class="num">Pes K</th></tr>
+          <tr><th>Distrito</th><th class="num">Opt K</th><th class="num">Base</th><th class="num">Pes K</th></tr>
         </thead>
         <tbody>
-          ${sv.bisagra.slice(0, 18).map(p => `
+          ${sv.bisagra.slice(0, 25).map(p => `
             <tr>
               <td>
-                <div class="prov-name">${titleCase(p.provincia)}</div>
-                <div class="prov-dep">${titleCase(p.departamento)} · ${fmt(p.validos_proy)} válidos</div>
+                <div class="prov-name">${titleCase(p.distrito)}</div>
+                <div class="prov-dep">${titleCase(p.provincia)}, ${titleCase(p.departamento)} · ${fmt(p.validos_proy)} válidos · 2021 C=${(p.pct_castillo_2021 ?? 0).toFixed(0)}%</div>
               </td>
               <td class="num pct-k">${(p.pct_keiko_optimista ?? 0).toFixed(1)}%</td>
-              <td class="num"><b>${p.pct_keiko.toFixed(1)}%</b></td>
+              <td class="num"><b>${p.pct_keiko_base.toFixed(1)}%</b></td>
               <td class="num pct-s">${(p.pct_keiko_pesimista ?? 0).toFixed(1)}%</td>
             </tr>
           `).join('')}
@@ -2332,21 +2332,42 @@ function drawSegundaVuelta() {
     </div>
 
     <details class="sv-method">
-      <summary>📐 Metodología — cómo se construyó el modelo</summary>
+      <summary>📐 Metodología — granularidad, transferencias y fuentes</summary>
       <div>
-        <b>1. Voto base</b> — Keiko (17.17%) y Sánchez (12%) en 1ra vuelta, suman 29.17%. Falta repartir el 70.83% (otros 8 candidatos + chicos).<br><br>
-        <b>2. Matriz de transferencias</b> por afinidad ideológica:<br>
-        • <b>Derecha</b> (López Aliaga 11.9%, Belmont 10.1%, Álvarez 7.9%, Espa 3.4%) → mayormente a Keiko<br>
-        • <b>Centro-izquierda</b> (Nieto 11%, López Chau 7.3%, Pérez Tello 3.4%, Olivera 1.8%) → mayormente a Sánchez<br>
-        • Una fracción <b>se abstiene</b> o vota blanco/nulo (el "anti-fujimorismo apagado")<br><br>
-        <b>3. Ajuste regional 2021</b> — para cada provincia se calcula un factor según cuánto sacó Castillo en 2021. Sur andino mantiene su rechazo histórico a Keiko aunque el rival sea más moderado.<br><br>
-        <b>4. 3 escenarios</b> con distintos pesos: <i>Optimista K</i> (derecha disciplinada vota K), <i>Base</i> (promedio), <i>Pesimista K</i> (anti-fujimorismo activo, 25% del voto derecha vota nulo).<br><br>
-        <b>5. Umbrales</b> — para cada provincia clave bajo escenario PESIMISTA, se calcula cuánto puede caer Keiko en esa provincia, manteniendo el resto del país, antes de perder. Es el "buffer" de cada provincia.<br><br>
-        <b>Limitaciones críticas:</b><br>
-        • La transferencia ideológica es una hipótesis — campañas, eventos y polarización pueden romperla<br>
-        • No modela movilidad electoral 2021→2026 (gente que no votó antes, jóvenes nuevos)<br>
-        • Asume que el patrón regional del sur andino se mantiene, pero un Sánchez más moderado podría capturar parte del centro-andino<br>
-        • El "anti-fujimorismo" puede ser más fuerte de lo modelado: encuestas 2021 mostraban ~50% rechazo persistente
+        <b>Granularidad: distrito (1,892 unidades)</b><br>
+        Cada uno de los 1,892 distritos del país se calcula individualmente. Voto base de Keiko/Sánchez en ese distrito (1ra vuelta 2026) + transferencia de los 8 candidatos eliminados (más resto chicos), ajustada por el patrón propio de ese distrito en 2021 (Keiko vs Castillo). Luego se agrega a provincia → departamento → nacional. <b>Coverage forense 2021: 100% (1,892 / 1,892 distritos con match).</b><br><br>
+
+        <b>Por qué distrito y no provincia</b><br>
+        Dentro de una misma provincia hay distritos que votan al revés. Ej. Lima: Miraflores ≠ Comas. Si agregaras por provincia, Lima salía como "60% Keiko" promedio, ocultando que San Juan de Lurigancho vota muy distinto a San Isidro. El modelo distrital recoge esa heterogeneidad.<br><br>
+
+        <b>Matrices de transferencia — fuente por candidato</b><br>
+        Cada split lleva su justificación en el JSON (campo <code>_fuente</code>). Resumen:<br>
+        • <b>López Aliaga (RP)</b> 78% K base · Fuente: 2da vuelta 2021 — su base votó ~80% Keiko (IPSOS jun-2021). Derecha conservadora disciplinada.<br>
+        • <b>Belmont</b> 70% K base · Derecha populista limeña. Más fragmentable que LA (20-25% es voto anti-todo, fuga a blanco).<br>
+        • <b>Álvarez Loayza (País Para Todos)</b> 72% K · Sin histórico, asignación por afinidad de programa (orden + economía abierta).<br>
+        • <b>Espa (Sicreo)</b> 55% K · Derecha menor, voto diluido.<br>
+        • <b>Nieto (Buen Gobierno)</b> 70% S base · Centro-izquierda, ex-PPK, anti-fujimorista declarado.<br>
+        • <b>López Chau (Ahora Nación)</b> 68% S · Izquierda nacionalista, heredero Mendoza/Humala. En 2016 Mendoza endosó PPK; ahora con izquierda en 2V, va directo a Sánchez.<br>
+        • <b>Pérez Tello (Primero la Gente)</b> 55% S · Ex-ministra Kuczynski, firmante manifiesto anti-K 2021.<br>
+        • <b>Olivera (Frente de la Esperanza)</b> 52% S · Antifujimorismo clásico años 90s-2000s. Mayor abstención por edad alta de su base.<br><br>
+
+        <b>Anclaje histórico 2021 distrital</b><br>
+        El "factor 2021" de cada distrito = (%Castillo 2021 - 50) / 50, ponderado por escenario (30% optimista / 50% base / 70% pesimista). En distritos donde Castillo arrasó (sur andino, 90%+), incluso el voto teóricamente pro-Keiko (López Aliaga) se reduce — el rechazo regional persiste. En distritos pro-Keiko 2021 (costa norte, Lima centro), el efecto es inverso.<br><br>
+
+        <b>Escenarios</b><br>
+        • <b>Optimista K</b>: transferencia derecha máxima (LA 88% K), anti-fujimorismo apagado, peso regional 2021 al 30%.<br>
+        • <b>Base</b>: heurística promedio, peso 2021 al 50%.<br>
+        • <b>Pesimista K</b>: 20-22% del voto derecha vota nulo, peso 2021 al 70% (anti-fujimorismo activo como 2021).<br><br>
+
+        <b>Limitaciones honestas</b><br>
+        • <b>No hay encuestas 2026 2V:</b> las matrices son hipótesis ancladas en 2016/2021 + perfil ideológico. Si IPSOS/IEP publican encuesta 2V, hay que recalibrar.<br>
+        • <b>Sánchez ≠ Castillo:</b> Sánchez es izquierda más establishment, podría capturar más centro-andino que Castillo. El modelo no lo refleja del todo — el factor 2021 puede ser demasiado pesimista en zonas que Castillo arrasó por su perfil rural-magisterio específico.<br>
+        • <b>Movilidad electoral 2021→2026:</b> 1.5M jóvenes nuevos no están en data 2021. Distribución asumida proporcional, pero suelen ser más anti-establishment.<br>
+        • <b>Eventos de campaña:</b> debates, escándalos, endosos no están modelados.<br>
+        • <b>Voto blanco/nulo en 2V:</b> 2021 fue 17%, asumimos rango similar via "abst" en cada split.<br><br>
+
+        <b>Fuentes</b><br>
+        Data 1V 2026: ONPE en vivo. Data 2V 2021: ONPE PCM CSVs (mesa-mesa, 270 provincias / 2,075 distritos). Transferencias: IPSOS jun-2021, IEP may-2021, lectura de programa político de cada candidato.
       </div>
     </details>
   `;

@@ -11,13 +11,19 @@ CSV_PATH = "forensic_2021/Resultados_2da_vuelta_Version_PCM .csv"
 prov = defaultdict(lambda: {
     "departamento": "",
     "provincia": "",
-    "votos_K": 0,    # Keiko (P1 en CSV)
-    "votos_C": 0,    # Castillo (P2)
-    "vb": 0,         # blancos
-    "vn": 0,         # nulos
-    "vi": 0,         # impugnados
-    "habiles": 0,    # electores habiles (sum mesas)
+    "votos_K": 0,    # Keiko (P2 en CSV)
+    "votos_C": 0,    # Castillo (P1)
+    "vb": 0, "vn": 0, "vi": 0,
+    "habiles": 0,
     "mesas": 0,
+})
+
+# nivel distrito (ubigeo 6 dígitos)
+dist = defaultdict(lambda: {
+    "departamento": "", "provincia": "", "distrito": "",
+    "votos_K": 0, "votos_C": 0,
+    "vb": 0, "vn": 0, "vi": 0,
+    "habiles": 0, "mesas": 0,
 })
 
 dep_totals = defaultdict(lambda: {"K": 0, "C": 0, "habiles": 0, "vb": 0, "vn": 0})
@@ -35,34 +41,44 @@ with open(CSV_PATH, "r", encoding="latin-1") as f:
     for row in reader:
         if row["DESCRIP_ESTADO_ACTA"].strip() != "CONTABILIZADA":
             continue
-        # ubigeo provincia = first 4 digits
         ubigeo_dist = row["UBIGEO"].strip('"').strip()
         ubigeo_prov = ubigeo_dist[:4]
         dep = row["DEPARTAMENTO"].strip().strip('"')
         provincia = row["PROVINCIA"].strip().strip('"')
-        key = ubigeo_prov
+        distrito = row["DISTRITO"].strip().strip('"')
 
-        p = prov[key]
+        # CSV: P1=CASTILLO (Perú Libre), P2=KEIKO (Fuerza Popular)
+        vK = to_int(row["VOTOS_P2"])
+        vC = to_int(row["VOTOS_P1"])
+        vb = to_int(row["VOTOS_VB"])
+        vn = to_int(row["VOTOS_VN"])
+        vi = to_int(row["VOTOS_VI"])
+        habiles = to_int(row["N_ELEC_HABIL"])
+
+        # provincia
+        p = prov[ubigeo_prov]
         p["departamento"] = dep
         p["provincia"] = provincia
-        # CSV: P1=CASTILLO (Perú Libre), P2=KEIKO (Fuerza Popular)
-        p["votos_K"] += to_int(row["VOTOS_P2"])
-        p["votos_C"] += to_int(row["VOTOS_P1"])
-        p["vb"] += to_int(row["VOTOS_VB"])
-        p["vn"] += to_int(row["VOTOS_VN"])
-        p["vi"] += to_int(row["VOTOS_VI"])
-        p["habiles"] += to_int(row["N_ELEC_HABIL"])
-        p["mesas"] += 1
+        p["votos_K"] += vK; p["votos_C"] += vC
+        p["vb"] += vb; p["vn"] += vn; p["vi"] += vi
+        p["habiles"] += habiles; p["mesas"] += 1
+
+        # distrito
+        di = dist[ubigeo_dist]
+        di["departamento"] = dep
+        di["provincia"] = provincia
+        di["distrito"] = distrito
+        di["votos_K"] += vK; di["votos_C"] += vC
+        di["vb"] += vb; di["vn"] += vn; di["vi"] += vi
+        di["habiles"] += habiles; di["mesas"] += 1
 
         d = dep_totals[dep]
-        d["K"] += to_int(row["VOTOS_P2"])
-        d["C"] += to_int(row["VOTOS_P1"])
-        d["habiles"] += to_int(row["N_ELEC_HABIL"])
-        d["vb"] += to_int(row["VOTOS_VB"])
-        d["vn"] += to_int(row["VOTOS_VN"])
+        d["K"] += vK; d["C"] += vC
+        d["habiles"] += habiles
+        d["vb"] += vb; d["vn"] += vn
 
 # build output
-out = {"provincias": [], "departamentos": [], "nacional": {}}
+out = {"provincias": [], "distritos": [], "departamentos": [], "nacional": {}}
 nacional = {"K": 0, "C": 0, "habiles": 0, "vb": 0, "vn": 0, "vi": 0}
 
 for key, p in prov.items():
@@ -96,6 +112,29 @@ for key, p in prov.items():
     nacional["vn"] += p["vn"]
     nacional["vi"] += p["vi"]
     nacional["habiles"] += p["habiles"]
+
+# distrito output
+for key, di in dist.items():
+    validos = di["votos_K"] + di["votos_C"]
+    if validos == 0:
+        continue
+    out["distritos"].append({
+        "ubigeo": key,
+        "departamento": di["departamento"],
+        "provincia": di["provincia"],
+        "distrito": di["distrito"],
+        "votos_K": di["votos_K"],
+        "votos_C": di["votos_C"],
+        "validos": validos,
+        "habiles": di["habiles"],
+        "vb": di["vb"],
+        "vn": di["vn"],
+        "pct_K": round(di["votos_K"]/validos*100, 2),
+        "pct_C": round(di["votos_C"]/validos*100, 2),
+        "margen": di["votos_K"] - di["votos_C"],
+        "ganador": "K" if di["votos_K"] > di["votos_C"] else "C",
+        "mesas": di["mesas"],
+    })
 
 for dep, d in dep_totals.items():
     validos = d["K"] + d["C"]
