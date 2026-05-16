@@ -2120,7 +2120,7 @@ function renderBatalla(data) {
 
 // ====================== 2DA VUELTA — KEIKO vs SÁNCHEZ ======================
 window._svData = null;
-window._svActiveScenario = 'BASE';
+window._svActiveScenario = 'ENCUESTAS';
 
 function renderSegundaVuelta(sv) {
   window._svData = sv;
@@ -2134,34 +2134,56 @@ function drawSegundaVuelta() {
   const esc = sv.escenarios[scKey];
   const nac = esc.nacional;
 
-  // ordenar provincias por margen ascendente (las que K más necesita primero)
   const provs = [...esc.provincias];
-  // provincias de Keiko más vulnerables: ordenadas por margen ascendente
   const provsK = provs.filter(p => p.ganador === 'K').sort((a,b) => a.margen - b.margen);
-  // provincias de Sánchez más alcanzables: las que K perdió por menos
   const provsS = provs.filter(p => p.ganador === 'S').sort((a,b) => b.margen - a.margen);
-
-  // departamentos ordenados por %K desc
   const deps = [...esc.departamentos].sort((a,b) => b.pct_keiko - a.pct_keiko);
 
-  // Histórico 2021 — provincias donde Keiko más perdió (sirve para "por qué perdió 2021")
-  // Lo derivamos del propio modelo (que tiene factor_2021)
-  const top2021Perdidas = provs
-    .filter(p => p.pct_castillo_2021 != null)
-    .sort((a,b) => (b.pct_castillo_2021 || 0) - (a.pct_castillo_2021 || 0))
-    .slice(0, 8);
-
-  // Umbrales Keiko: provincias clave de K bajo PESIMISTA
+  // umbrales clave (sólo en escenario PESIMISTA tienen sentido — bajo encuestas Keiko gana muy ajustado)
   const umbrales = sv.umbrales_keiko
-    .filter(u => u.es_provincia_keiko && u.buffer_pp <= 30 && u.validos_proy > 50000)
+    .filter(u => u.es_provincia_keiko && u.buffer_pp <= 20 && u.validos_proy > 30000)
     .sort((a,b) => a.buffer_pp - b.buffer_pp)
-    .slice(0, 12);
+    .slice(0, 14);
+
+  // distritos bisagra con factor 2021
+  const bisagras = (sv.bisagra || []).filter(b => b.validos_proy > 3000).slice(0, 25);
+
+  // fuentes encuestas (meta)
+  const fu = sv.meta?.fuentes_encuestas || {};
+  const ipsos = fu.ipsos_abr_23_24;
+  const iep = fu.iep_abr_21_25;
+  const iepReg = fu.iep_regionales || {};
 
   const winnerK = nac.margen > 0;
   const html = `
+    <!-- ENCUESTAS REALES — fuente -->
+    <div class="sv-section" style="background:linear-gradient(135deg, #FEF3C7, #FED7AA); border-left:4px solid var(--keiko)">
+      <div class="sv-section-title">📊 Encuestas reales 2da vuelta — abril 2026</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px">
+        <div style="background:white; padding:12px; border-radius:10px">
+          <div style="font-size:0.65rem; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase">IPSOS · Perú21</div>
+          <div style="font-size:0.65rem; color:var(--text-secondary); margin-bottom:6px">23-24 abr 2026</div>
+          <div style="font-size:1.1rem; font-weight:800">${ipsos?.k}% / ${ipsos?.s}%</div>
+          <div style="font-size:0.7rem; color:var(--text-secondary)">Empate técnico · Blanco/nulo ${ipsos?.blanco_nulo}%</div>
+          <div style="font-size:0.7rem; margin-top:4px"><b>Antivoto:</b> K ${ipsos?.rechazo_k}% · S ${ipsos?.rechazo_s}%</div>
+        </div>
+        <div style="background:white; padding:12px; border-radius:10px">
+          <div style="font-size:0.65rem; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase">IEP · La República</div>
+          <div style="font-size:0.65rem; color:var(--text-secondary); margin-bottom:6px">21-25 abr · n=${iep?.muestra}</div>
+          <div style="font-size:1.1rem; font-weight:800">${iep?.k}% / ${iep?.s}%</div>
+          <div style="font-size:0.7rem; color:var(--text-secondary)">Sobre válido: K ${iep?.val_k}% / S ${iep?.val_s}%</div>
+          <div style="font-size:0.7rem; margin-top:4px"><b>Error:</b> ±${iep?.error_pp}pp</div>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:0.7rem; color:var(--text-secondary); line-height:1.5">
+        <b>Cruces regionales IEP (% válido):</b><br>
+        Lima Metro K ${iepReg.LIMA_METRO?.k}% / S ${iepReg.LIMA_METRO?.s}% · Costa Norte K ${iepReg.COSTA_NORTE?.k}% / S ${iepReg.COSTA_NORTE?.s}% · Sierra Centro K ${iepReg.SIERRA_CENTRO?.k}% / S ${iepReg.SIERRA_CENTRO?.s}% · Sierra Sur K ${iepReg.SIERRA_SUR?.k}% / S ${iepReg.SIERRA_SUR?.s}% · Oriente K ${iepReg.ORIENTE?.k}% / S ${iepReg.ORIENTE?.s}%
+      </div>
+    </div>
+
     <div class="sv-hero">
-      <div class="sv-hero-title">🔥 Segunda Vuelta 2026 — Proyección</div>
-      <div class="sv-hero-sub">${esc.label}<br><span style="font-size:0.7rem">Modelo distrital — 1,892 distritos con factor histórico 2021 individual</span></div>
+      <div class="sv-hero-title">🔥 Proyección 2da Vuelta 2026</div>
+      <div class="sv-hero-sub">${esc.label}<br><span style="font-size:0.7rem">Modelo distrital · 1,892 distritos · calibrado por zona IEP · spread intra-zona vía Castillo 1V 2021</span></div>
       <div class="sv-vs">
         <div class="sv-fighter f-k">
           <div class="sv-name">KEIKO</div>
@@ -2187,14 +2209,14 @@ function drawSegundaVuelta() {
     </div>
 
     <div class="sv-scenarios">
-      <button class="sv-sc-btn ${scKey==='OPTIMISTA_K'?'active':''}" onclick="window._svSetScenario('OPTIMISTA_K')">Optimista K</button>
-      <button class="sv-sc-btn ${scKey==='BASE'?'active':''}" onclick="window._svSetScenario('BASE')">Base</button>
-      <button class="sv-sc-btn ${scKey==='PESIMISTA_K'?'active':''}" onclick="window._svSetScenario('PESIMISTA_K')">Pesimista K</button>
+      <button class="sv-sc-btn ${scKey==='ENCUESTAS'?'active':''}" onclick="window._svSetScenario('ENCUESTAS')">📊 Encuestas</button>
+      <button class="sv-sc-btn ${scKey==='OPTIMISTA_K'?'active':''}" onclick="window._svSetScenario('OPTIMISTA_K')">▲ Optimista K</button>
+      <button class="sv-sc-btn ${scKey==='PESIMISTA_K'?'active':''}" onclick="window._svSetScenario('PESIMISTA_K')">▼ Pesimista K</button>
     </div>
 
     <div class="sv-section">
-      <div class="sv-section-title">Por departamento — escenario ${scKey.toLowerCase().replace('_k', ' K')}</div>
-      <div class="sv-section-sub">Quién gana en cada departamento. Lima concentra el ~31% del voto.</div>
+      <div class="sv-section-title">Por departamento — ${scKey === 'ENCUESTAS' ? 'anclado a encuestas' : (scKey === 'OPTIMISTA_K' ? 'rechazo K cae 8pp' : 'rechazo K rebrota')}</div>
+      <div class="sv-section-sub">${scKey === 'ENCUESTAS' ? 'Calibrado contra crosstabs IEP por zona. Lima concentra ~31% del voto nacional.' : 'Sensitividad sobre encuestas. Muestra qué pasa si el rechazo a Keiko se mueve significativamente.'}</div>
       ${deps.map(d => `
         <div class="sv-dep-row">
           <div class="name">${titleCase(d.departamento)}</div>
@@ -2209,12 +2231,35 @@ function drawSegundaVuelta() {
     </div>
 
     <div class="sv-section">
-      <div class="sv-section-title">⚠️ Provincias clave de Keiko — su MARGEN DE SEGURIDAD</div>
-      <div class="sv-section-sub">Bajo escenario PESIMISTA (anti-fujimorismo activo), cuánto puede caer Keiko en cada provincia que hoy le favorece antes de perder la elección. Buffer chico = bisagra real.</div>
-      ${umbrales.length === 0 ? '<div class="sv-section-sub">Sin provincias con buffer crítico en este escenario.</div>' : `
+      <div class="sv-section-title">🎯 Distritos bisagra (margen <8pp en encuestas)</div>
+      <div class="sv-section-sub">Distritos donde el resultado puede flipar. Cada uno con su voto Castillo 1V 2021 como ancla regional.</div>
       <table class="sv-table">
         <thead>
-          <tr><th>Provincia</th><th class="num">% K actual</th><th class="num">% K mínimo</th><th class="num">Buffer</th></tr>
+          <tr><th>Distrito</th><th class="num">Pes K</th><th class="num">Encuestas</th><th class="num">Opt K</th></tr>
+        </thead>
+        <tbody>
+          ${bisagras.map(p => `
+            <tr>
+              <td>
+                <div class="prov-name">${titleCase(p.distrito)}</div>
+                <div class="prov-dep">${titleCase(p.provincia)}, ${titleCase(p.departamento)} · ${fmt(p.validos_proy)} val · Castillo 1V 2021: ${(p.pct_castillo_1v_2021 ?? 0).toFixed(0)}%</div>
+              </td>
+              <td class="num pct-s">${(p.pct_keiko_pesimista ?? 0).toFixed(1)}%</td>
+              <td class="num"><b>${p.pct_keiko_encuestas.toFixed(1)}%</b></td>
+              <td class="num pct-k">${(p.pct_keiko_optimista ?? 0).toFixed(1)}%</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sv-section">
+      <div class="sv-section-title">⚠️ Provincias clave de Keiko — buffer bajo PESIMISTA</div>
+      <div class="sv-section-sub">Si el rechazo a Keiko rebrota (25% de su voto se pierde + 15% va a S), Keiko PIERDE nacional. El buffer indica cuánto puede caer en cada provincia que aún le favorece antes de que pierda nacional. Buffer=0 significa "ya está perdiendo, no hay defensa local posible".</div>
+      ${umbrales.length === 0 ? '<div class="sv-section-sub" style="margin-top:8px"><b>En escenario PESIMISTA, Keiko ya pierde con ${fmt(Math.abs(sv.escenarios.PESIMISTA_K.nacional.margen))} votos de margen.</b> No hay umbral local que la salve — necesita activamente bajar el antivoto antes del día de votación.</div>' : `
+      <table class="sv-table">
+        <thead>
+          <tr><th>Provincia</th><th class="num">% K pesim</th><th class="num">% K mín</th><th class="num">Buffer</th></tr>
         </thead>
         <tbody>
           ${umbrales.map(u => `
@@ -2224,55 +2269,28 @@ function drawSegundaVuelta() {
                 <div class="prov-dep">${titleCase(u.departamento)} · ${fmt(u.validos_proy)} válidos</div>
               </td>
               <td class="num pct-k">${u.pct_actual_pesimista.toFixed(1)}%</td>
-              <td class="num">${u.pct_minimo_keiko < 0 ? '<span class="gap-pos">∞</span>' : u.pct_minimo_keiko.toFixed(1)+'%'}</td>
+              <td class="num">${u.pct_minimo_keiko < 0 ? '∞' : u.pct_minimo_keiko.toFixed(1)+'%'}</td>
               <td class="num ${u.buffer_pp < 5 ? 'gap-neg' : (u.buffer_pp < 15 ? '' : 'gap-pos')}">${u.buffer_pp.toFixed(1)}pp</td>
             </tr>
           `).join('')}
         </tbody>
       </table>
       `}
-      <div class="sv-alert">
-        <b>Lectura:</b> Si Keiko cae más que el "buffer" en una provincia (manteniendo todo lo demás del escenario PESIMISTA), pierde la elección.
-        En LIMA el buffer suele ser el más chico del país porque Lima concentra el mayor volumen de votos — moverla 1pp equivale a mover varias provincias chicas.
-      </div>
     </div>
 
     <div class="sv-section">
-      <div class="sv-section-title">🎯 Distritos bisagra — donde se gana o pierde</div>
-      <div class="sv-section-sub">Distritos con margen <8pp en escenario base. Cada uno con su propio factor histórico 2021. Se muestra cómo se mueven entre escenarios.</div>
-      <table class="sv-table">
-        <thead>
-          <tr><th>Distrito</th><th class="num">Opt K</th><th class="num">Base</th><th class="num">Pes K</th></tr>
-        </thead>
-        <tbody>
-          ${sv.bisagra.slice(0, 25).map(p => `
-            <tr>
-              <td>
-                <div class="prov-name">${titleCase(p.distrito)}</div>
-                <div class="prov-dep">${titleCase(p.provincia)}, ${titleCase(p.departamento)} · ${fmt(p.validos_proy)} válidos · 2021 C=${(p.pct_castillo_2021 ?? 0).toFixed(0)}%</div>
-              </td>
-              <td class="num pct-k">${(p.pct_keiko_optimista ?? 0).toFixed(1)}%</td>
-              <td class="num"><b>${p.pct_keiko_base.toFixed(1)}%</b></td>
-              <td class="num pct-s">${(p.pct_keiko_pesimista ?? 0).toFixed(1)}%</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="sv-section">
-      <div class="sv-section-title">🔻 Top provincias que Keiko necesita recuperar</div>
-      <div class="sv-section-sub">Bajo escenario actual (${scKey}): provincias donde Sánchez gana hoy y Keiko podría dar pelea (margen <15pp).</div>
+      <div class="sv-section-title">🔻 Provincias donde Keiko necesita recuperar</div>
+      <div class="sv-section-sub">Bajo escenario ${scKey}: Sánchez gana hoy pero margen <12pp — son los frentes de campaña con mayor ROI.</div>
       <table class="sv-table">
         <thead>
           <tr><th>Provincia</th><th class="num">% K</th><th class="num">% S</th><th class="num">Margen</th></tr>
         </thead>
         <tbody>
-          ${provsS.filter(p => (p.pct_sanchez - p.pct_keiko) < 15).slice(0, 15).map(p => `
+          ${provsS.filter(p => (p.pct_sanchez - p.pct_keiko) < 12).slice(0, 18).map(p => `
             <tr>
               <td>
                 <div class="prov-name">${titleCase(p.provincia)}</div>
-                <div class="prov-dep">${titleCase(p.departamento)} · ${fmt(p.validos_proy)} válidos · 2021 Castillo ${(p.pct_castillo_2021 ?? 0).toFixed(0)}%</div>
+                <div class="prov-dep">${titleCase(p.departamento)} · ${fmt(p.validos_proy)} válidos · zona ${p.zona?.replace('_', ' ') || ''}</div>
               </td>
               <td class="num pct-k">${p.pct_keiko.toFixed(1)}%</td>
               <td class="num pct-s">${p.pct_sanchez.toFixed(1)}%</td>
@@ -2284,90 +2302,65 @@ function drawSegundaVuelta() {
     </div>
 
     <div class="sv-section">
-      <div class="sv-section-title">📉 Por qué Keiko perdió en 2021</div>
-      <div class="sv-section-sub">Datos forenses 2da vuelta 2021 (Keiko vs Castillo) — provincias donde Castillo arrasó.</div>
+      <div class="sv-section-title">📉 Comparación con 2021 — por qué Keiko perdió antes</div>
       <div class="sv-2021-grid">
         <div class="sv-2021-card">
-          <div class="sv-2021-lbl">Resultado nacional</div>
+          <div class="sv-2021-lbl">2021 resultado nacional</div>
           <div class="sv-2021-num">49.73% / 50.27%</div>
           <div class="sv-2021-detail">Keiko 8,637,654 vs Castillo 8,729,732. Perdió por <b>92,078 votos</b>.</div>
         </div>
         <div class="sv-2021-card">
-          <div class="sv-2021-lbl">El sur andino la mató</div>
-          <div class="sv-2021-num">11 deptos</div>
-          <div class="sv-2021-detail">Puno, Cusco, Apurímac, Ayacucho, Huancavelica, Cajamarca: Castillo +60% en TODOS.</div>
+          <div class="sv-2021-lbl">2026 hoy (encuestas)</div>
+          <div class="sv-2021-num">${nac.pct_keiko.toFixed(1)}% / ${nac.pct_sanchez.toFixed(1)}%</div>
+          <div class="sv-2021-detail">${winnerK ? 'Keiko ganaría' : 'Sánchez ganaría'} por ${fmt(Math.abs(nac.margen))} votos · margen ${Math.abs(nac.margen) < 500000 ? 'muy estrecho' : 'amplio'}</div>
         </div>
         <div class="sv-2021-card">
-          <div class="sv-2021-lbl">Lima la salvó</div>
-          <div class="sv-2021-num">+1.74M</div>
-          <div class="sv-2021-detail">En Lima ciudad sacó 65.68% (+1,736,329 votos sobre Castillo). No alcanzó.</div>
+          <div class="sv-2021-lbl">Antivoto K 2021 → 2026</div>
+          <div class="sv-2021-num">59% → 48%</div>
+          <div class="sv-2021-detail">El rechazo a Keiko BAJÓ 11pp desde abril 2 a abril 24. Esa caída es lo que la pone en empate técnico hoy.</div>
         </div>
         <div class="sv-2021-card">
-          <div class="sv-2021-lbl">Provincia más extrema</div>
-          <div class="sv-2021-num">Azángaro</div>
-          <div class="sv-2021-detail">Castillo 95.43% / Keiko 4.57%. Margen -71,020 votos sólo ahí.</div>
+          <div class="sv-2021-lbl">Antivoto Sánchez ↑</div>
+          <div class="sv-2021-num">39% → 43%</div>
+          <div class="sv-2021-detail">Sánchez sube en rechazo a medida que lo conocen. Su techo es más bajo que el de Castillo (52% rechazo en 2021).</div>
         </div>
-      </div>
-
-      <div style="margin-top:14px;">
-        <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Top 8 provincias donde Castillo arrasó (2021)</div>
-        <table class="sv-table">
-          <thead><tr><th>Provincia</th><th class="num">% K 2021</th><th class="num">% C 2021</th><th class="num">Margen</th></tr></thead>
-          <tbody>
-          ${top2021Perdidas.map(p => `
-            <tr>
-              <td><div class="prov-name">${titleCase(p.provincia)}</div><div class="prov-dep">${titleCase(p.departamento)}</div></td>
-              <td class="num pct-k">${(p.pct_keiko_2021 ?? 0).toFixed(1)}%</td>
-              <td class="num pct-s">${(p.pct_castillo_2021 ?? 0).toFixed(1)}%</td>
-              <td class="num gap-neg">${fmt(p.margen_2021 ?? 0)}</td>
-            </tr>
-          `).join('')}
-          </tbody>
-        </table>
       </div>
       <div class="sv-alert">
-        <b>Lectura 2026:</b> Sánchez es izquierda menos rural-magisterio que Castillo, pero hereda el voto anti-fujimorista del sur andino.
-        El modelo lo refleja: en Puno/Cusco/Apurímac Keiko sigue en rangos ${'<'}25% incluso en su escenario optimista. La elección se decide en Lima, costa norte (Lambayeque, La Libertad, Piura) y las bisagras de selva (Loreto, Ucayali, San Martín).
+        <b>El factor decisivo en 2026:</b> el antivoto a Keiko cayó 11pp en 3 semanas. Si sigue bajando, escenario OPTIMISTA. Si los escándalos/escenarios polarizantes lo reactivan, escenario PESIMISTA. Hoy estamos en el medio (ENCUESTAS).
       </div>
     </div>
 
     <details class="sv-method">
-      <summary>📐 Metodología — granularidad, transferencias y fuentes</summary>
+      <summary>📐 Metodología — cómo se construye este modelo</summary>
       <div>
-        <b>Granularidad: distrito (1,892 unidades)</b><br>
-        Cada uno de los 1,892 distritos del país se calcula individualmente. Voto base de Keiko/Sánchez en ese distrito (1ra vuelta 2026) + transferencia de los 8 candidatos eliminados (más resto chicos), ajustada por el patrón propio de ese distrito en 2021 (Keiko vs Castillo). Luego se agrega a provincia → departamento → nacional. <b>Coverage forense 2021: 100% (1,892 / 1,892 distritos con match).</b><br><br>
+        <b>Inputs verificables</b><br>
+        • Voto 1ra vuelta 2026: ONPE en vivo, 1,892 distritos × 36 candidatos.<br>
+        • Encuestas 2da vuelta 2026: <b>IPSOS Perú21 (23-24 abr, K 38% / S 38%, antivoto K 48% / S 43%)</b> + <b>IEP La República (21-25 abr, n=1,207, K 31% / S 32%, sobre válido K 49.2% / S 50.8%)</b>.<br>
+        • Crosstabs regionales IEP: 5 zonas (Lima Metro, Costa Norte, Sierra Centro, Sierra Sur, Oriente) con % K/S por zona.<br>
+        • Crosstabs NSE IEP: K es 51% en A/B, 22% en D/E. S al revés.<br>
+        • Forense 2021 1V por distrito: voto Castillo (P16), Mendoza, Lescano, etc. → predictor de afinidad izquierda.<br>
+        • Forense 2021 2V por distrito: voto Castillo vs Keiko 2da vuelta.<br><br>
 
-        <b>Por qué distrito y no provincia</b><br>
-        Dentro de una misma provincia hay distritos que votan al revés. Ej. Lima: Miraflores ≠ Comas. Si agregaras por provincia, Lima salía como "60% Keiko" promedio, ocultando que San Juan de Lurigancho vota muy distinto a San Isidro. El modelo distrital recoge esa heterogeneidad.<br><br>
+        <b>Mecánica del escenario ENCUESTAS (primario)</b><br>
+        Para cada zona IEP, calibramos un parámetro <code>baseK_zona</code> tal que el agregado de votos de los 366-586 distritos en esa zona reproduce exactamente el % medido por IEP (Lima 65/35, Costa Norte 46/54, etc).<br><br>
+        Dentro de la zona, los distritos no son uniformes: el % "otros" que va a Keiko se ajusta con un spread de 0.25 según el % Castillo 1V 2021 de cada distrito. Distrito donde Castillo arrasó → menos transferencia a K. Distrito donde Castillo perdió → más transferencia a K.<br><br>
+        ~30% del voto "otros" se asume abstención inducida (refleja 17-24% blanco/nulo + 7-13% NS medido).<br><br>
 
-        <b>Matrices de transferencia — fuente por candidato</b><br>
-        Cada split lleva su justificación en el JSON (campo <code>_fuente</code>). Resumen:<br>
-        • <b>López Aliaga (RP)</b> 78% K base · Fuente: 2da vuelta 2021 — su base votó ~80% Keiko (IPSOS jun-2021). Derecha conservadora disciplinada.<br>
-        • <b>Belmont</b> 70% K base · Derecha populista limeña. Más fragmentable que LA (20-25% es voto anti-todo, fuga a blanco).<br>
-        • <b>Álvarez Loayza (País Para Todos)</b> 72% K · Sin histórico, asignación por afinidad de programa (orden + economía abierta).<br>
-        • <b>Espa (Sicreo)</b> 55% K · Derecha menor, voto diluido.<br>
-        • <b>Nieto (Buen Gobierno)</b> 70% S base · Centro-izquierda, ex-PPK, anti-fujimorista declarado.<br>
-        • <b>López Chau (Ahora Nación)</b> 68% S · Izquierda nacionalista, heredero Mendoza/Humala. En 2016 Mendoza endosó PPK; ahora con izquierda en 2V, va directo a Sánchez.<br>
-        • <b>Pérez Tello (Primero la Gente)</b> 55% S · Ex-ministra Kuczynski, firmante manifiesto anti-K 2021.<br>
-        • <b>Olivera (Frente de la Esperanza)</b> 52% S · Antifujimorismo clásico años 90s-2000s. Mayor abstención por edad alta de su base.<br><br>
+        <b>Mecánica escenarios alternativos</b><br>
+        • <b>OPTIMISTA_K</b>: 60% del voto abst y 20% del voto S "transferido" pasa a K. Simula caída fuerte del antivoto K.<br>
+        • <b>PESIMISTA_K</b>: 25% del voto K "transferido" se va a abst, 15% va a S. Simula rebrote del antifujimorismo.<br><br>
 
-        <b>Anclaje histórico 2021 distrital</b><br>
-        El "factor 2021" de cada distrito = (%Castillo 2021 - 50) / 50, ponderado por escenario (30% optimista / 50% base / 70% pesimista). En distritos donde Castillo arrasó (sur andino, 90%+), incluso el voto teóricamente pro-Keiko (López Aliaga) se reduce — el rechazo regional persiste. En distritos pro-Keiko 2021 (costa norte, Lima centro), el efecto es inverso.<br><br>
+        <b>Lo que el modelo NO captura</b><br>
+        • Eventos del debate 2da vuelta (28 mayo).<br>
+        • Endosos formales pendientes (Belmont, Nieto, López Aliaga).<br>
+        • Migración voto extranjero o jóvenes nuevos no presentes en data 2021.<br>
+        • Shocks: escándalos, lawfare, intervención militar.<br><br>
 
-        <b>Escenarios</b><br>
-        • <b>Optimista K</b>: transferencia derecha máxima (LA 88% K), anti-fujimorismo apagado, peso regional 2021 al 30%.<br>
-        • <b>Base</b>: heurística promedio, peso 2021 al 50%.<br>
-        • <b>Pesimista K</b>: 20-22% del voto derecha vota nulo, peso 2021 al 70% (anti-fujimorismo activo como 2021).<br><br>
-
-        <b>Limitaciones honestas</b><br>
-        • <b>No hay encuestas 2026 2V:</b> las matrices son hipótesis ancladas en 2016/2021 + perfil ideológico. Si IPSOS/IEP publican encuesta 2V, hay que recalibrar.<br>
-        • <b>Sánchez ≠ Castillo:</b> Sánchez es izquierda más establishment, podría capturar más centro-andino que Castillo. El modelo no lo refleja del todo — el factor 2021 puede ser demasiado pesimista en zonas que Castillo arrasó por su perfil rural-magisterio específico.<br>
-        • <b>Movilidad electoral 2021→2026:</b> 1.5M jóvenes nuevos no están en data 2021. Distribución asumida proporcional, pero suelen ser más anti-establishment.<br>
-        • <b>Eventos de campaña:</b> debates, escándalos, endosos no están modelados.<br>
-        • <b>Voto blanco/nulo en 2V:</b> 2021 fue 17%, asumimos rango similar via "abst" en cada split.<br><br>
+        <b>Validación cruzada</b><br>
+        Nuestro escenario ENCUESTAS da K 50.8% / S 49.2% nacional. IEP da K 49.2% / S 50.8% sobre válido. <b>Diferencia: 1.6pp, dentro del error muestral (±2.8pp)</b>. El modelo reproduce las encuestas con un ligero sesgo pro-K por cómo distribuimos "otros" en zona Lima_Metro (Callao tiene mucho peso en bloque Lima).<br><br>
 
         <b>Fuentes</b><br>
-        Data 1V 2026: ONPE en vivo. Data 2V 2021: ONPE PCM CSVs (mesa-mesa, 270 provincias / 2,075 distritos). Transferencias: IPSOS jun-2021, IEP may-2021, lectura de programa político de cada candidato.
+        IPSOS: <a href="https://www.ipsos.com/es-pe/escenarios-de-intencion-de-voto-segunda-vuelta-encuesta-peru-21-ipsos-abril-2026" target="_blank" style="color:var(--keiko)">ipsos.com</a> · IEP: <a href="https://encuestas.com.pe/encuesta-presidencial-segunda-vuelta-iep-02-mayo-2026/" target="_blank" style="color:var(--keiko)">encuestas.com.pe</a> · Wikipedia sondeos: <a href="https://es.wikipedia.org/wiki/Anexo:Sondeos_de_intenci%C3%B3n_de_voto_para_las_elecciones_presidenciales_de_Per%C3%BA_de_2026" target="_blank" style="color:var(--keiko)">es.wikipedia.org</a>. Forense 2021: ONPE-PCM CSVs.
       </div>
     </details>
   `;
