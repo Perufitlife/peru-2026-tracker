@@ -252,6 +252,85 @@
   .jee-cand-btn.active-la { background: var(--lopez); color: white; }
   .jee-cand-btn.active-s { background: var(--sanchez); color: white; }
   .jee-cand-btn.inactive { background: transparent; color: var(--text-secondary); }
+
+  /* ============ 2DA VUELTA ============ */
+  :root {
+    --keiko: #F97316;       /* naranja FP */
+    --keiko-bg: #FFEDD5;
+    --sanchezSV: #DC2626;   /* mantengo rojo para Sánchez */
+    --sanchezSV-bg: #FEE2E2;
+  }
+  .sv-hero { background: linear-gradient(135deg, #FFF7ED, #FEF3C7); border-radius: 20px; padding: 22px 18px; margin-bottom: 16px; border: 1px solid #FED7AA; }
+  .sv-hero-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); font-weight: 800; text-align: center; }
+  .sv-hero-sub { font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 2px; }
+  .sv-vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; margin-top: 14px; }
+  .sv-fighter { background: white; border-radius: 16px; padding: 12px 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .sv-fighter.f-k { border-top: 3px solid var(--keiko); }
+  .sv-fighter.f-s { border-top: 3px solid var(--sanchezSV); }
+  .sv-name { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 2px; }
+  .sv-name-full { font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 6px; }
+  .sv-pct { font-size: 2rem; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .f-k .sv-pct { color: var(--keiko); }
+  .f-s .sv-pct { color: var(--sanchezSV); }
+  .sv-votes { font-size: 0.7rem; color: var(--text-secondary); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .sv-vs-badge { font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); }
+  .sv-margin { margin-top: 14px; text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
+  .sv-margin-tag { display: inline-block; padding: 4px 12px; border-radius: 99px; font-weight: 800; font-size: 0.85rem; }
+  .sv-margin-tag.win-k { background: var(--keiko-bg); color: var(--keiko); }
+  .sv-margin-tag.win-s { background: var(--sanchezSV-bg); color: var(--sanchezSV); }
+  .sv-bar-stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 12px; background: var(--border); }
+  .sv-bar-k { background: var(--keiko); }
+  .sv-bar-s { background: var(--sanchezSV); }
+
+  /* selector de escenarios */
+  .sv-scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--border); padding: 3px; border-radius: 12px; margin-bottom: 16px; }
+  .sv-sc-btn { background: none; border: none; padding: 10px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .sv-sc-btn.active { background: var(--card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* tarjetas seccion */
+  .sv-section { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  .sv-section-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 4px; }
+  .sv-section-sub { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4; }
+
+  /* tabla de provincias */
+  .sv-table { width: 100%; font-size: 0.72rem; }
+  .sv-table th { text-align: left; font-weight: 700; font-size: 0.6rem; text-transform: uppercase; color: var(--text-secondary); padding: 6px 4px; border-bottom: 1px solid var(--border); letter-spacing: 0.5px; }
+  .sv-table td { padding: 8px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; font-variant-numeric: tabular-nums; }
+  .sv-table tr:last-child td { border-bottom: none; }
+  .sv-table .num { text-align: right; }
+  .sv-table .prov-name { font-weight: 700; }
+  .sv-table .prov-dep { color: var(--text-secondary); font-size: 0.65rem; }
+  .sv-table .pct-k { color: var(--keiko); font-weight: 700; }
+  .sv-table .pct-s { color: var(--sanchezSV); font-weight: 700; }
+  .sv-table .gap-pos { color: var(--green); font-weight: 700; }
+  .sv-table .gap-neg { color: var(--sanchezSV); font-weight: 700; }
+  .sv-mini-bar { height: 5px; border-radius: 3px; overflow: hidden; display: flex; margin-top: 3px; background: var(--border); }
+
+  .sv-dep-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.78rem; }
+  .sv-dep-row:last-child { border-bottom: none; }
+  .sv-dep-row .name { font-weight: 700; flex: 1; }
+  .sv-dep-row .vals { font-variant-numeric: tabular-nums; display: flex; gap: 8px; align-items: center; }
+  .sv-dep-bar-bg { width: 70px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: flex; }
+  .sv-dep-bar-k { background: var(--keiko); }
+  .sv-dep-bar-s { background: var(--sanchezSV); }
+
+  /* "por qué perdió 2021" */
+  .sv-2021-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .sv-2021-card { background: var(--bg); border-radius: 12px; padding: 12px; }
+  .sv-2021-num { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; }
+  .sv-2021-lbl { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+  .sv-2021-detail { font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+
+  /* warning box */
+  .sv-alert { background: linear-gradient(135deg, #FEE2E2, #FEF3C7); border-left: 4px solid var(--sanchezSV); border-radius: 8px; padding: 12px 14px; margin-top: 10px; font-size: 0.75rem; line-height: 1.5; }
+  .sv-alert b { color: var(--text-primary); }
+  .sv-good { background: linear-gradient(135deg, #D1FAE5, #DBEAFE); border-left: 4px solid var(--green); }
+
+  details.sv-method > summary { cursor: pointer; padding: 12px 14px; background: var(--card); border-radius: 12px; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); list-style: none; }
+  details.sv-method > summary::-webkit-details-marker { display: none; }
+  details.sv-method[open] > summary { border-radius: 12px 12px 0 0; }
+  details.sv-method > div { background: var(--card); border-radius: 0 0 12px 12px; padding: 14px; font-size: 0.72rem; line-height: 1.55; color: var(--text-secondary); }
+  details.sv-method b { color: var(--text-primary); }
 </style>
 </head>
 <body>
@@ -277,6 +356,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('batalla')">Batalla JEE</button>
     <button class="tab-btn" onclick="switchTab('resumen')">Resumen</button>
+    <button class="tab-btn" onclick="switchTab('segunda')">2da Vuelta</button>
   </div>
 
   <div id="tab-resumen" class="tab-content">
@@ -291,6 +371,10 @@
   <div id="tab-batalla" class="tab-content active">
     <div id="batalla-container"></div>
   </div><!-- fin tab-batalla -->
+
+  <div id="tab-segunda" class="tab-content">
+    <div id="segunda-container">Cargando proyección 2da vuelta...</div>
+  </div><!-- fin tab-segunda -->
 
   <div class="footer">
     Datos en tiempo real obtenidos de la API pública de ONPE.<br>
@@ -715,13 +799,17 @@ function setJeePreset(le, pv) {
 let historyData = [];
 
 async function load() {
-  const [dataRes, histRes] = await Promise.all([
+  const [dataRes, histRes, svRes] = await Promise.all([
     fetch('data.json?t=' + Date.now()),
-    fetch('history.json?t=' + Date.now()).catch(() => null)
+    fetch('history.json?t=' + Date.now()).catch(() => null),
+    fetch('segunda_vuelta_2026.json?t=' + Date.now()).catch(() => null),
   ]);
   const data = await dataRes.json();
   try { historyData = await histRes.json(); } catch { historyData = []; }
+  let segundaData = null;
+  try { segundaData = await svRes.json(); } catch {}
   render(data);
+  if (segundaData) renderSegundaVuelta(segundaData);
 }
 
 function render(data) {
@@ -2028,6 +2116,247 @@ function renderBatalla(data) {
   // Construir y renderizar el explorador JEE (drill-down)
   window._jeeTreeData = buildJeeTree(data);
   renderJeeTree();
+}
+
+// ====================== 2DA VUELTA — KEIKO vs SÁNCHEZ ======================
+window._svData = null;
+window._svActiveScenario = 'BASE';
+
+function renderSegundaVuelta(sv) {
+  window._svData = sv;
+  drawSegundaVuelta();
+}
+
+function drawSegundaVuelta() {
+  const sv = window._svData;
+  if (!sv) return;
+  const scKey = window._svActiveScenario;
+  const esc = sv.escenarios[scKey];
+  const nac = esc.nacional;
+
+  // ordenar provincias por margen ascendente (las que K más necesita primero)
+  const provs = [...esc.provincias];
+  // provincias de Keiko más vulnerables: ordenadas por margen ascendente
+  const provsK = provs.filter(p => p.ganador === 'K').sort((a,b) => a.margen - b.margen);
+  // provincias de Sánchez más alcanzables: las que K perdió por menos
+  const provsS = provs.filter(p => p.ganador === 'S').sort((a,b) => b.margen - a.margen);
+
+  // departamentos ordenados por %K desc
+  const deps = [...esc.departamentos].sort((a,b) => b.pct_keiko - a.pct_keiko);
+
+  // Histórico 2021 — provincias donde Keiko más perdió (sirve para "por qué perdió 2021")
+  // Lo derivamos del propio modelo (que tiene factor_2021)
+  const top2021Perdidas = provs
+    .filter(p => p.pct_castillo_2021 != null)
+    .sort((a,b) => (b.pct_castillo_2021 || 0) - (a.pct_castillo_2021 || 0))
+    .slice(0, 8);
+
+  // Umbrales Keiko: provincias clave de K bajo PESIMISTA
+  const umbrales = sv.umbrales_keiko
+    .filter(u => u.es_provincia_keiko && u.buffer_pp <= 30 && u.validos_proy > 50000)
+    .sort((a,b) => a.buffer_pp - b.buffer_pp)
+    .slice(0, 12);
+
+  const winnerK = nac.margen > 0;
+  const html = `
+    <div class="sv-hero">
+      <div class="sv-hero-title">🔥 Segunda Vuelta 2026 — Proyección</div>
+      <div class="sv-hero-sub">Modelo de transferencia 1ra → 2da vuelta · ${esc.label}</div>
+      <div class="sv-vs">
+        <div class="sv-fighter f-k">
+          <div class="sv-name">KEIKO</div>
+          <div class="sv-name-full">Fuerza Popular</div>
+          <div class="sv-pct">${nac.pct_keiko.toFixed(2)}%</div>
+          <div class="sv-votes">${fmt(nac.keiko)}</div>
+        </div>
+        <div class="sv-vs-badge">VS</div>
+        <div class="sv-fighter f-s">
+          <div class="sv-name">SÁNCHEZ</div>
+          <div class="sv-name-full">Juntos por el Perú</div>
+          <div class="sv-pct">${nac.pct_sanchez.toFixed(2)}%</div>
+          <div class="sv-votes">${fmt(nac.sanchez)}</div>
+        </div>
+      </div>
+      <div class="sv-bar-stack">
+        <div class="sv-bar-k" style="width:${nac.pct_keiko}%"></div>
+        <div class="sv-bar-s" style="width:${nac.pct_sanchez}%"></div>
+      </div>
+      <div class="sv-margin">
+        Margen: <span class="sv-margin-tag ${winnerK ? 'win-k' : 'win-s'}">${winnerK ? 'K' : 'S'} +${fmt(Math.abs(nac.margen))}</span>
+      </div>
+    </div>
+
+    <div class="sv-scenarios">
+      <button class="sv-sc-btn ${scKey==='OPTIMISTA_K'?'active':''}" onclick="window._svSetScenario('OPTIMISTA_K')">Optimista K</button>
+      <button class="sv-sc-btn ${scKey==='BASE'?'active':''}" onclick="window._svSetScenario('BASE')">Base</button>
+      <button class="sv-sc-btn ${scKey==='PESIMISTA_K'?'active':''}" onclick="window._svSetScenario('PESIMISTA_K')">Pesimista K</button>
+    </div>
+
+    <div class="sv-section">
+      <div class="sv-section-title">Por departamento — escenario ${scKey.toLowerCase().replace('_k', ' K')}</div>
+      <div class="sv-section-sub">Quién gana en cada departamento. Lima concentra el ~31% del voto.</div>
+      ${deps.map(d => `
+        <div class="sv-dep-row">
+          <div class="name">${titleCase(d.departamento)}</div>
+          <div class="vals">
+            <span class="pct-k">${d.pct_keiko.toFixed(1)}%</span>
+            <div class="sv-dep-bar-bg"><div class="sv-dep-bar-k" style="width:${d.pct_keiko}%"></div><div class="sv-dep-bar-s" style="width:${d.pct_sanchez}%"></div></div>
+            <span class="pct-s">${d.pct_sanchez.toFixed(1)}%</span>
+            <span style="color:${d.ganador==='K'?'var(--keiko)':'var(--sanchezSV)'}; font-weight:800; min-width: 14px; text-align:center;">${d.ganador}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="sv-section">
+      <div class="sv-section-title">⚠️ Provincias clave de Keiko — su MARGEN DE SEGURIDAD</div>
+      <div class="sv-section-sub">Bajo escenario PESIMISTA (anti-fujimorismo activo), cuánto puede caer Keiko en cada provincia que hoy le favorece antes de perder la elección. Buffer chico = bisagra real.</div>
+      ${umbrales.length === 0 ? '<div class="sv-section-sub">Sin provincias con buffer crítico en este escenario.</div>' : `
+      <table class="sv-table">
+        <thead>
+          <tr><th>Provincia</th><th class="num">% K actual</th><th class="num">% K mínimo</th><th class="num">Buffer</th></tr>
+        </thead>
+        <tbody>
+          ${umbrales.map(u => `
+            <tr>
+              <td>
+                <div class="prov-name">${titleCase(u.provincia)}</div>
+                <div class="prov-dep">${titleCase(u.departamento)} · ${fmt(u.validos_proy)} válidos</div>
+              </td>
+              <td class="num pct-k">${u.pct_actual_pesimista.toFixed(1)}%</td>
+              <td class="num">${u.pct_minimo_keiko < 0 ? '<span class="gap-pos">∞</span>' : u.pct_minimo_keiko.toFixed(1)+'%'}</td>
+              <td class="num ${u.buffer_pp < 5 ? 'gap-neg' : (u.buffer_pp < 15 ? '' : 'gap-pos')}">${u.buffer_pp.toFixed(1)}pp</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      `}
+      <div class="sv-alert">
+        <b>Lectura:</b> Si Keiko cae más que el "buffer" en una provincia (manteniendo todo lo demás del escenario PESIMISTA), pierde la elección.
+        En LIMA el buffer suele ser el más chico del país porque Lima concentra el mayor volumen de votos — moverla 1pp equivale a mover varias provincias chicas.
+      </div>
+    </div>
+
+    <div class="sv-section">
+      <div class="sv-section-title">🎯 Provincias bisagra — donde se gana o pierde</div>
+      <div class="sv-section-sub">Top 12 provincias con margen <10pp en escenario base. Cada escenario muestra cómo se mueve.</div>
+      <table class="sv-table">
+        <thead>
+          <tr><th>Provincia</th><th class="num">Opt K</th><th class="num">Base</th><th class="num">Pes K</th></tr>
+        </thead>
+        <tbody>
+          ${sv.bisagra.slice(0, 18).map(p => `
+            <tr>
+              <td>
+                <div class="prov-name">${titleCase(p.provincia)}</div>
+                <div class="prov-dep">${titleCase(p.departamento)} · ${fmt(p.validos_proy)} válidos</div>
+              </td>
+              <td class="num pct-k">${(p.pct_keiko_optimista ?? 0).toFixed(1)}%</td>
+              <td class="num"><b>${p.pct_keiko.toFixed(1)}%</b></td>
+              <td class="num pct-s">${(p.pct_keiko_pesimista ?? 0).toFixed(1)}%</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sv-section">
+      <div class="sv-section-title">🔻 Top provincias que Keiko necesita recuperar</div>
+      <div class="sv-section-sub">Bajo escenario actual (${scKey}): provincias donde Sánchez gana hoy y Keiko podría dar pelea (margen <15pp).</div>
+      <table class="sv-table">
+        <thead>
+          <tr><th>Provincia</th><th class="num">% K</th><th class="num">% S</th><th class="num">Margen</th></tr>
+        </thead>
+        <tbody>
+          ${provsS.filter(p => (p.pct_sanchez - p.pct_keiko) < 15).slice(0, 15).map(p => `
+            <tr>
+              <td>
+                <div class="prov-name">${titleCase(p.provincia)}</div>
+                <div class="prov-dep">${titleCase(p.departamento)} · ${fmt(p.validos_proy)} válidos · 2021 Castillo ${(p.pct_castillo_2021 ?? 0).toFixed(0)}%</div>
+              </td>
+              <td class="num pct-k">${p.pct_keiko.toFixed(1)}%</td>
+              <td class="num pct-s">${p.pct_sanchez.toFixed(1)}%</td>
+              <td class="num gap-neg">-${fmt(Math.abs(p.margen))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sv-section">
+      <div class="sv-section-title">📉 Por qué Keiko perdió en 2021</div>
+      <div class="sv-section-sub">Datos forenses 2da vuelta 2021 (Keiko vs Castillo) — provincias donde Castillo arrasó.</div>
+      <div class="sv-2021-grid">
+        <div class="sv-2021-card">
+          <div class="sv-2021-lbl">Resultado nacional</div>
+          <div class="sv-2021-num">49.73% / 50.27%</div>
+          <div class="sv-2021-detail">Keiko 8,637,654 vs Castillo 8,729,732. Perdió por <b>92,078 votos</b>.</div>
+        </div>
+        <div class="sv-2021-card">
+          <div class="sv-2021-lbl">El sur andino la mató</div>
+          <div class="sv-2021-num">11 deptos</div>
+          <div class="sv-2021-detail">Puno, Cusco, Apurímac, Ayacucho, Huancavelica, Cajamarca: Castillo +60% en TODOS.</div>
+        </div>
+        <div class="sv-2021-card">
+          <div class="sv-2021-lbl">Lima la salvó</div>
+          <div class="sv-2021-num">+1.74M</div>
+          <div class="sv-2021-detail">En Lima ciudad sacó 65.68% (+1,736,329 votos sobre Castillo). No alcanzó.</div>
+        </div>
+        <div class="sv-2021-card">
+          <div class="sv-2021-lbl">Provincia más extrema</div>
+          <div class="sv-2021-num">Azángaro</div>
+          <div class="sv-2021-detail">Castillo 95.43% / Keiko 4.57%. Margen -71,020 votos sólo ahí.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Top 8 provincias donde Castillo arrasó (2021)</div>
+        <table class="sv-table">
+          <thead><tr><th>Provincia</th><th class="num">% K 2021</th><th class="num">% C 2021</th><th class="num">Margen</th></tr></thead>
+          <tbody>
+          ${top2021Perdidas.map(p => `
+            <tr>
+              <td><div class="prov-name">${titleCase(p.provincia)}</div><div class="prov-dep">${titleCase(p.departamento)}</div></td>
+              <td class="num pct-k">${(p.pct_keiko_2021 ?? 0).toFixed(1)}%</td>
+              <td class="num pct-s">${(p.pct_castillo_2021 ?? 0).toFixed(1)}%</td>
+              <td class="num gap-neg">${fmt(p.margen_2021 ?? 0)}</td>
+            </tr>
+          `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="sv-alert">
+        <b>Lectura 2026:</b> Sánchez es izquierda menos rural-magisterio que Castillo, pero hereda el voto anti-fujimorista del sur andino.
+        El modelo lo refleja: en Puno/Cusco/Apurímac Keiko sigue en rangos ${'<'}25% incluso en su escenario optimista. La elección se decide en Lima, costa norte (Lambayeque, La Libertad, Piura) y las bisagras de selva (Loreto, Ucayali, San Martín).
+      </div>
+    </div>
+
+    <details class="sv-method">
+      <summary>📐 Metodología — cómo se construyó el modelo</summary>
+      <div>
+        <b>1. Voto base</b> — Keiko (17.17%) y Sánchez (12%) en 1ra vuelta, suman 29.17%. Falta repartir el 70.83% (otros 8 candidatos + chicos).<br><br>
+        <b>2. Matriz de transferencias</b> por afinidad ideológica:<br>
+        • <b>Derecha</b> (López Aliaga 11.9%, Belmont 10.1%, Álvarez 7.9%, Espa 3.4%) → mayormente a Keiko<br>
+        • <b>Centro-izquierda</b> (Nieto 11%, López Chau 7.3%, Pérez Tello 3.4%, Olivera 1.8%) → mayormente a Sánchez<br>
+        • Una fracción <b>se abstiene</b> o vota blanco/nulo (el "anti-fujimorismo apagado")<br><br>
+        <b>3. Ajuste regional 2021</b> — para cada provincia se calcula un factor según cuánto sacó Castillo en 2021. Sur andino mantiene su rechazo histórico a Keiko aunque el rival sea más moderado.<br><br>
+        <b>4. 3 escenarios</b> con distintos pesos: <i>Optimista K</i> (derecha disciplinada vota K), <i>Base</i> (promedio), <i>Pesimista K</i> (anti-fujimorismo activo, 25% del voto derecha vota nulo).<br><br>
+        <b>5. Umbrales</b> — para cada provincia clave bajo escenario PESIMISTA, se calcula cuánto puede caer Keiko en esa provincia, manteniendo el resto del país, antes de perder. Es el "buffer" de cada provincia.<br><br>
+        <b>Limitaciones críticas:</b><br>
+        • La transferencia ideológica es una hipótesis — campañas, eventos y polarización pueden romperla<br>
+        • No modela movilidad electoral 2021→2026 (gente que no votó antes, jóvenes nuevos)<br>
+        • Asume que el patrón regional del sur andino se mantiene, pero un Sánchez más moderado podría capturar parte del centro-andino<br>
+        • El "anti-fujimorismo" puede ser más fuerte de lo modelado: encuestas 2021 mostraban ~50% rechazo persistente
+      </div>
+    </details>
+  `;
+
+  document.getElementById('segunda-container').innerHTML = html;
+}
+
+window._svSetScenario = function(sc) {
+  window._svActiveScenario = sc;
+  drawSegundaVuelta();
 }
 
 load();

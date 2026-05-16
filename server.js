@@ -43,8 +43,14 @@ function runSync(callback) {
     lastSync = new Date();
     lastError = null;
 
-    // Auto-push to GitHub (data.json + history.json)
-    execFile('git', ['add', 'data.json', 'history.json'], { cwd: DIR }, () => {
+    // Regenerar modelo de 2da vuelta con la data fresca
+    execFile('node', [path.join(DIR, 'build_segunda_vuelta.js')], { timeout: 30000 }, (svErr) => {
+      if (svErr) console.log('[2DA-VUELTA] Error:', svErr.message);
+      else console.log('[2DA-VUELTA] Modelo regenerado');
+    });
+
+    // Auto-push to GitHub (data.json + history.json + segunda_vuelta_2026.json)
+    execFile('git', ['add', 'data.json', 'history.json', 'segunda_vuelta_2026.json'], { cwd: DIR }, () => {
       execFile('git', ['commit', '-m', `Sync ${new Date().toISOString()}`], { cwd: DIR }, (commitErr) => {
         if (commitErr) {
           console.log('[GIT] Nothing to commit or error:', commitErr.message.split('\n')[0]);

@@ -1,3 +1,19 @@
 telegram-bot.js
 node_modules/
 peru_geo.json
+
+# Análisis locales — NO pushear a GitHub
+analisis-local.html
+auditoria-local.html
+audit-local.js
+audit-results.json
+fetch-mesas-local.js
+actas-mesas-local.json
+audit-mesas-local.js
+audit-mesas-results.json
+forensic_2021/
+local-*.html
+local-*.js
+*-local.html
+*-local.js
+*-local.json
