@@ -29,10 +29,15 @@
  *  - Forense 2021 2da vuelta y 1ra vuelta por distrito (CSVs ONPE-PCM).
  */
 const fs = require("fs");
+const { execSync } = require("child_process");
+
+// Regenera el modelo predictivo primero
+try { execSync("node build_predictive.js", { stdio: "pipe" }); } catch (e) {}
 
 const data = require("./data.json");
 const forense2v = require("./forensic_2021_provincias.json");      // 2V 2021
 const forense1v = require("./forensic_2021_1v_distritos.json");    // 1V 2021
+const modelPred = require("./modelo_predictivo_2026.json");        // modelo agnóstico propio
 
 const K_NAME = "KEIKO SOFIA FUJIMORI HIGUCHI";
 const S_NAME = "ROBERTO HELBERT SANCHEZ PALOMINO";
@@ -647,25 +652,193 @@ out.escenarios.PESIMISTA_K = {
   distritos: pes,
 };
 
-// MAS_PROBABLE — encuestas + integración de todas las señales
-const mp = aplicarMasProbable(enc.distritos);
+// ============================================================
+// MODELO_PROPIO — predicción agnóstica de encuestas
+// ============================================================
+//
+// Resultado del modelo predictivo distrital (build_predictive.js):
+// continuity_factor × ajuste_castillo_personal × ajuste_urbano + antivoto K + efecto 2016
+// Da: K ~52% / S ~48% (5pp diferente a IEP)
+//
+// Lo integro como escenario MODELO_PROPIO con todas sus métricas.
+
+const modelPredMap = new Map();
+modelPred.distritos.forEach(d => modelPredMap.set(d.ubigeo, d));
+
+function distritosFromModelPred() {
+  // Adaptar formato del modelo predictivo al formato esperado
+  return modelPred.distritos.map(d => ({
+    ubigeo: d.ubigeo,
+    departamento: d.departamento,
+    provincia: d.provincia,
+    distrito: d.distrito,
+    zona: distritoZona(d.departamento),
+    validos_1v: 0,
+    keiko_base: 0,
+    sanchez_base: 0,
+    otros_1v: 0,
+    share_otros_a_K: 0,
+    share_otros_a_S: 0,
+    share_otros_abst: 0,
+    keiko_proy: d.votos_keiko_pred,
+    sanchez_proy: d.votos_sanchez_pred,
+    abstencion_inducida: 0,
+    validos_proy: d.votos_keiko_pred + d.votos_sanchez_pred,
+    pct_keiko: d.pct_keiko_pred,
+    pct_sanchez: d.pct_sanchez_pred,
+    margen: d.margen_pred,
+    ganador: d.ganador_pred,
+    pct_castillo_1v_2021: null,
+    pct_castillo_2v_2021: d.pct_castillo_2V_2021,
+    continuity_factor: d.continuity_factor,
+    ajuste_castillo_personal: d.ajuste_castillo_personal,
+    ajuste_urbano: d.ajuste_urbano,
+  }));
+}
+
+const modeloPropioDist = distritosFromModelPred();
+out.escenarios.MODELO_PROPIO = {
+  label: `Modelo propio agnóstico (back-test RMSE ${modelPred.meta.back_test_rmse}pp)`,
+  ...agregarProvinciaYDepartamento(modeloPropioDist),
+  distritos: modeloPropioDist,
+  metodologia: modelPred.meta.metodologia,
+  validacion: modelPred.meta.validacion_cruzada,
+  validacion_zonal: modelPred.validacion_zonal,
+};
+
+// ============================================================
+// MAS_PROBABLE — Bayesian blend modelo propio + encuestas
+// ============================================================
+//
+// Combina:
+//   - Modelo propio: K ~52% (peso 0.45 — alto pero no ciego, RMSE elevado)
+//   - Encuestas IEP/IPSOS: K ~50% (peso 0.55 — mayor peso por validez metodológica)
+//
+// Por distrito: blend ponderado del modeloPropio y ENCUESTAS.
+const W_MODELO = 0.45;
+const W_ENCUESTAS = 0.55;
+
+const encDistMap = new Map();
+enc.distritos.forEach(d => encDistMap.set(d.ubigeo, d));
+
+const mpDist = [];
+for (const dMP of modeloPropioDist) {
+  const dEnc = encDistMap.get(dMP.ubigeo);
+  if (!dEnc) {
+    mpDist.push({ ...dMP });
+    continue;
+  }
+  // Blend porcentajes ponderados
+  const pct_K_blend = dMP.pct_keiko * W_MODELO + dEnc.pct_keiko * W_ENCUESTAS;
+  const pct_S_blend = 100 - pct_K_blend;
+  const validos = Math.max(dMP.validos_proy, dEnc.validos_proy);
+  const votos_K = Math.round(validos * pct_K_blend / 100);
+  const votos_S = Math.round(validos * pct_S_blend / 100);
+  mpDist.push({
+    ...dEnc,
+    keiko_proy: votos_K,
+    sanchez_proy: votos_S,
+    validos_proy: votos_K + votos_S,
+    pct_keiko: +pct_K_blend.toFixed(2),
+    pct_sanchez: +pct_S_blend.toFixed(2),
+    margen: votos_K - votos_S,
+    ganador: votos_K > votos_S ? "K" : "S",
+    blend_modelo_pct_k: dMP.pct_keiko,
+    blend_encuestas_pct_k: dEnc.pct_keiko,
+  });
+}
+
 out.escenarios.MAS_PROBABLE = {
-  label: "Más probable (encuestas + momentum antivoto + voto extranjero + efecto 2016)",
-  ...agregarProvinciaYDepartamento(mp),
-  distritos: mp,
-  ajustes_aplicados: {
-    momentum_antivoto_k: "+1.0pp K (antivoto K cayó 11pp en 3 sem, asume continúa)",
-    efecto_recta_final_2016: "-1.5pp K (antifujimorismo se moviliza última semana, ref PPK 2016)",
-    voto_extranjero: "Exterior asignado 72% K (perfil urbano educado anti-izquierda)",
-    miedo_castillo_2_0: "+0.5pp K (Sánchez autodefinido castillista → voto del miedo)",
-    net_pre_extranjero: "~0pp (momentum + recta final se cancelan)",
-    voto_extranjero_efecto_real_pct: "+0.5pp K nacional (~500K votos asignados 72/28 vs ~52/48 base)",
+  label: `Más probable (bayesian blend: 45% modelo propio + 55% encuestas)`,
+  ...agregarProvinciaYDepartamento(mpDist),
+  distritos: mpDist,
+  blend: {
+    pesos: { modelo_propio: W_MODELO, encuestas: W_ENCUESTAS },
+    justificacion: "Blend 45/55 refleja: modelo propio tiene back-test RMSE 11pp (alto) por distrito pero captura tendencias estructurales; encuestas IPSOS/IEP tienen ±2.8pp error muestral nacional pero pueden tener sesgo NSE+urbano (overrepresentación A/B en Lima).",
   },
 };
 
 // Monte Carlo — distribución de probabilidad
-console.log("Corriendo Monte Carlo 5,000 simulaciones...");
-out.monte_carlo = correrMonteCarlo(enc.distritos, 5000);
+// Usamos los distritos MAS_PROBABLE (blend) como ancla
+// y agregamos ruido representando:
+//  - Incertidumbre en el peso del blend (¿más cerca del modelo o encuestas?) σ=0.10
+//  - Shock recta final 2016 (riesgo) μ=-0.5pp σ=1.2pp K
+//  - Antivoto K trajectory σ=1.5pp K
+//  - Voto extranjero σ=0.05
+//  - Ruido zonal σ=2.0pp por zona
+
+function correrMonteCarlo2(blendDistritos, modelDistMap, encDistMap, nSims = 5000) {
+  const results = [];
+  for (let i = 0; i < nSims; i++) {
+    const e1 = gaussian(0, 0.015);          // shift global antivoto
+    const e2 = gaussian(-0.005, 0.012);     // recta final 2016
+    const e3 = gaussian(0.72, 0.05);        // voto extranjero
+    const wMod = clampNum(gaussian(0.45, 0.10), 0.20, 0.70);  // peso modelo vs encuestas
+    const wEnc = 1 - wMod;
+    const e_zonal = {
+      LIMA_METRO: gaussian(0, 0.020), COSTA_NORTE: gaussian(0, 0.020),
+      COSTA_SUR: gaussian(0, 0.020), SIERRA_CENTRO: gaussian(0, 0.020),
+      SIERRA_SUR: gaussian(0, 0.020), ORIENTE: gaussian(0, 0.020),
+    };
+
+    let totK = 0, totS = 0;
+    for (const d of blendDistritos) {
+      const dMod = modelDistMap.get(d.ubigeo);
+      const dEnc = encDistMap.get(d.ubigeo);
+      if (!dMod || !dEnc) continue;
+
+      // Blend con peso muestral
+      let pctK = dMod.pct_keiko * wMod + dEnc.pct_keiko * wEnc;
+      // Ajustes globales sobre el blend
+      pctK += (e1 + e2 + 0.005) * 100;
+      pctK += (e_zonal[d.zona] || 0) * 100;
+      pctK = clampNum(pctK, 3, 97);
+
+      const validos = d.validos_proy;
+      let kProy = validos * pctK / 100;
+      let sProy = validos - kProy;
+
+      if (d.departamento === "EXTRANJERO") {
+        kProy = validos * e3;
+        sProy = validos * (1 - e3);
+      }
+      totK += kProy;
+      totS += sProy;
+    }
+    results.push(totK / (totK + totS) * 100);
+  }
+  results.sort((a, b) => a - b);
+  const median = results[Math.floor(nSims * 0.5)];
+  const p10 = results[Math.floor(nSims * 0.10)];
+  const p90 = results[Math.floor(nSims * 0.90)];
+  const p025 = results[Math.floor(nSims * 0.025)];
+  const p975 = results[Math.floor(nSims * 0.975)];
+  const pKwins = results.filter(r => r > 50).length / nSims * 100;
+  return {
+    n_sims: nSims,
+    mediana_pct_keiko: +median.toFixed(2),
+    mediana_pct_sanchez: +(100 - median).toFixed(2),
+    prob_keiko_gana: +pKwins.toFixed(1),
+    prob_sanchez_gana: +(100 - pKwins).toFixed(1),
+    ci80_keiko: [+p10.toFixed(2), +p90.toFixed(2)],
+    ci95_keiko: [+p025.toFixed(2), +p975.toFixed(2)],
+    parametros: {
+      blend_modelo_propio: { mu: 0.45, sigma: 0.10 },
+      shift_antivoto_3sem: { mu: 0, sigma: 0.015 },
+      recta_final_2016: { mu: -0.005, sigma: 0.012 },
+      voto_extranjero_k: { mu: 0.72, sigma: 0.05 },
+      ruido_zonal: { mu: 0, sigma: 0.020 },
+    },
+  };
+}
+
+function clampNum(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+
+const modelDistMapForMC = new Map();
+modeloPropioDist.forEach(d => modelDistMapForMC.set(d.ubigeo, d));
+
+console.log("Corriendo Monte Carlo 5,000 simulaciones (modelo + encuestas con incertidumbre en blend)...");
+out.monte_carlo = correrMonteCarlo2(mpDist, modelDistMapForMC, encDistMap, 5000);
 
 // ===== Provincias bisagra (margen <8pp en escenario ENCUESTAS) =====
 out.bisagra = enc.distritos

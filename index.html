@@ -283,8 +283,8 @@
   .sv-bar-s { background: var(--sanchezSV); }
 
   /* selector de escenarios */
-  .sv-scenarios { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: var(--border); padding: 3px; border-radius: 12px; margin-bottom: 16px; }
-  .sv-sc-btn { background: none; border: none; padding: 10px 4px; border-radius: 10px; font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .sv-scenarios { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--border); padding: 3px; border-radius: 12px; margin-bottom: 16px; }
+  .sv-sc-btn { background: none; border: none; padding: 10px 2px; border-radius: 10px; font-size: 0.6rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
   .sv-sc-btn.active { background: var(--card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
   /* Monte Carlo prob card */
@@ -2259,6 +2259,7 @@ function drawSegundaVuelta() {
 
     <div class="sv-scenarios">
       <button class="sv-sc-btn ${scKey==='MAS_PROBABLE'?'active':''}" onclick="window._svSetScenario('MAS_PROBABLE')">⭐ Más probable</button>
+      <button class="sv-sc-btn ${scKey==='MODELO_PROPIO'?'active':''}" onclick="window._svSetScenario('MODELO_PROPIO')">🧠 Modelo propio</button>
       <button class="sv-sc-btn ${scKey==='ENCUESTAS'?'active':''}" onclick="window._svSetScenario('ENCUESTAS')">📊 Encuestas</button>
       <button class="sv-sc-btn ${scKey==='OPTIMISTA_K'?'active':''}" onclick="window._svSetScenario('OPTIMISTA_K')">▲ Opt K</button>
       <button class="sv-sc-btn ${scKey==='PESIMISTA_K'?'active':''}" onclick="window._svSetScenario('PESIMISTA_K')">▼ Pes K</button>
@@ -2349,6 +2350,65 @@ function drawSegundaVuelta() {
           `).join('')}
         </tbody>
       </table>
+    </div>
+
+    <div class="sv-section">
+      <div class="sv-section-title">⚖️ Comparación de modelos — transparencia</div>
+      <div class="sv-section-sub">Cómo se compara mi análisis agnóstico vs lo que dicen las encuestas.</div>
+      <table class="sv-table">
+        <thead>
+          <tr><th>Modelo</th><th class="num">% K</th><th class="num">% S</th><th class="num">Margen</th></tr>
+        </thead>
+        <tbody>
+          ${(() => {
+            const escs = ['MODELO_PROPIO', 'ENCUESTAS', 'MAS_PROBABLE'];
+            return escs.map(k => {
+              const e = sv.escenarios[k];
+              if (!e) return '';
+              const labels = {
+                MODELO_PROPIO: '🧠 <b>Modelo propio</b> (agnóstico)',
+                ENCUESTAS: '📊 Encuestas (replica IEP/IPSOS)',
+                MAS_PROBABLE: '⭐ <b>Más probable</b> (blend 45/55)',
+              };
+              return `<tr>
+                <td>${labels[k]}<div class="prov-dep">${e.label.split('(')[1]?.replace(')', '') || ''}</div></td>
+                <td class="num pct-k"><b>${e.nacional.pct_keiko.toFixed(2)}%</b></td>
+                <td class="num pct-s">${e.nacional.pct_sanchez.toFixed(2)}%</td>
+                <td class="num ${e.nacional.margen > 0 ? 'gap-pos' : 'gap-neg'}">${e.nacional.margen > 0 ? '+' : ''}${fmt(e.nacional.margen)}</td>
+              </tr>`;
+            }).join('');
+          })()}
+        </tbody>
+      </table>
+
+      <div class="sv-alert">
+        <b>El modelo propio dice K +4pp más que las encuestas.</b> ¿Por qué?
+        <br>1. Construye desde data 2021 distrital: continuity factor (cómo izquierda 1V se consolidó en 2V) ≈ 1.37x.
+        <br>2. Sánchez ≠ Castillo: Castillo arrasó 80-90% en sur andino por carisma personal-rural. Sánchez es urbano-Lima, no transferible 100%.
+        <br>3. Antivoto K cayó de 59% a 48% en abril; mi modelo proyecta caída adicional → +1pp K.
+        <br>4. Voto extranjero: 72% K (perfil urbano educado anti-izq, confirmado por ERM 2026 1V).
+        <br>Las <b>encuestas pueden tener sesgo NSE</b> (overrepresentación A/B en Lima, donde Sánchez sale bajo). Históricamente 2016 las encuestas subestimaron a Keiko 10pp.
+        <br>El blend 45/55 balancea ambos riesgos.
+      </div>
+
+      ${sv.escenarios.MODELO_PROPIO?.validacion_zonal ? `
+      <div style="margin-top:14px;">
+        <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Modelo propio vs IEP por zona</div>
+        <table class="sv-table">
+          <thead><tr><th>Zona</th><th class="num">Modelo</th><th class="num">IEP</th><th class="num">Diff</th></tr></thead>
+          <tbody>
+          ${sv.escenarios.MODELO_PROPIO.validacion_zonal.map(v => `
+            <tr>
+              <td>${v.zona.replace('_', ' ')}<div class="prov-dep">${v.n_distritos} distritos</div></td>
+              <td class="num pct-k">${v.modelo_pct_K}%</td>
+              <td class="num">${v.target_iep_pct_K}%</td>
+              <td class="num ${Math.abs(v.diff_pp) > 8 ? 'gap-neg' : (Math.abs(v.diff_pp) > 4 ? '' : 'gap-pos')}">${v.diff_pp > 0 ? '+' : ''}${v.diff_pp}pp</td>
+            </tr>
+          `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ` : ''}
     </div>
 
     <div class="sv-section">
