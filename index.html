@@ -2173,6 +2173,31 @@ function drawSegundaVuelta() {
 
   const winnerK = nac.margen > 0;
   const html = `
+    <!-- 1V 2026 — data oficial -->
+    <div class="sv-section" style="background:linear-gradient(135deg, #DBEAFE, #DDD6FE); border-left:4px solid var(--lopez)">
+      <div class="sv-section-title">🗳️ Primera vuelta 2026 — data oficial ONPE</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px">
+        <div style="background:white; padding:10px; border-radius:8px">
+          <div style="font-size:0.6rem; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase">Participación</div>
+          <div style="font-size:1.3rem; font-weight:800; margin-top:2px">81.3%</div>
+          <div style="font-size:0.65rem; color:var(--text-secondary)">+11pp vs 2021 (70.1%)</div>
+        </div>
+        <div style="background:white; padding:10px; border-radius:8px">
+          <div style="font-size:0.6rem; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase">Blanco/Nulo</div>
+          <div style="font-size:1.3rem; font-weight:800; margin-top:2px">13.8%</div>
+          <div style="font-size:0.65rem; color:var(--text-secondary)">B 9.7% · N 4.1% (vs 18.6% en 2021)</div>
+        </div>
+        <div style="background:white; padding:10px; border-radius:8px">
+          <div style="font-size:0.6rem; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase">Padrón hábil</div>
+          <div style="font-size:1.3rem; font-weight:800; margin-top:2px">27.3M</div>
+          <div style="font-size:0.65rem; color:var(--text-secondary)">~1.2M extranjero</div>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:0.7rem; color:var(--text-secondary); line-height:1.45">
+        Para proyectar 2V: histórico Perú 2V vs 1V participación → -1.5pp en 2016 (sube de 81.8 → 80.3), +4.5pp en 2021 (post-pandemia, sube 70.1 → 74.6). Para 2026 con 1V 81.3% asumimos 2V ≈ 80% (leve baja como 2016).
+      </div>
+    </div>
+
     <!-- ENCUESTAS REALES — fuente -->
     <div class="sv-section" style="background:linear-gradient(135deg, #FEF3C7, #FED7AA); border-left:4px solid var(--keiko)">
       <div class="sv-section-title">📊 Encuestas reales 2da vuelta — abril 2026</div>
@@ -2415,9 +2440,9 @@ function drawSegundaVuelta() {
       <div class="sv-section-title">📉 Comparación con 2021 — por qué Keiko perdió antes</div>
       <div class="sv-2021-grid">
         <div class="sv-2021-card">
-          <div class="sv-2021-lbl">2021 resultado nacional</div>
-          <div class="sv-2021-num">49.73% / 50.27%</div>
-          <div class="sv-2021-detail">Keiko 8,637,654 vs Castillo 8,729,732. Perdió por <b>92,078 votos</b>.</div>
+          <div class="sv-2021-lbl">2021 resultado oficial 100% (JNE)</div>
+          <div class="sv-2021-num">49.88% / 50.13%</div>
+          <div class="sv-2021-detail">Keiko 8,792,117 vs Castillo 8,836,380. Perdió por <b>44,058 votos</b> — la elección más ajustada de la historia republicana.</div>
         </div>
         <div class="sv-2021-card">
           <div class="sv-2021-lbl">2026 hoy (encuestas)</div>

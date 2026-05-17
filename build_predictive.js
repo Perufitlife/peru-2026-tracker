@@ -116,9 +116,12 @@ for (const dep of data.departamentos) {
 
       const pct_izq_1V_2026 = totalValidos1V_2026 > 0 ? izq1V_2026 / totalValidos1V_2026 * 100 : 0;
       const pct_der_1V_2026 = totalValidos1V_2026 > 0 ? der1V_2026 / totalValidos1V_2026 * 100 : 0;
-      const habiles_2026 = dist.totales?.totalElectoresHabiles
-        || dist.totales?.totalVotosEmitidos
-        || totalValidos1V_2026 * 1.4;  // ~73% participación
+      // Hábiles 2026: ONPE no expone padrón distrital. Estimamos desde votos emitidos.
+      // Participación REAL 1V 2026 = 81.3% nacional.
+      // habiles = emitidos / participacion. Si participacion ~81.3%, emitidos ≈ habiles × 0.813.
+      // emitidos = validos + blanco (9.7%) + nulo (4.1%) ≈ validos × 1.16
+      const emitidos_estim = dist.totales?.totalVotosEmitidos || (totalValidos1V_2026 * 1.16);
+      const habiles_2026 = emitidos_estim / 0.813;
 
       distritosBase.push({
         ubigeo: ubigeo6,
@@ -305,10 +308,16 @@ for (const d of distritosBase) {
   pct_K_final = clamp(pct_K_final, 3, 97);
   pct_S_final = 100 - pct_K_final;
 
-  // (e) Estimar votos absolutos: asumimos participación 73% × hábiles, blanco/nulo 12% (típico 2V)
-  const participacion = 0.73;
-  const blanco_nulo_pct = 0.12;
-  const votos_validos_estim = d.habiles_2026 * participacion * (1 - blanco_nulo_pct);
+  // (e) Estimar votos absolutos para 2V 2026
+  //     Participación 1V 2026 REAL: 81.3% (subió +11pp vs 70% en 2021).
+  //     Histórico 2V vs 1V Perú:
+  //       2016: 1V 81.8% → 2V 80.3% (-1.5pp, ligera baja)
+  //       2021: 1V 70.1% → 2V 74.6% (+4.5pp, sube post-pandemia)
+  //     Para 2026 con 1V 81.3%: estimo 2V 80.0% (leve baja como 2016).
+  //     Voto blanco/nulo 2V típicamente ~13-15% (alto en elecciones polarizadas).
+  const participacion_2V = 0.80;
+  const blanco_nulo_pct = 0.14;
+  const votos_validos_estim = d.habiles_2026 * participacion_2V * (1 - blanco_nulo_pct);
 
   const votos_K = votos_validos_estim * pct_K_final / 100;
   const votos_S = votos_validos_estim * pct_S_final / 100;
