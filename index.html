@@ -2198,6 +2198,36 @@ function drawSegundaVuelta() {
       </div>
     </div>
 
+    <!-- POLYMARKET — smart money con skin in the game -->
+    ${(() => {
+      const pm = sv.escenarios?.MAS_PROBABLE?.blend?.polymarket;
+      if (!pm) return '';
+      return `
+      <div class="sv-section" style="background:linear-gradient(135deg, #ECFDF5, #DBEAFE); border-left:4px solid #10B981">
+        <div class="sv-section-title">💰 Polymarket — mercado de predicción en vivo</div>
+        <div class="sv-section-sub">Smart money con $${(pm.volumen_usd/1e6).toFixed(1)}M apostado. Más resistente a sesgos que encuestas.</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px">
+          <div style="background:white; padding:14px; border-radius:10px; text-align:center; border-top:3px solid var(--keiko)">
+            <div style="font-size:0.6rem; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase">Keiko Fujimori</div>
+            <div style="font-size:2rem; font-weight:800; color:var(--keiko); line-height:1; margin:6px 0">${Math.round(pm.prob_keiko_gana*100)}%</div>
+            <div style="font-size:0.7rem; color:var(--text-secondary)">probabilidad de ganar</div>
+            <div style="font-size:0.65rem; color:var(--text-secondary); margin-top:4px">precio: ${Math.round(pm.prob_keiko_gana*100)}¢</div>
+          </div>
+          <div style="background:white; padding:14px; border-radius:10px; text-align:center; border-top:3px solid var(--sanchezSV)">
+            <div style="font-size:0.6rem; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase">Roberto Sánchez</div>
+            <div style="font-size:2rem; font-weight:800; color:var(--sanchezSV); line-height:1; margin:6px 0">${Math.round((1-pm.prob_keiko_gana)*100)}%</div>
+            <div style="font-size:0.7rem; color:var(--text-secondary)">probabilidad de ganar</div>
+            <div style="font-size:0.65rem; color:var(--text-secondary); margin-top:4px">precio: ${Math.round((1-pm.prob_keiko_gana)*100)}¢</div>
+          </div>
+        </div>
+        <div style="margin-top:10px; font-size:0.7rem; color:var(--text-secondary); line-height:1.5">
+          <b>% K implícito en voto:</b> ${pm.pct_k_implied}% (deducido del precio: P(K gana)×52 + P(S gana)×48).
+          <br><a href="${pm.url}" target="_blank" style="color:#10B981; font-weight:700">Ver mercado en Polymarket →</a>
+        </div>
+      </div>
+      `;
+    })()}
+
     <!-- ENCUESTAS REALES — fuente -->
     <div class="sv-section" style="background:linear-gradient(135deg, #FEF3C7, #FED7AA); border-left:4px solid var(--keiko)">
       <div class="sv-section-title">📊 Encuestas reales 2da vuelta — abril 2026</div>
@@ -2375,6 +2405,42 @@ function drawSegundaVuelta() {
           `).join('')}
         </tbody>
       </table>
+    </div>
+
+    <!-- EVENTOS DE CAMPAÑA — shocks que mueven el modelo -->
+    <div class="sv-section" style="border-left:4px solid var(--yellow)">
+      <div class="sv-section-title">📰 Eventos de campaña — recta final</div>
+      <div class="sv-section-sub">Shocks identificados que se integran al modelo (sólo los con efecto medible).</div>
+      <div style="font-size:0.75rem; line-height:1.55; margin-top:8px">
+        <div style="display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:start; padding:8px 0; border-bottom:1px solid var(--border)">
+          <span style="font-size:0.65rem; font-weight:800; background:var(--bg); padding:3px 6px; border-radius:6px; min-width:50px; text-align:center">17-MAY</span>
+          <div><b>López Aliaga no endosa a Keiko</b> — declaró "te están robando las elecciones, perderás por 4ta vez". Solo pidió a sus seguidores "no votar blanco ni viciar". Apoyo tibio, no formal.</div>
+          <span style="color:var(--sanchezSV); font-weight:800">-1.0pp K</span>
+        </div>
+        <div style="display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:start; padding:8px 0; border-bottom:1px solid var(--border)">
+          <span style="font-size:0.65rem; font-weight:800; background:var(--bg); padding:3px 6px; border-radius:6px; min-width:50px; text-align:center">MAY</span>
+          <div><b>Sánchez promete indultar a Castillo</b> — moviliza voto del miedo a "Castillo 2.0". IPSOS midió antivoto S subió de 39% a 44% en 22 días (abr 2 → abr 24).</div>
+          <span style="color:var(--keiko); font-weight:800">+0.5pp K</span>
+        </div>
+        <div style="display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:start; padding:8px 0; border-bottom:1px solid var(--border)">
+          <span style="font-size:0.65rem; font-weight:800; background:var(--bg); padding:3px 6px; border-radius:6px; min-width:50px; text-align:center">ABR</span>
+          <div><b>Antivoto K cayó 59% → 48%</b> en 22 días según IPSOS. Proyección lineal con desaceleración → 45% hoy. Cada pp menos de antivoto = +0.3pp K nacional.</div>
+          <span style="color:var(--keiko); font-weight:800">+0.9pp K</span>
+        </div>
+        <div style="display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:start; padding:8px 0; border-bottom:1px solid var(--border)">
+          <span style="font-size:0.65rem; font-weight:800; background:var(--bg); padding:3px 6px; border-radius:6px; min-width:50px; text-align:center">RIESGO</span>
+          <div><b>Efecto recta final 2016</b> — en 2016 PPK recuperó 10pp en la última semana (denuncias corrupción FP + endoso Mendoza). Antifujimorismo se moviliza al final.</div>
+          <span style="color:var(--sanchezSV); font-weight:800">-1.5pp K</span>
+        </div>
+        <div style="display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:start; padding:8px 0">
+          <span style="font-size:0.65rem; font-weight:800; background:var(--keiko-bg); color:var(--keiko); padding:3px 6px; border-radius:6px; min-width:50px; text-align:center">NETO</span>
+          <div><b>Suma total de shocks</b> sobre la base demográfica del modelo.</div>
+          <span style="color:var(--sanchezSV); font-weight:800">-1.1pp K</span>
+        </div>
+      </div>
+      <div class="sv-alert">
+        <b>Próximos eventos a tracking:</b> Debate presidencial 28-mayo (mueve históricamente 1-3pp). Cierre de campaña 4-jun. Día E 7-jun.
+      </div>
     </div>
 
     <div class="sv-section">

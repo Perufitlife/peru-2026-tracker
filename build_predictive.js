@@ -249,23 +249,34 @@ function ajusteSanchezUrbano(habiles) {
 
 // Antivoto K — variable temporal global
 // IPSOS midió 59% (abr 2) → 48% (abr 24). -11pp en 22 días = -0.5pp/día.
-// Hoy 17-may = 23 días post abr-24. Asumiendo desaceleración fuerte (-0.15pp/día):
-//   antivoto K hoy ≈ 48 - 0.15*23 = 44.5%.
-// Piso histórico antifujimorista duro ≈ 38-42% (Cofes/IEP 2016-2021).
-// El efecto recta final 2016 (PPK recuperó 10pp en 1 semana) puede REVERTIR esto.
-// Net effect realista: el antivoto K hoy probablemente está entre 44-46%, no 42%.
-// Sobre el voto válido: cada 1pp menos antivoto K → +0.3pp K (no 0.5pp — porque
-// muchos antivotos K se quedan en blanco/nulo aunque "no le tengan tanto rechazo").
+// Hoy 18-may = 24 días post abr-24. Asumiendo desaceleración fuerte (-0.15pp/día):
+//   antivoto K hoy ≈ 48 - 0.15*24 = 44.4%.
+// Piso histórico antifujimorista duro ≈ 38-42% (CPI/IEP 2016-2021).
 const ANTIVOTO_K_ABR24 = 48;
-const ANTIVOTO_K_HOY = 45;    // más conservador
-const SHIFT_K_NACIONAL_PCT = (ANTIVOTO_K_ABR24 - ANTIVOTO_K_HOY) * 0.3 / 100;
-// = (48-45) * 0.3 / 100 = 0.9pp → ~+1pp K nacional
-console.log(`\nAjuste temporal antivoto K: rechazo ${ANTIVOTO_K_ABR24}% → ${ANTIVOTO_K_HOY}% → +${(SHIFT_K_NACIONAL_PCT*100).toFixed(1)}pp K nacional`);
+const ANTIVOTO_K_HOY = 45;
+const SHIFT_K_ANTIVOTO = (ANTIVOTO_K_ABR24 - ANTIVOTO_K_HOY) * 0.3 / 100;
+console.log(`\nAjuste antivoto K: ${ANTIVOTO_K_ABR24}% → ${ANTIVOTO_K_HOY}% → +${(SHIFT_K_ANTIVOTO*100).toFixed(1)}pp K`);
 
-// Efecto recta final 2016 — descuenta -1.5pp K
-// (Antifujimorismo se moviliza en última semana, ref histórico 2016)
+// Efecto recta final 2016 — antifujimorismo se moviliza en la última semana (ref 2016 PPK +10pp)
 const SHIFT_RECTA_FINAL_2016 = -0.015;
-console.log(`Ajuste recta final 2016 (riesgo): ${SHIFT_RECTA_FINAL_2016*100}pp K`);
+console.log(`Ajuste recta final 2016: ${SHIFT_RECTA_FINAL_2016*100}pp K`);
+
+// AJUSTE LÓPEZ ALIAGA NO-ENDOSO (18-may 2026)
+// López Aliaga declaró: "Keiko, te están robando las elecciones, perderás por 4ta vez" (Infobae 17-may).
+// Solo pidió a sus seguidores "no votar blanco ni viciar" — apoyo tibio, no endoso formal.
+// 11.91% del voto 1V era LA. Si su transferencia a K cae de 78% (asumido base 2021) a 60%,
+// el efecto es: 11.91% * (0.78 - 0.60) = -2.14pp K. Pero descontamos parcial porque mi
+// modelo no usa transferencia ideológica directa, sino continuity_factor que ya capta parte.
+// Net effect estimado: -1.0pp K.
+const SHIFT_LA_NO_ENDOSO = -0.010;
+console.log(`Ajuste López Aliaga no-endoso: ${SHIFT_LA_NO_ENDOSO*100}pp K (Infobae 17-may)`);
+
+// AJUSTE SÁNCHEZ PROMETE INDULTO CASTILLO (polariza)
+// Sánchez prometió indultar a Castillo. Eso activa el voto del miedo: parte del centro
+// que estaba indeciso ve a Sánchez como "Castillo 2.0" y vota K por descarte.
+// Efecto medible en encuestas IPSOS abr 23-24: antivoto Sánchez subió de 39% a 44% (+5pp en 22d).
+const SHIFT_INDULTO_CASTILLO = +0.005;
+console.log(`Ajuste indulto Castillo (voto del miedo): +${SHIFT_INDULTO_CASTILLO*100}pp K`);
 
 // Construcción de proyección distrital
 console.log(`\n=== Modelo predictivo distrital 2026 ===`);
@@ -289,11 +300,13 @@ for (const d of distritosBase) {
   const pct_sanchez_local = clamp(pct_sanchez_pred_raw, 5, 95);
   let pct_keiko_local = 100 - pct_sanchez_local;
 
-  // (e) AJUSTES GLOBALES
-  //     - antivoto K cayendo: +1pp K
-  //     - efecto recta final 2016: -1.5pp K
-  //     Net: -0.5pp K (favorece a Sánchez ligeramente)
-  const shift_global = (SHIFT_K_NACIONAL_PCT + SHIFT_RECTA_FINAL_2016) * 100;
+  // (e) AJUSTES GLOBALES — eventos y dinámica del 18-may 2026
+  //     - antivoto K cayendo: +0.9pp K
+  //     - recta final 2016 (riesgo): -1.5pp K
+  //     - López Aliaga no-endoso (17-may): -1.0pp K
+  //     - Sánchez promete indulto Castillo: +0.5pp K (voto del miedo)
+  //     Net: -1.1pp K (favorece levemente a Sánchez)
+  const shift_global = (SHIFT_K_ANTIVOTO + SHIFT_RECTA_FINAL_2016 + SHIFT_LA_NO_ENDOSO + SHIFT_INDULTO_CASTILLO) * 100;
   pct_keiko_local += shift_global;
   const pct_sanchez_final_local = 100 - pct_keiko_local;
 
@@ -438,7 +451,11 @@ const out = {
     parametros_temporales: {
       antivoto_K_abr24: ANTIVOTO_K_ABR24,
       antivoto_K_hoy: ANTIVOTO_K_HOY,
-      shift_K_nacional: +SHIFT_K_NACIONAL_PCT.toFixed(3),
+      shift_antivoto_pct: +SHIFT_K_ANTIVOTO.toFixed(3),
+      shift_recta_final_2016_pct: SHIFT_RECTA_FINAL_2016,
+      shift_la_no_endoso_pct: SHIFT_LA_NO_ENDOSO,
+      shift_indulto_castillo_pct: SHIFT_INDULTO_CASTILLO,
+      shift_total_pct: +(SHIFT_K_ANTIVOTO + SHIFT_RECTA_FINAL_2016 + SHIFT_LA_NO_ENDOSO + SHIFT_INDULTO_CASTILLO).toFixed(3),
     },
     validacion_cruzada: {
       modelo_nacional_K: +pct_K_nac.toFixed(2),

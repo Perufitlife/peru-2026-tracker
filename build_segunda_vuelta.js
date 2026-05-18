@@ -707,54 +707,90 @@ out.escenarios.MODELO_PROPIO = {
 };
 
 // ============================================================
-// MAS_PROBABLE — Bayesian blend modelo propio + encuestas
+// MAS_PROBABLE — Bayesian blend 3-way (modelo + encuestas + Polymarket)
 // ============================================================
 //
-// Combina:
-//   - Modelo propio: K ~52% (peso 0.45 — alto pero no ciego, RMSE elevado)
-//   - Encuestas IEP/IPSOS: K ~50% (peso 0.55 — mayor peso por validez metodológica)
-//
-// Por distrito: blend ponderado del modeloPropio y ENCUESTAS.
-const W_MODELO = 0.45;
-const W_ENCUESTAS = 0.55;
+// Polymarket actualizado 18-may 2026:
+//   Keiko 64¢ / Sánchez 34.7¢ ($52.9M volumen total)
+//   Esto NO es % de voto — es probabilidad de ganar.
+//   Convertir a "% K esperado": si P(K gana) = 64%, entonces el resultado medio condicional
+//   en victoria de K es ~51-52% (margen apretado); el medio condicional Sánchez victoria es ~49%.
+//   Voto esperado K = 0.64 × 51.5 + 0.36 × 48.5 ≈ 50.4%.
+//   Esto es nuestro "Polymarket implícito %K".
+const POLYMARKET_P_K = 0.64;
+const POLYMARKET_VOL_USD = 52946762;
+const POLYMARKET_PCT_K_IMPLIED = POLYMARKET_P_K * 51.5 + (1 - POLYMARKET_P_K) * 48.5; // ≈ 50.4%
+
+// Pesos del blend bayesiano (suman 1.0):
+const W_MODELO = 0.30;       // modelo propio (RMSE 11pp por distrito, alto)
+const W_ENCUESTAS = 0.45;    // encuestas IEP/IPSOS (±2.8pp error muestral, mayor metodología)
+const W_POLYMARKET = 0.25;   // smart money con skin in the game ($53M apostado)
 
 const encDistMap = new Map();
 enc.distritos.forEach(d => encDistMap.set(d.ubigeo, d));
 
-const mpDist = [];
+// Polymarket no tiene granularidad distrital. Aplicamos un shift uniforme nacional
+// para llevar el agregado del blend modelo+encuestas hacia POLYMARKET_PCT_K_IMPLIED.
+
+// Primero blend modelo+encuestas sin Polymarket para saber su agregado nacional
+let totK_modEnc = 0, totS_modEnc = 0;
+const blendModEnc = [];
 for (const dMP of modeloPropioDist) {
   const dEnc = encDistMap.get(dMP.ubigeo);
-  if (!dEnc) {
-    mpDist.push({ ...dMP });
-    continue;
-  }
-  // Blend porcentajes ponderados
-  const pct_K_blend = dMP.pct_keiko * W_MODELO + dEnc.pct_keiko * W_ENCUESTAS;
-  const pct_S_blend = 100 - pct_K_blend;
+  if (!dEnc) { blendModEnc.push({ ...dMP }); continue; }
+  const w_mod_norm = W_MODELO / (W_MODELO + W_ENCUESTAS);
+  const w_enc_norm = W_ENCUESTAS / (W_MODELO + W_ENCUESTAS);
+  const pct_K_blend = dMP.pct_keiko * w_mod_norm + dEnc.pct_keiko * w_enc_norm;
   const validos = Math.max(dMP.validos_proy, dEnc.validos_proy);
-  const votos_K = Math.round(validos * pct_K_blend / 100);
-  const votos_S = Math.round(validos * pct_S_blend / 100);
+  blendModEnc.push({ ...dEnc, pct_keiko: pct_K_blend, validos_proy: validos });
+  totK_modEnc += validos * pct_K_blend / 100;
+  totS_modEnc += validos * (100 - pct_K_blend) / 100;
+}
+const pct_K_modEnc_nac = totK_modEnc / (totK_modEnc + totS_modEnc) * 100;
+
+// Shift necesario para alcanzar la mezcla 3-way: pct_K_final = (1-Wpoly)*pct_K_modEnc + Wpoly*POLYMARKET
+const target_K_nac = (W_MODELO + W_ENCUESTAS) * pct_K_modEnc_nac + W_POLYMARKET * POLYMARKET_PCT_K_IMPLIED;
+const SHIFT_POLYMARKET_PP = target_K_nac - pct_K_modEnc_nac;
+console.log(`Blend mod+enc nacional: K ${pct_K_modEnc_nac.toFixed(2)}% · target final con polymarket: ${target_K_nac.toFixed(2)}% · shift: ${SHIFT_POLYMARKET_PP.toFixed(2)}pp`);
+
+// Aplicar shift uniforme a cada distrito
+const mpDist = [];
+for (const d of blendModEnc) {
+  const pct_K_final = d.pct_keiko + SHIFT_POLYMARKET_PP;
+  const pct_S_final = 100 - pct_K_final;
+  const validos = d.validos_proy;
+  const votos_K = Math.round(validos * pct_K_final / 100);
+  const votos_S = Math.round(validos * pct_S_final / 100);
+  const dMP_for_log = modeloPropioDist.find(x => x.ubigeo === d.ubigeo);
+  const dEnc_for_log = encDistMap.get(d.ubigeo);
   mpDist.push({
-    ...dEnc,
+    ...d,
     keiko_proy: votos_K,
     sanchez_proy: votos_S,
     validos_proy: votos_K + votos_S,
-    pct_keiko: +pct_K_blend.toFixed(2),
-    pct_sanchez: +pct_S_blend.toFixed(2),
+    pct_keiko: +pct_K_final.toFixed(2),
+    pct_sanchez: +pct_S_final.toFixed(2),
     margen: votos_K - votos_S,
     ganador: votos_K > votos_S ? "K" : "S",
-    blend_modelo_pct_k: dMP.pct_keiko,
-    blend_encuestas_pct_k: dEnc.pct_keiko,
+    blend_modelo_pct_k: dMP_for_log?.pct_keiko,
+    blend_encuestas_pct_k: dEnc_for_log?.pct_keiko,
+    blend_polymarket_shift_pp: +SHIFT_POLYMARKET_PP.toFixed(2),
   });
 }
 
 out.escenarios.MAS_PROBABLE = {
-  label: `Más probable (bayesian blend: 45% modelo propio + 55% encuestas)`,
+  label: `Más probable (blend 3-way: 30% modelo + 45% encuestas + 25% Polymarket)`,
   ...agregarProvinciaYDepartamento(mpDist),
   distritos: mpDist,
   blend: {
-    pesos: { modelo_propio: W_MODELO, encuestas: W_ENCUESTAS },
-    justificacion: "Blend 45/55 refleja: modelo propio tiene back-test RMSE 11pp (alto) por distrito pero captura tendencias estructurales; encuestas IPSOS/IEP tienen ±2.8pp error muestral nacional pero pueden tener sesgo NSE+urbano (overrepresentación A/B en Lima).",
+    pesos: { modelo_propio: W_MODELO, encuestas: W_ENCUESTAS, polymarket: W_POLYMARKET },
+    polymarket: {
+      prob_keiko_gana: POLYMARKET_P_K,
+      pct_k_implied: +POLYMARKET_PCT_K_IMPLIED.toFixed(2),
+      volumen_usd: POLYMARKET_VOL_USD,
+      url: "https://polymarket.com/event/peru-presidential-election-winner",
+    },
+    justificacion: "Blend 3-way ponderado: 30% modelo distrital (RMSE 11pp pero captura tendencias estructurales); 45% encuestas IEP/IPSOS (±2.8pp pero metodología validada); 25% Polymarket (smart money $53M apostado, free of polling biases).",
   },
 };
 
