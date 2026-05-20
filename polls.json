@@ -11,9 +11,17 @@
     "error_pp": "margen de error en puntos porcentuales (95% conf)",
     "tipo": "nacional | regional | tracking",
     "resultados": {
-      "nacional": { "k": "%K", "s": "%S", "blanco_nulo": "%B/V", "indeciso": "%NS/NR" },
+      "nacional": {
+        "k": "%K",
+        "s": "%S",
+        "blanco_nulo": "%B/V",
+        "indeciso": "%NS/NR"
+      },
       "estratos": "opcional — lima_metro / otras_ciudades / rural / nse_ab / nse_c / nse_de etc.",
-      "antivoto": { "k": "%rechazo a K", "s": "%rechazo a S" }
+      "antivoto": {
+        "k": "%rechazo a K",
+        "s": "%rechazo a S"
+      }
     },
     "url": "fuente"
   },
@@ -22,19 +30,42 @@
       "id": "ipsos-2026-04-24",
       "pollster": "IPSOS",
       "client": "Perú21",
-      "fecha_campo": ["2026-04-23", "2026-04-24"],
+      "fecha_campo": [
+        "2026-04-23",
+        "2026-04-24"
+      ],
       "fecha_publicacion": "2026-04-26",
       "n": 1210,
       "error_pp": 2.8,
       "tipo": "nacional",
       "resultados": {
-        "nacional": { "k": 38, "s": 38, "blanco_nulo": 17, "indeciso": 7 },
-        "estratos": {
-          "lima_metro":     { "k": 50, "s": 25, "blanco_nulo": 17 },
-          "otras_ciudades": { "k": 35, "s": 40, "blanco_nulo": 17 },
-          "rural":          { "k": 26, "s": 55, "blanco_nulo": 16 }
+        "nacional": {
+          "k": 38,
+          "s": 38,
+          "blanco_nulo": 17,
+          "indeciso": 7
         },
-        "antivoto": { "k": 48, "s": 43 }
+        "estratos": {
+          "lima_metro": {
+            "k": 50,
+            "s": 25,
+            "blanco_nulo": 17
+          },
+          "otras_ciudades": {
+            "k": 35,
+            "s": 40,
+            "blanco_nulo": 17
+          },
+          "rural": {
+            "k": 26,
+            "s": 55,
+            "blanco_nulo": 16
+          }
+        },
+        "antivoto": {
+          "k": 48,
+          "s": 43
+        }
       },
       "url": "https://www.ipsos.com/es-pe/escenarios-de-intencion-de-voto-segunda-vuelta-encuesta-peru-21-ipsos-abril-2026"
     },
@@ -42,25 +73,60 @@
       "id": "iep-2026-04-25",
       "pollster": "IEP",
       "client": "La República",
-      "fecha_campo": ["2026-04-21", "2026-04-25"],
+      "fecha_campo": [
+        "2026-04-21",
+        "2026-04-25"
+      ],
       "fecha_publicacion": "2026-04-27",
       "n": 1207,
       "error_pp": 2.8,
       "tipo": "nacional",
       "resultados": {
-        "nacional": { "k": 31, "s": 32, "blanco_nulo": 24, "indeciso": 13 },
-        "val": { "k": 49.2, "s": 50.8 },
+        "nacional": {
+          "k": 31,
+          "s": 32,
+          "blanco_nulo": 24,
+          "indeciso": 13
+        },
+        "val": {
+          "k": 49.2,
+          "s": 50.8
+        },
         "regionales_val": {
-          "lima_metro":   { "k": 65, "s": 35 },
-          "costa_norte":  { "k": 46, "s": 54 },
-          "sierra_centro":{ "k": 39, "s": 61 },
-          "sierra_sur":   { "k": 32, "s": 68 },
-          "oriente":      { "k": 44, "s": 56 }
+          "lima_metro": {
+            "k": 65,
+            "s": 35
+          },
+          "costa_norte": {
+            "k": 46,
+            "s": 54
+          },
+          "sierra_centro": {
+            "k": 39,
+            "s": 61
+          },
+          "sierra_sur": {
+            "k": 32,
+            "s": 68
+          },
+          "oriente": {
+            "k": 44,
+            "s": 56
+          }
         },
         "nse": {
-          "ab": { "k": 51, "s": 20 },
-          "c":  { "k": 36, "s": 28 },
-          "de": { "k": 22, "s": 38 }
+          "ab": {
+            "k": 51,
+            "s": 20
+          },
+          "c": {
+            "k": 36,
+            "s": 28
+          },
+          "de": {
+            "k": 22,
+            "s": 38
+          }
         }
       },
       "url": "https://encuestas.com.pe/encuesta-presidencial-segunda-vuelta-iep-02-mayo-2026/"
@@ -69,17 +135,37 @@
       "id": "ipsos-2026-05-17",
       "pollster": "IPSOS",
       "client": "Perú21",
-      "fecha_campo": ["2026-05-16", "2026-05-17"],
+      "fecha_campo": [
+        "2026-05-16",
+        "2026-05-17"
+      ],
       "fecha_publicacion": "2026-05-20",
       "n": 1210,
       "error_pp": 2.8,
       "tipo": "nacional",
       "resultados": {
-        "nacional": { "k": 39, "s": 35, "blanco_nulo": 14, "indeciso": 12 },
+        "nacional": {
+          "k": 39,
+          "s": 35,
+          "blanco_nulo": 14,
+          "indeciso": 12
+        },
         "estratos": {
-          "lima_metro":     { "k": 54, "s": 23, "blanco_nulo": 12 },
-          "otras_ciudades": { "k": 35, "s": 36, "blanco_nulo": 16 },
-          "rural":          { "k": 26, "s": 49, "blanco_nulo": 14 }
+          "lima_metro": {
+            "k": 54,
+            "s": 23,
+            "blanco_nulo": 12
+          },
+          "otras_ciudades": {
+            "k": 35,
+            "s": 36,
+            "blanco_nulo": 16
+          },
+          "rural": {
+            "k": 26,
+            "s": 49,
+            "blanco_nulo": 14
+          }
         }
       },
       "url": "https://rpp.pe/politica/elecciones/keiko-fujimori-vs-roberto-sanchez-asi-va-la-intencion-de-voto-presidencial-a-18-dias-de-la-segunda-vuelta-segun-ipsos-noticia-1689251"

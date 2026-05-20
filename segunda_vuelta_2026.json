@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-05-20T15:17:11.311Z",
+    "generated_at": "2026-05-20T15:19:11.759Z",
     "granularidad": "distrito (1,892 unidades)",
     "fuentes_encuestas": {
       "ipsos_abr_23_24": {
@@ -303554,7 +303554,7 @@
   },
   "polls_timeseries": {
     "meta": {
-      "generated_at": "2026-05-20T15:17:11.310Z",
+      "generated_at": "2026-05-20T15:19:11.758Z",
       "n_polls": 3,
       "dia_eleccion": "2026-06-07"
     },
@@ -303881,8 +303881,8 @@
           "id": "iep-2026-04-25",
           "pollster": "IEP",
           "n": 1207,
-          "dias": 27.636936446759258,
-          "peso": 167.64125881121097,
+          "dias": 27.638330520833332,
+          "peso": 167.62456647569067,
           "k": 31,
           "s": 32,
           "peso_norm": 0.135
@@ -303891,8 +303891,8 @@
           "id": "ipsos-2026-04-24",
           "pollster": "IPSOS",
           "n": 1210,
-          "dias": 27.136936446759258,
-          "peso": 174.16846757324117,
+          "dias": 27.138330520833332,
+          "peso": 174.1511253120436,
           "k": 38,
           "s": 38,
           "peso_norm": 0.14
@@ -303901,8 +303901,8 @@
           "id": "ipsos-2026-05-17",
           "pollster": "IPSOS",
           "n": 1210,
-          "dias": 4.136936446759259,
-          "peso": 900.4369793548437,
+          "dias": 4.138330520833334,
+          "peso": 900.3473212582577,
           "k": 39,
           "s": 35,
           "peso_norm": 0.725
@@ -303918,17 +303918,17 @@
   },
   "monte_carlo": {
     "n_sims": 5000,
-    "mediana_pct_keiko": 50.99,
-    "mediana_pct_sanchez": 49.01,
-    "prob_keiko_gana": 67.9,
-    "prob_sanchez_gana": 32.1,
+    "mediana_pct_keiko": 51,
+    "mediana_pct_sanchez": 49,
+    "prob_keiko_gana": 67.7,
+    "prob_sanchez_gana": 32.3,
     "ci80_keiko": [
-      48.17,
-      53.85
+      48.25,
+      53.78
     ],
     "ci95_keiko": [
-      46.66,
-      55.1
+      46.83,
+      55.14
     ],
     "parametros": {
       "blend_modelo_propio": {
