@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-05-20T15:17:11.129Z",
+    "generated_at": "2026-05-20T15:19:11.519Z",
     "modelo": "predictivo distrital — agnóstico de encuestas",
     "metodologia": {
       "paso_1": "Continuity factor distrital = pct_Castillo_2V_2021 / pct_izq_total_1V_2021. Mide cuánto del voto centro fue absorbido por izquierda en 2V 2021.",
