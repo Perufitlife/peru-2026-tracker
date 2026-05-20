@@ -407,7 +407,12 @@ a:hover { text-decoration: underline; }
 .pm-side.k .pm-pct { color: var(--keiko); }
 .pm-side.s .pm-pct { color: var(--sanchez); }
 .pm-lbl { font-size: 0.65rem; color: var(--text-muted); }
-.pm-link { display: inline-block; margin-top: 10px; font-weight: 700; font-size: 0.72rem; }
+.pm-link { display: inline-block; font-weight: 700; font-size: 0.72rem; }
+.pm-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 0.72rem; color: var(--text-muted); }
+.pm-foot b { color: var(--text); font-variant-numeric: tabular-nums; }
+.pm-fresh { display: inline-block; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.3px; padding: 2px 8px; border-radius: 99px; vertical-align: middle; text-transform: none; }
+.pm-fresh.on { background: var(--green-bg); color: #047857; }
+.pm-fresh.stale { background: var(--yellow-bg); color: #92400E; }
 
 /* ============================================================
    BISAGRAS TABLE
@@ -752,9 +757,7 @@ function renderResumenView(sv) {
 function renderMapaView(sv) {
   const escK = window._svActiveScenario;
   const esc = sv.escenarios[escK];
-  if (!window._svGeo) {
-    return '<div class="card"><div class="card-title">🗺️ Mapa</div><div class="card-sub">Cargando geometría…</div></div>';
-  }
+  // Siempre renderiza el SVG vacío — initMapaInteractions hace lazy-load del geo
   return `
     <div class="card">
       <div class="card-title">🗺️ Mapa por departamento</div>
@@ -817,11 +820,28 @@ function normDep(s) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 }
 
-function initMapaInteractions(sv) {
+async function ensureGeo() {
+  if (window._svGeo) return window._svGeo;
+  try {
+    const res = await fetch('peru_geo.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    window._svGeo = await res.json();
+    return window._svGeo;
+  } catch (e) {
+    console.error('peru_geo.json fetch falló:', e);
+    return null;
+  }
+}
+
+async function initMapaInteractions(sv) {
   const svg = document.getElementById('peru-map');
   const tt = document.getElementById('map-tooltip');
-  const geo = window._svGeo;
-  if (!svg || !geo) return;
+  if (!svg) return;
+  const geo = await ensureGeo();
+  if (!geo) {
+    svg.outerHTML = '<div class="card-foot">⚠️ No se pudo cargar el mapa (peru_geo.json no disponible).</div>';
+    return;
+  }
   const escK = window._svActiveScenario;
   const esc = sv.escenarios[escK];
   const depByName = {};
@@ -1027,16 +1047,25 @@ function renderTecnicoView(sv) {
       </div>
     </div>` : ''}
 
-    ${pm ? `
+    ${pm ? (() => {
+      const pmFetchedAgo = pm.fetched_at ? Math.round((Date.now() - new Date(pm.fetched_at).getTime())/60000) : null;
+      const pmAgoLabel = pmFetchedAgo == null ? '' : pmFetchedAgo < 60 ? `hace ${pmFetchedAgo} min` : pmFetchedAgo < 1440 ? `hace ${Math.round(pmFetchedAgo/60)} h` : `hace ${Math.round(pmFetchedAgo/1440)} días`;
+      const pK = Math.round(pm.prob_keiko_gana * 100);
+      const pS = Math.round((pm.prob_sanchez_gana != null ? pm.prob_sanchez_gana : (1 - pm.prob_keiko_gana)) * 100);
+      return `
     <div class="card pm-card">
-      <div class="card-title">💰 Polymarket — smart money en vivo</div>
-      <div class="card-sub">$${(pm.volumen_usd/1e6).toFixed(1)}M apostado. Mercado de predicción.</div>
+      <div class="card-title">💰 Polymarket en vivo ${pmFetchedAgo != null ? `<span class="pm-fresh ${pmFetchedAgo < 90 ? 'on' : 'stale'}">● ${pmAgoLabel}</span>` : ''}</div>
+      <div class="card-sub">$${(pm.volumen_usd/1e6).toFixed(1)}M apostado · $${pm.volumen_24h_usd ? Math.round(pm.volumen_24h_usd/1000) : 0}K en 24h. Smart money en tiempo real.</div>
       <div class="pm-grid">
-        <div class="pm-side k"><div class="pm-name">Keiko</div><div class="pm-pct">${Math.round(pm.prob_keiko_gana*100)}¢</div><div class="pm-lbl">prob. ganar</div></div>
-        <div class="pm-side s"><div class="pm-name">Sánchez</div><div class="pm-pct">${Math.round((1-pm.prob_keiko_gana)*100)}¢</div><div class="pm-lbl">prob. ganar</div></div>
+        <div class="pm-side k"><div class="pm-name">Keiko</div><div class="pm-pct">${pK}¢</div><div class="pm-lbl">prob. ganar</div></div>
+        <div class="pm-side s"><div class="pm-name">Sánchez</div><div class="pm-pct">${pS}¢</div><div class="pm-lbl">prob. ganar</div></div>
       </div>
-      <a href="${pm.url}" target="_blank" class="pm-link">Ver mercado →</a>
-    </div>` : ''}
+      <div class="pm-foot">
+        <span>%K voto implícito: <b>${pm.pct_k_implied}%</b></span>
+        <a href="${pm.url}" target="_blank" class="pm-link">Ver mercado →</a>
+      </div>
+    </div>`;
+    })() : ''}
 
     <div class="card">
       <div class="card-title">🏛️ Por departamento (${esc.label})</div>

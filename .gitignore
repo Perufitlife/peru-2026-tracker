@@ -1,6 +1,5 @@
 telegram-bot.js
 node_modules/
-peru_geo.json
 
 # Análisis locales — NO pushear a GitHub
 analisis-local.html

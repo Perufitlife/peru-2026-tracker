@@ -35,6 +35,10 @@ const { analizarPolls } = require("./polls_engine");
 // Regenera el modelo predictivo primero
 try { execSync("node build_predictive.js", { stdio: "pipe" }); } catch (e) {}
 
+// Pull Polymarket en vivo. Si falla, sigue con el snapshot previo.
+try { execSync("node fetch_polymarket.js", { stdio: "inherit" }); }
+catch (e) { console.log("⚠️  Polymarket fetch falló — usando snapshot previo si existe."); }
+
 const data = require("./data.json");
 const forense2v = require("./forensic_2021_provincias.json");      // 2V 2021
 const forense1v = require("./forensic_2021_1v_distritos.json");    // 1V 2021
@@ -714,16 +718,28 @@ out.escenarios.MODELO_PROPIO = {
 // MAS_PROBABLE — Bayesian blend 3-way (modelo + encuestas + Polymarket)
 // ============================================================
 //
-// Polymarket actualizado 18-may 2026:
-//   Keiko 64¢ / Sánchez 34.7¢ ($52.9M volumen total)
-//   Esto NO es % de voto — es probabilidad de ganar.
-//   Convertir a "% K esperado": si P(K gana) = 64%, entonces el resultado medio condicional
-//   en victoria de K es ~51-52% (margen apretado); el medio condicional Sánchez victoria es ~49%.
-//   Voto esperado K = 0.64 × 51.5 + 0.36 × 48.5 ≈ 50.4%.
-//   Esto es nuestro "Polymarket implícito %K".
-const POLYMARKET_P_K = 0.64;
-const POLYMARKET_VOL_USD = 52946762;
-const POLYMARKET_PCT_K_IMPLIED = POLYMARKET_P_K * 51.5 + (1 - POLYMARKET_P_K) * 48.5; // ≈ 50.4%
+// Polymarket lee de polymarket_live.json (regenerado por fetch_polymarket.js).
+// Si el archivo no existe (e.g. API caída en momento de build), usa fallback.
+let POLYMARKET_P_K = 0.74;                  // fallback ≈ último conocido
+let POLYMARKET_VOL_USD = 19000000;
+let POLYMARKET_FETCHED_AT = null;
+let POLYMARKET_VOL_24H = 0;
+let POLYMARKET_RESIDUAL = 0;
+try {
+  const pmLive = JSON.parse(fs.readFileSync("./polymarket_live.json", "utf8"));
+  POLYMARKET_P_K = pmLive.prob_keiko_gana;
+  POLYMARKET_VOL_USD = pmLive.volumen_usd_total;
+  POLYMARKET_VOL_24H = pmLive.volumen_24h_usd;
+  POLYMARKET_FETCHED_AT = pmLive.fetched_at;
+  POLYMARKET_RESIDUAL = pmLive.prob_residual;
+  console.log(`Polymarket LIVE: K ${(POLYMARKET_P_K*100).toFixed(1)}% · vol $${(POLYMARKET_VOL_USD/1e6).toFixed(1)}M · fetched ${POLYMARKET_FETCHED_AT}`);
+} catch (e) {
+  console.log("Polymarket LIVE no disponible — usando fallback K=" + POLYMARKET_P_K);
+}
+// Convertir P(ganar) a "%K esperado en voto":
+//   En victoria de K, escenario condicional medio ≈ 52% (margen apretado).
+//   En victoria de S, condicional medio ≈ 48%.
+const POLYMARKET_PCT_K_IMPLIED = POLYMARKET_P_K * 52 + (1 - POLYMARKET_P_K) * 48;
 
 // Pesos del blend bayesiano (suman 1.0):
 const W_MODELO = 0.30;       // modelo propio (RMSE 11pp por distrito, alto)
@@ -790,8 +806,12 @@ out.escenarios.MAS_PROBABLE = {
     pesos: { modelo_propio: W_MODELO, encuestas: W_ENCUESTAS, polymarket: W_POLYMARKET },
     polymarket: {
       prob_keiko_gana: POLYMARKET_P_K,
+      prob_sanchez_gana: +(1 - POLYMARKET_P_K - POLYMARKET_RESIDUAL).toFixed(4),
+      prob_residual: POLYMARKET_RESIDUAL,
       pct_k_implied: +POLYMARKET_PCT_K_IMPLIED.toFixed(2),
       volumen_usd: POLYMARKET_VOL_USD,
+      volumen_24h_usd: POLYMARKET_VOL_24H,
+      fetched_at: POLYMARKET_FETCHED_AT,
       url: "https://polymarket.com/event/peru-presidential-election-winner",
     },
     justificacion: "Blend 3-way ponderado: 30% modelo distrital (RMSE 11pp pero captura tendencias estructurales); 45% encuestas IEP/IPSOS (±2.8pp pero metodología validada); 25% Polymarket (smart money $53M apostado, free of polling biases).",
