@@ -26,9 +26,9 @@
   --keiko: #F97316;
   --keiko-bg: #FFEDD5;
   --keiko-dark: #C2410C;
-  --sanchez: #2563EB;
-  --sanchez-bg: #DBEAFE;
-  --sanchez-dark: #1D4ED8;
+  --sanchez: #DC2626;
+  --sanchez-bg: #FEE2E2;
+  --sanchez-dark: #991B1B;
   --green: #10B981;
   --green-bg: #D1FAE5;
   --yellow: #F59E0B;
@@ -70,7 +70,7 @@ a:hover { text-decoration: underline; }
 .gh-card::before {
   content: ''; position: absolute; inset: 0;
   background: radial-gradient(circle at 0% 0%, rgba(249,115,22,0.18), transparent 50%),
-              radial-gradient(circle at 100% 0%, rgba(37,99,235,0.18), transparent 50%);
+              radial-gradient(circle at 100% 0%, rgba(220,38,38,0.18), transparent 50%);
   pointer-events: none;
 }
 .gh-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; position: relative; }
@@ -83,15 +83,15 @@ a:hover { text-decoration: underline; }
 .gh-cd-lbl { font-size: 0.6rem; opacity: 0.65; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-top: 4px; }
 .gh-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 16px 0 8px; background: rgba(255,255,255,0.08); position: relative; }
 .gh-bar-k { background: linear-gradient(90deg, #FB923C, #F97316); }
-.gh-bar-s { background: linear-gradient(90deg, #3B82F6, #2563EB); }
+.gh-bar-s { background: linear-gradient(90deg, #F87171, #DC2626); }
 .gh-foot { display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; position: relative; gap: 8px; }
 .gh-side { display: flex; align-items: center; gap: 5px; font-weight: 600; opacity: 0.9; }
 .gh-side.k { color: #FB923C; }
-.gh-side.s { color: #60A5FA; }
+.gh-side.s { color: #F87171; }
 .gh-side b { color: white; font-weight: 800; }
 .gh-dot { width: 8px; height: 8px; border-radius: 50%; }
 .gh-side.k .gh-dot { background: #F97316; }
-.gh-side.s .gh-dot { background: #2563EB; }
+.gh-side.s .gh-dot { background: #DC2626; }
 .gh-mid { font-size: 0.65rem; opacity: 0.55; font-weight: 500; text-align: center; flex: 1; }
 
 /* ============================================================
@@ -156,7 +156,7 @@ a:hover { text-decoration: underline; }
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
 }
 .hero-card.hero-k::before { background: linear-gradient(90deg, #FB923C, #F97316); }
-.hero-card.hero-s::before { background: linear-gradient(90deg, #3B82F6, #2563EB); }
+.hero-card.hero-s::before { background: linear-gradient(90deg, #F87171, #DC2626); }
 .hero-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
 .hero-winner { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .hero-card.hero-k .hero-winner { color: var(--keiko-dark); }
@@ -175,7 +175,7 @@ a:hover { text-decoration: underline; }
 .hero-prob-bar { display: flex; height: 22px; border-radius: 6px; overflow: hidden; margin-top: 8px; background: var(--border-soft); font-size: 0.7rem; font-weight: 700; color: white; }
 .hpb-k, .hpb-s { display: flex; align-items: center; justify-content: center; }
 .hpb-k { background: linear-gradient(90deg, #FB923C, #F97316); }
-.hpb-s { background: linear-gradient(90deg, #3B82F6, #2563EB); }
+.hpb-s { background: linear-gradient(90deg, #F87171, #DC2626); }
 
 /* ============================================================
    TRIPWIRES — Semáforos
@@ -190,10 +190,10 @@ a:hover { text-decoration: underline; }
 }
 .tw:hover { transform: translateY(-2px); }
 .tw.verde_k { border-left-color: var(--keiko); background: linear-gradient(135deg, #FFFBEB, #FED7AA); }
-.tw.verde_s { border-left-color: var(--sanchez); background: linear-gradient(135deg, #EFF6FF, #BFDBFE); }
+.tw.verde_s { border-left-color: var(--sanchez); background: linear-gradient(135deg, #FEF2F2, #FECACA); }
 .tw.verde   { border-left-color: var(--green); background: linear-gradient(135deg, #ECFDF5, #A7F3D0); }
 .tw.amarillo { border-left-color: var(--yellow); background: linear-gradient(135deg, #FFFBEB, #FEF3C7); }
-.tw.rojo     { border-left-color: var(--red); background: linear-gradient(135deg, #FEF2F2, #FECACA); }
+.tw.rojo     { border-left-color: #7C3AED; background: linear-gradient(135deg, #F5F3FF, #DDD6FE); }
 .tw-titulo { font-size: 0.62rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 .tw-valor { font-size: 1.7rem; font-weight: 800; color: var(--text); line-height: 1; margin: 8px 0 4px; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
 .tw-estado { font-size: 0.62rem; color: var(--text-muted); line-height: 1.3; }
@@ -225,7 +225,7 @@ a:hover { text-decoration: underline; }
 /* ============================================================
    CTA buttons
    ============================================================ */
-.cta-card { background: linear-gradient(135deg, #FFEDD5, #DBEAFE); }
+.cta-card { background: linear-gradient(135deg, #FFEDD5, #FEE2E2); }
 .cta-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 4px; }
 .cta-buttons button {
   background: white;
@@ -392,12 +392,12 @@ a:hover { text-decoration: underline; }
 .mc-name { font-size: 0.62rem; font-weight: 800; opacity: 0.7; letter-spacing: 0.5px; }
 .mc-pct { font-size: 2.4rem; font-weight: 800; margin: 4px 0; line-height: 1; letter-spacing: -1.5px; }
 .mc-side.k .mc-pct { color: #FB923C; }
-.mc-side.s .mc-pct { color: #60A5FA; }
+.mc-side.s .mc-pct { color: #F87171; }
 .mc-lbl { font-size: 0.65rem; opacity: 0.7; }
 .mc-ci { font-size: 0.72rem; opacity: 0.85; margin-top: 14px; text-align: center; line-height: 1.55; font-variant-numeric: tabular-nums; }
 .mc-ci b { color: white; }
 
-.pm-card { background: linear-gradient(135deg, #ECFDF5, #DBEAFE); }
+.pm-card { background: linear-gradient(135deg, #ECFDF5, #FEE2E2); }
 .pm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .pm-side { background: white; border-radius: 12px; padding: 14px; text-align: center; }
 .pm-side.k { border-top: 3px solid var(--keiko); }
@@ -761,7 +761,7 @@ function renderMapaView(sv) {
   return `
     <div class="card">
       <div class="card-title">🗺️ Mapa por departamento</div>
-      <div class="card-sub">Naranja = Keiko · Azul = Sánchez. Intensidad = margen. Hover para detalle.</div>
+      <div class="card-sub">Naranja = Keiko · Rojo = Sánchez. Intensidad = margen. Hover para detalle.</div>
       <div class="scenario-picker">${renderScenarioButtons(escK)}</div>
       <div class="map-wrap">
         <svg id="peru-map" viewBox="0 0 600 700" preserveAspectRatio="xMidYMid meet"></svg>
@@ -776,10 +776,10 @@ function renderMapaView(sv) {
           <span class="ml-label">← Keiko fuerte ··· empate</span>
         </div>
         <div class="ml-row">
-          <span class="ml-swatch" style="background:#BFDBFE"></span>
-          <span class="ml-swatch" style="background:#60A5FA"></span>
-          <span class="ml-swatch" style="background:#2563EB"></span>
-          <span class="ml-swatch" style="background:#1E3A8A"></span>
+          <span class="ml-swatch" style="background:#FECACA"></span>
+          <span class="ml-swatch" style="background:#F87171"></span>
+          <span class="ml-swatch" style="background:#DC2626"></span>
+          <span class="ml-swatch" style="background:#7F1D1D"></span>
           <span class="ml-label">empate ··· Sánchez fuerte →</span>
         </div>
       </div>
@@ -810,10 +810,10 @@ function colorPorMargen(pctK) {
   if (m >= 10) return '#EA580C';
   if (m >= 3)  return '#FB923C';
   if (m >= 0)  return '#FED7AA';
-  if (m >= -3)  return '#BFDBFE';
-  if (m >= -10) return '#60A5FA';
-  if (m >= -20) return '#2563EB';
-  return '#1E3A8A';
+  if (m >= -3)  return '#FECACA';
+  if (m >= -10) return '#F87171';
+  if (m >= -20) return '#DC2626';
+  return '#7F1D1D';
 }
 
 function normDep(s) {
@@ -901,7 +901,7 @@ async function initMapaInteractions(sv) {
       const pK = parseFloat(e.target.dataset.pctk);
       const pS = parseFloat(e.target.dataset.pcts);
       const win = pK > pS ? 'KEIKO' : 'SÁNCHEZ';
-      tt.innerHTML = `<b>${titleCase(dep)}</b><br>K ${pK.toFixed(1)}% · S ${pS.toFixed(1)}%<br>Gana <b style="color:${pK > pS ? '#F97316' : '#3B82F6'}">${win}</b>`;
+      tt.innerHTML = `<b>${titleCase(dep)}</b><br>K ${pK.toFixed(1)}% · S ${pS.toFixed(1)}%<br>Gana <b style="color:${pK > pS ? '#F97316' : '#DC2626'}">${win}</b>`;
       tt.style.display = 'block';
     });
     el.addEventListener('mousemove', e => {
@@ -936,7 +936,7 @@ function renderTendenciaView(sv) {
       <div class="card-title">🚦 Tripwires en detalle</div>
       <div class="card-sub">Los 3 indicadores cuya evolución decide el resultado.</div>
       ${renderTripwiresInline(tw)}
-      <div class="card-foot">Naranja = favorable a Keiko. Azul = favorable a Sánchez. Amarillo = zona de batalla. Rojo = volátil.</div>
+      <div class="card-foot">Naranja = favorable a Keiko. Rojo = favorable a Sánchez. Amarillo = zona de batalla. Morado = alta volatilidad.</div>
     </div>
 
     ${vel?.lima_metro ? `
