@@ -283,9 +283,56 @@
   .sv-bar-s { background: var(--sanchezSV); }
 
   /* selector de escenarios */
-  .sv-scenarios { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--border); padding: 3px; border-radius: 12px; margin-bottom: 16px; }
+  .sv-scenarios { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; background: var(--border); padding: 3px; border-radius: 12px; margin-bottom: 16px; }
   .sv-sc-btn { background: none; border: none; padding: 10px 2px; border-radius: 10px; font-size: 0.6rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
   .sv-sc-btn.active { background: var(--card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* tripwires — semáforos de seguimiento día a día */
+  .sv-tripwires-card { background: linear-gradient(135deg, #0F172A, #1E293B); color: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+  .sv-tripwires-title { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; opacity: 0.65; margin-bottom: 2px; }
+  .sv-tripwires-sub { font-size: 0.7rem; opacity: 0.6; margin-bottom: 12px; }
+  .sv-tripwires-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sv-tripwire { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 10px; border-left: 4px solid var(--text-secondary); }
+  .sv-tripwire.verde_k { border-left-color: #F97316; }
+  .sv-tripwire.verde_s { border-left-color: #3B82F6; }
+  .sv-tripwire.verde { border-left-color: #10B981; }
+  .sv-tripwire.amarillo { border-left-color: #FBBF24; }
+  .sv-tripwire.rojo { border-left-color: #EF4444; }
+  .sv-tw-titulo { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
+  .sv-tw-valor { font-size: 1.6rem; font-weight: 800; line-height: 1; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+  .sv-tw-unidad { font-size: 0.62rem; opacity: 0.6; }
+  .sv-tw-trend { font-size: 0.68rem; opacity: 0.85; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .sv-tw-trend .up { color: #34D399; }
+  .sv-tw-trend .down { color: #FB7185; }
+  .sv-tw-trend .flat { color: rgba(255,255,255,0.5); }
+  .sv-tw-estado { font-size: 0.6rem; opacity: 0.55; margin-top: 4px; font-style: italic; }
+
+  /* tabla de tendencia por estrato */
+  .sv-trend-card { background: var(--card); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  .sv-trend-table { width: 100%; font-size: 0.72rem; font-variant-numeric: tabular-nums; border-collapse: collapse; }
+  .sv-trend-table th { text-align: right; font-weight: 700; font-size: 0.58rem; text-transform: uppercase; color: var(--text-secondary); padding: 6px 6px; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+  .sv-trend-table th:first-child { text-align: left; }
+  .sv-trend-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: right; }
+  .sv-trend-table td:first-child { text-align: left; font-weight: 700; }
+  .sv-trend-table tr:last-child td { border-bottom: none; }
+  .sv-trend-table .delta-up-k { color: var(--keiko); font-weight: 700; }
+  .sv-trend-table .delta-up-s { color: var(--sanchezSV); font-weight: 700; }
+  .sv-trend-table .delta-flat { color: var(--text-secondary); }
+  .sv-arrow { font-size: 0.7rem; margin-right: 2px; }
+
+  /* timeseries de encuestas */
+  .sv-polls-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .sv-poll-row { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; align-items: center; background: rgba(0,0,0,0.02); border-radius: 10px; padding: 10px 12px; font-size: 0.72rem; }
+  .sv-poll-meta { font-weight: 700; font-size: 0.7rem; }
+  .sv-poll-meta-sub { color: var(--text-secondary); font-size: 0.6rem; font-weight: 500; margin-top: 2px; }
+  .sv-poll-bar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; background: var(--border); position: relative; }
+  .sv-poll-bar > div { display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; color: white; }
+  .sv-poll-bar .bk { background: var(--keiko); }
+  .sv-poll-bar .bs { background: var(--sanchezSV); }
+  .sv-poll-bar .bbn { background: #9CA3AF; }
+  .sv-poll-nums { font-variant-numeric: tabular-nums; font-size: 0.68rem; color: var(--text-secondary); white-space: nowrap; }
+  .sv-poll-nums b.k { color: var(--keiko); }
+  .sv-poll-nums b.s { color: var(--sanchezSV); }
 
   /* Monte Carlo prob card */
   .sv-prob-card { background: linear-gradient(135deg, #1F2937, #111827); color: white; border-radius: 20px; padding: 22px 18px; margin-bottom: 16px; }
@@ -2172,7 +2219,133 @@ function drawSegundaVuelta() {
   const iepReg = fu.iep_regionales || {};
 
   const winnerK = nac.margen > 0;
+
+  // ===== Tripwires + Tendencia (de polls_timeseries) =====
+  const pts = sv.polls_timeseries || {};
+  const tripwires = pts.tripwires || [];
+  const vel = pts.velocidades || {};
+  const momentum = pts.escenario_momentum;
+  const ancla = pts.anclaje_doble;
+  const pollsResumen = pts.polls_resumen || [];
+
+  function renderArrow(delta_pp, favors_k_if_positive = true) {
+    if (delta_pp == null) return '<span class="flat">—</span>';
+    const abs = Math.abs(delta_pp);
+    if (abs < 0.1) return '<span class="flat">→ 0</span>';
+    const cls = (delta_pp > 0) === favors_k_if_positive ? 'up' : 'down';
+    const arrow = delta_pp > 0 ? '↑' : '↓';
+    return `<span class="${cls}">${arrow} ${abs.toFixed(1)}pp</span>`;
+  }
+
+  function renderTrendCell(d, isS = false) {
+    // d = { v1, v2, delta_pp, pp_por_semana } o null
+    if (!d) return '<td class="delta-flat">—</td>';
+    const cls = d.delta_pp > 0.3 ? (isS ? 'delta-up-s' : 'delta-up-k')
+              : d.delta_pp < -0.3 ? (isS ? 'delta-up-k' : 'delta-up-s')
+              : 'delta-flat';
+    const arrow = d.delta_pp > 0.3 ? '▲' : d.delta_pp < -0.3 ? '▼' : '→';
+    return `<td class="${cls}"><span class="sv-arrow">${arrow}</span>${d.v1}→<b>${d.v2}</b> <span style="opacity:0.7;font-weight:500">(${d.pp_por_semana > 0 ? '+' : ''}${d.pp_por_semana}/sem)</span></td>`;
+  }
+
+  const tripwiresHtml = tripwires.length === 0 ? '' : `
+    <div class="sv-tripwires-card">
+      <div class="sv-tripwires-title">🚦 Tripwires — seguimiento día a día</div>
+      <div class="sv-tripwires-sub">Los 3 indicadores cuya evolución entre encuestas decide el resultado. Cambio de color = cambio de escenario.</div>
+      <div class="sv-tripwires-grid">
+        ${tripwires.map(tw => `
+          <div class="sv-tripwire ${tw.semaforo}">
+            <div class="sv-tw-titulo">${tw.titulo}</div>
+            <div class="sv-tw-valor">${tw.valor_actual != null ? tw.valor_actual + '%' : '—'}</div>
+            <div class="sv-tw-unidad">${tw.unidad}</div>
+            <div class="sv-tw-trend">
+              ${tw.tendencia
+                ? `${tw.tendencia.from}% → <b>${tw.tendencia.to}%</b> ${renderArrow(tw.tendencia.delta_pp, tw.id === 'rural_sanchez' ? false : (tw.id === 'antivoto_k' ? false : true))}`
+                : `<span class="flat">una sola medición</span>`}
+            </div>
+            <div class="sv-tw-estado">${tw.estado} · obs ${tw.observacion}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  const trendHtml = (!vel || !vel.lima_metro) ? '' : `
+    <div class="sv-trend-card">
+      <div class="sv-section-title">📈 Tendencia por estrato — IPSOS abril → mayo (${vel.semanas_intervalo} semanas)</div>
+      <div class="sv-section-sub">Velocidad observada de Keiko y Sánchez en cada estrato. Las flechas indican a quién favorece el cambio.</div>
+      <table class="sv-trend-table">
+        <thead>
+          <tr><th>Estrato</th><th>Keiko</th><th>Sánchez</th><th>Blanco/Nulo</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Lima Metro</td>
+            ${renderTrendCell(vel.lima_metro.k, false)}
+            ${renderTrendCell(vel.lima_metro.s, true)}
+            ${renderTrendCell(vel.lima_metro.blanco_nulo, false)}
+          </tr>
+          <tr>
+            <td>Otras ciudades</td>
+            ${renderTrendCell(vel.otras_ciudades.k, false)}
+            ${renderTrendCell(vel.otras_ciudades.s, true)}
+            ${renderTrendCell(vel.otras_ciudades.blanco_nulo, false)}
+          </tr>
+          <tr>
+            <td>Rural</td>
+            ${renderTrendCell(vel.rural.k, false)}
+            ${renderTrendCell(vel.rural.s, true)}
+            ${renderTrendCell(vel.rural.blanco_nulo, false)}
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px; font-size:0.7rem; color:var(--text-secondary); line-height:1.5">
+        <b>Lectura clave:</b> Lima se polariza pro-Keiko (+1.2pp/sem). En interior urbano y rural Sánchez sangra, pero el voto perdido NO va a Keiko — va a indecisos. Eso es lo que captura el escenario MOMENTUM.
+      </div>
+    </div>
+  `;
+
+  const pollsListHtml = pollsResumen.length === 0 ? '' : `
+    <div class="sv-section" style="background:linear-gradient(135deg, #FFF7ED, #FEF3C7); border-left:4px solid var(--keiko)">
+      <div class="sv-section-title">📚 Timeseries de encuestas — ${pollsResumen.length} mediciones</div>
+      <div class="sv-section-sub">Append-only. Cada nueva encuesta entra a polls.json y el modelo recalcula tripwires + velocidades + momentum.</div>
+      <div class="sv-polls-list">
+        ${pollsResumen.slice().sort((a,b) => (a.fecha_campo[1] < b.fecha_campo[1] ? 1 : -1)).map(p => {
+          const total = (p.nacional?.k || 0) + (p.nacional?.s || 0) + (p.nacional?.blanco_nulo || 0) + (p.nacional?.indeciso || 0);
+          const k = p.nacional?.k || 0;
+          const s = p.nacional?.s || 0;
+          const bn = p.nacional?.blanco_nulo || 0;
+          const ind = p.nacional?.indeciso || 0;
+          return `
+          <div class="sv-poll-row">
+            <div>
+              <div class="sv-poll-meta">${p.pollster}</div>
+              <div class="sv-poll-meta-sub">${p.fecha_campo[0].slice(5)} → ${p.fecha_campo[1].slice(5)} · n=${fmt(p.n)}</div>
+            </div>
+            <div>
+              <div class="sv-poll-bar">
+                <div class="bk" style="width:${k}%">${k}</div>
+                <div class="bs" style="width:${s}%">${s}</div>
+                <div class="bbn" style="width:${bn + ind}%">${bn + ind}</div>
+              </div>
+            </div>
+            <div class="sv-poll-nums">
+              <b class="k">K ${k}</b> · <b class="s">S ${s}</b> · BN ${bn} · NS ${ind}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${ancla ? `
+      <div style="margin-top:12px; padding:10px 12px; background:white; border-radius:10px; font-size:0.7rem; line-height:1.5">
+        <b>Anclaje doble ponderado por recencia (τ=${ancla.tau_dias}d):</b> K <b style="color:var(--keiko)">${ancla.promedio_ponderado.val_k}%</b> / S <b style="color:var(--sanchezSV)">${ancla.promedio_ponderado.val_s}%</b> sobre voto válido. La última encuesta pesa ~${(ancla.items[ancla.items.length-1].peso_norm*100).toFixed(0)}%.
+      </div>` : ''}
+    </div>
+  `;
+
   const html = `
+    ${tripwiresHtml}
+    ${trendHtml}
+    ${pollsListHtml}
+
     <!-- 1V 2026 — data oficial -->
     <div class="sv-section" style="background:linear-gradient(135deg, #DBEAFE, #DDD6FE); border-left:4px solid var(--lopez)">
       <div class="sv-section-title">🗳️ Primera vuelta 2026 — data oficial ONPE</div>
@@ -2314,15 +2487,27 @@ function drawSegundaVuelta() {
 
     <div class="sv-scenarios">
       <button class="sv-sc-btn ${scKey==='MAS_PROBABLE'?'active':''}" onclick="window._svSetScenario('MAS_PROBABLE')">⭐ Más probable</button>
-      <button class="sv-sc-btn ${scKey==='MODELO_PROPIO'?'active':''}" onclick="window._svSetScenario('MODELO_PROPIO')">🧠 Modelo propio</button>
+      <button class="sv-sc-btn ${scKey==='MOMENTUM'?'active':''}" onclick="window._svSetScenario('MOMENTUM')">🚀 Momentum</button>
+      <button class="sv-sc-btn ${scKey==='MODELO_PROPIO'?'active':''}" onclick="window._svSetScenario('MODELO_PROPIO')">🧠 Modelo</button>
       <button class="sv-sc-btn ${scKey==='ENCUESTAS'?'active':''}" onclick="window._svSetScenario('ENCUESTAS')">📊 Encuestas</button>
       <button class="sv-sc-btn ${scKey==='OPTIMISTA_K'?'active':''}" onclick="window._svSetScenario('OPTIMISTA_K')">▲ Opt K</button>
       <button class="sv-sc-btn ${scKey==='PESIMISTA_K'?'active':''}" onclick="window._svSetScenario('PESIMISTA_K')">▼ Pes K</button>
     </div>
 
     <div class="sv-section">
-      <div class="sv-section-title">Por departamento — ${scKey === 'ENCUESTAS' ? 'anclado a encuestas' : (scKey === 'OPTIMISTA_K' ? 'rechazo K cae 8pp' : 'rechazo K rebrota')}</div>
-      <div class="sv-section-sub">${scKey === 'ENCUESTAS' ? 'Calibrado contra crosstabs IEP por zona. Lima concentra ~31% del voto nacional.' : 'Sensitividad sobre encuestas. Muestra qué pasa si el rechazo a Keiko se mueve significativamente.'}</div>
+      <div class="sv-section-title">Por departamento — ${
+        scKey === 'ENCUESTAS' ? 'anclado a encuestas' :
+        scKey === 'OPTIMISTA_K' ? 'rechazo K cae 8pp' :
+        scKey === 'PESIMISTA_K' ? 'rechazo K rebrota' :
+        scKey === 'MOMENTUM' ? 'extrapola IPSOS abr→may al día D' :
+        scKey === 'MODELO_PROPIO' ? 'modelo distrital propio' :
+        'blend 3-way'
+      }</div>
+      <div class="sv-section-sub">${
+        scKey === 'ENCUESTAS' ? 'Calibrado contra crosstabs IEP por zona. Lima concentra ~31% del voto nacional.' :
+        scKey === 'MOMENTUM' ? `Velocidades IPSOS por estrato proyectadas al ${momentum?.fecha_objetivo || '7-jun'} con dampening ${momentum?.dampening || 0.5} + reparto del limbo (55% líder / 30% rezagado / 15% nulo + 10% bonus al líder anti-castillista).` :
+        'Sensitividad sobre encuestas. Muestra qué pasa si el rechazo a Keiko se mueve significativamente.'
+      }</div>
       ${deps.map(d => `
         <div class="sv-dep-row">
           <div class="name">${titleCase(d.departamento)}</div>

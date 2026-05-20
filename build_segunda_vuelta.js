@@ -30,6 +30,7 @@
  */
 const fs = require("fs");
 const { execSync } = require("child_process");
+const { analizarPolls } = require("./polls_engine");
 
 // Regenera el modelo predictivo primero
 try { execSync("node build_predictive.js", { stdio: "pipe" }); } catch (e) {}
@@ -38,6 +39,9 @@ const data = require("./data.json");
 const forense2v = require("./forensic_2021_provincias.json");      // 2V 2021
 const forense1v = require("./forensic_2021_1v_distritos.json");    // 1V 2021
 const modelPred = require("./modelo_predictivo_2026.json");        // modelo agnóstico propio
+
+// Timeseries de encuestas + momentum + tripwires (calculado del polls.json)
+const pollsAnalysis = analizarPolls("./polls.json");
 
 const K_NAME = "KEIKO SOFIA FUJIMORI HIGUCHI";
 const S_NAME = "ROBERTO HELBERT SANCHEZ PALOMINO";
@@ -793,6 +797,53 @@ out.escenarios.MAS_PROBABLE = {
     justificacion: "Blend 3-way ponderado: 30% modelo distrital (RMSE 11pp pero captura tendencias estructurales); 45% encuestas IEP/IPSOS (±2.8pp pero metodología validada); 25% Polymarket (smart money $53M apostado, free of polling biases).",
   },
 };
+
+// ============================================================
+// ESCENARIO MOMENTUM — extrapola velocidades IPSOS al día D
+// ============================================================
+//
+// Toma el escenario ENCUESTAS como base distrital y aplica un shift uniforme
+// para que el % nacional iguale el momentum proyectado del polls_engine.
+// El momentum_engine ya computó el % nacional válido proyectado al 7-jun
+// usando velocidades observadas IPSOS (abr→may) con dampening 0.5
+// y reparto del limbo con prior histórico Perú 2da vuelta.
+
+if (pollsAnalysis.escenario_momentum) {
+  const targetMomentumK = pollsAnalysis.escenario_momentum.nacional_valido.k;
+  const baseEncNac = out.escenarios.ENCUESTAS.nacional;
+  const baseEncK = baseEncNac.pct_keiko;
+  const SHIFT_MOMENTUM_PP = targetMomentumK - baseEncK;
+
+  const momentumDist = enc.distritos.map(d => {
+    const pct_K = Math.max(3, Math.min(97, d.pct_keiko + SHIFT_MOMENTUM_PP));
+    const pct_S = 100 - pct_K;
+    const validos = d.validos_proy;
+    const k = Math.round(validos * pct_K / 100);
+    const s = Math.round(validos * pct_S / 100);
+    return {
+      ...d,
+      keiko_proy: k,
+      sanchez_proy: s,
+      validos_proy: k + s,
+      pct_keiko: +pct_K.toFixed(2),
+      pct_sanchez: +pct_S.toFixed(2),
+      margen: k - s,
+      ganador: k > s ? "K" : "S",
+    };
+  });
+  out.escenarios.MOMENTUM = {
+    label: `Momentum (extrapola velocidades IPSOS abr→may al día D, dampening 0.5)`,
+    ...agregarProvinciaYDepartamento(momentumDist),
+    distritos: momentumDist,
+    momentum: pollsAnalysis.escenario_momentum,
+    shift_aplicado_pp: +SHIFT_MOMENTUM_PP.toFixed(2),
+    justificacion: "Toma la última IPSOS (16-17 may) por estrato (Lima/Otras/Rural), extrapola con velocidad observada de 3 semanas previas (con 50% dampening porque tendencias se aplanan cerca del día D), reparte el limbo (indec+B/N) con prior histórico Perú: 55% al líder, 30% al rezagado, 15% nulo extra; +10% al líder si el rezagado es percibido radical (sesgo anti-castillista observado en 2021).",
+  };
+  console.log(`Momentum nacional: K ${targetMomentumK}% (shift sobre ENCUESTAS: ${SHIFT_MOMENTUM_PP > 0 ? '+' : ''}${SHIFT_MOMENTUM_PP.toFixed(2)}pp)`);
+}
+
+// Adjuntar análisis del timeseries (polls_engine) al output
+out.polls_timeseries = pollsAnalysis;
 
 // Monte Carlo — distribución de probabilidad
 // Usamos los distritos MAS_PROBABLE (blend) como ancla
