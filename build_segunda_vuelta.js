@@ -448,8 +448,33 @@ out.meta.nacional_1v = {
 
 // Escenario ENCUESTAS (primario)
 const enc = correrEncuestas();
+
+// ====== RE-ANCLAJE: swing nacional al anclaje doble (recency-weighted) ======
+// La FORMA regional viene de IEP-abr (granular y estable distrito a distrito);
+// el NIVEL nacional se desplaza uniformemente para igualar el anclaje doble del
+// polls_engine, que pondera todas las encuestas por recencia (al 27-may dominan
+// IPSOS 16-17may + DATUM 17-20may, ~85% del peso). Mantiene la geografía, refresca
+// el titular. Se recalcula solo en cada build conforme entran encuestas nuevas.
+const TARGET_ENC_K = pollsAnalysis.anclaje_doble?.promedio_ponderado?.val_k;
+if (TARGET_ENC_K) {
+  const totVal = enc.distritos.reduce((a, d) => a + d.validos_proy, 0);
+  const curK = enc.distritos.reduce((a, d) => a + d.validos_proy * d.pct_keiko / 100, 0) / totVal * 100;
+  const SWING_ENC_PP = TARGET_ENC_K - curK;
+  enc.distritos = enc.distritos.map(d => {
+    const pct_K = Math.max(3, Math.min(97, d.pct_keiko + SWING_ENC_PP));
+    const pct_S = 100 - pct_K;
+    const k = Math.round(d.validos_proy * pct_K / 100);
+    const s = Math.round(d.validos_proy * pct_S / 100);
+    return { ...d, keiko_proy: k, sanchez_proy: s, validos_proy: k + s,
+      pct_keiko: +pct_K.toFixed(2), pct_sanchez: +pct_S.toFixed(2),
+      margen: k - s, ganador: k > s ? "K" : "S" };
+  });
+  enc.reanclaje = { target_k: TARGET_ENC_K, base_k: +curK.toFixed(2), swing_pp: +SWING_ENC_PP.toFixed(2) };
+  console.log(`Re-anclaje ENCUESTAS: ${curK.toFixed(2)}% → ${TARGET_ENC_K}% K (swing ${SWING_ENC_PP > 0 ? '+' : ''}${SWING_ENC_PP.toFixed(2)}pp · forma regional IEP-abr preservada)`);
+}
+
 out.escenarios.ENCUESTAS = {
-  label: "Encuestas (anclado a IPSOS+IEP abr-2026)",
+  label: "Encuestas (forma regional IEP-abr · nivel re-anclado a promedio ponderado IPSOS-may + DATUM)",
   ...agregarProvinciaYDepartamento(enc.distritos),
   distritos: enc.distritos,
   calibracion: Object.fromEntries(Object.entries(enc.zonas).map(([k, v]) => [k, {
@@ -459,6 +484,7 @@ out.escenarios.ENCUESTAS = {
     target_pctK: TARGET_VAL_IEP[k]?.k ?? null,
     n_distritos: v.distritos.length,
   }])),
+  reanclaje: enc.reanclaje ?? null,
 };
 
 // ============================================================
