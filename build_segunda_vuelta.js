@@ -47,6 +47,9 @@ const modelPred = require("./modelo_predictivo_2026.json");        // modelo agn
 // Timeseries de encuestas + momentum + tripwires (calculado del polls.json)
 const pollsAnalysis = analizarPolls("./polls.json");
 
+// Baseline 2021 2V por distrito (calibrado/oficial) para el comparativo swing
+const baseline2021 = fs.existsSync("./baseline_2021_2v.json") ? require("./baseline_2021_2v.json") : null;
+
 const K_NAME = "KEIKO SOFIA FUJIMORI HIGUCHI";
 const S_NAME = "ROBERTO HELBERT SANCHEZ PALOMINO";
 
@@ -890,6 +893,68 @@ if (pollsAnalysis.escenario_momentum) {
 
 // Adjuntar análisis del timeseries (polls_engine) al output
 out.polls_timeseries = pollsAnalysis;
+
+// ============================================================
+// COMPARATIVO 2021 vs 2026 — baseline real + contrafactual swing
+// ============================================================
+//
+// Toma el resultado REAL 2021 2V por distrito (Castillo vs Keiko) y, manteniendo
+// el turnout/padrón de cada distrito, aplica las preferencias PROYECTADAS 2026 por
+// escenario. Responde: "si la elección de 2021 se repitiera con los % de hoy,
+// ¿Keiko voltea el resultado y por cuántos votos?". El voto extranjero (no proyectado
+// por encuestas) se mantiene en su patrón 2021. Se recalcula en cada build.
+if (baseline2021) {
+  const CONTINENTES_EXT = new Set(["AFRICA", "AMERICA", "ASIA", "EUROPA", "OCEANIA"]);
+  const b21 = new Map(baseline2021.distritos.map(d => [String(d.ubigeo), d]));
+  const foreign = baseline2021.distritos.filter(d => CONTINENTES_EXT.has(d.departamento));
+  const fK = foreign.reduce((a, d) => a + d.votos_K, 0);
+  const fC = foreign.reduce((a, d) => a + d.votos_C, 0);
+
+  const contrafactual = (scen) => {
+    const dists = out.escenarios[scen]?.distritos || [];
+    let cfK = 0, cfS = 0, valMatched = 0, matched = 0, flipCaK = 0, flipKaC = 0;
+    for (const d of dists) {
+      const b = b21.get(String(d.ubigeo));
+      if (!b || CONTINENTES_EXT.has(b.departamento)) continue;
+      const projK = d.pct_keiko / 100;
+      cfK += b.validos * projK;
+      cfS += b.validos * (1 - projK);
+      valMatched += b.validos; matched++;
+      const won26 = d.pct_keiko >= 50 ? "K" : "S";
+      if (b.ganador === "C" && won26 === "K") flipCaK++;
+      if (b.ganador === "K" && won26 === "S") flipKaC++;
+    }
+    cfK += fK; cfS += fC;
+    const tot = cfK + cfS;
+    return {
+      keiko_votos: Math.round(cfK), sanchez_votos: Math.round(cfS),
+      pct_keiko: +(cfK / tot * 100).toFixed(2), pct_sanchez: +(cfS / tot * 100).toFixed(2),
+      margen_votos: Math.round(cfK - cfS), ganador: cfK > cfS ? "KEIKO" : "SANCHEZ",
+      distritos_volteados_C_a_K: flipCaK, distritos_volteados_K_a_C: flipKaC,
+      n_distritos_proyectados: matched,
+      cobertura_pct: +(valMatched / baseline2021.meta.nacional_oficial.validos * 100).toFixed(1),
+    };
+  };
+
+  out.comparativo_2021 = {
+    meta: {
+      eleccion: baseline2021.meta.eleccion,
+      calibrado: baseline2021.meta.calibrado,
+      fuente: baseline2021.meta.fuente,
+      nota: baseline2021.meta.nota,
+    },
+    nacional_2021_oficial: baseline2021.meta.nacional_oficial,
+    voto_extranjero_2021: { keiko: fK, castillo: fC, margen: fK - fC, nota: "Mantenido del patrón real 2021 (no proyectado por encuestas 2026)" },
+    contrafactual: {
+      ENCUESTAS: contrafactual("ENCUESTAS"),
+      MAS_PROBABLE: contrafactual("MAS_PROBABLE"),
+      MOMENTUM: contrafactual("MOMENTUM"),
+    },
+    // El detalle por distrito vive en baseline_2021_2v.json (lazy-load en la UI).
+  };
+  const cf = out.comparativo_2021.contrafactual.MAS_PROBABLE;
+  console.log(`Comparativo 2021→2026 (MÁS_PROBABLE): ${cf.ganador} ${cf.margen_votos > 0 ? "+" : ""}${cf.margen_votos.toLocaleString()} · ${cf.distritos_volteados_C_a_K} distritos volteados C→K`);
+}
 
 // Monte Carlo — distribución de probabilidad
 // Usamos los distritos MAS_PROBABLE (blend) como ancla

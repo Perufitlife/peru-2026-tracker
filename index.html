@@ -444,6 +444,44 @@ details.method p { margin-bottom: 10px; }
 details.method code { background: var(--card-soft); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; color: var(--keiko-dark); }
 
 /* ============================================================
+   COMPARATIVO 2021 vs HOY
+   ============================================================ */
+.cmp-nat { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 4px; }
+.cmp-natcard { background: var(--card-soft); border-radius: 12px; padding: 14px; border: 1px solid var(--border-soft); }
+.cmp-natcard.win-k { border-color: var(--keiko); box-shadow: 0 0 0 1px var(--keiko) inset; }
+.cmp-natcard.win-s { border-color: var(--sanchez); box-shadow: 0 0 0 1px var(--sanchez) inset; }
+.cmp-nl { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; line-height: 1.4; min-height: 2.4em; }
+.cmp-nwin { font-size: 1.05rem; font-weight: 800; margin: 6px 0 8px; }
+.cmp-nwin.keiko { color: var(--keiko); }
+.cmp-nwin.sanchez { color: var(--sanchez); }
+.cmp-nbar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--border); }
+.cmp-nrow { display: flex; justify-content: space-between; font-size: 0.72rem; font-weight: 700; margin-top: 6px; }
+.cmp-nmargin { font-size: 0.78rem; font-weight: 800; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.cmp-nmargin.pos { color: var(--keiko); }
+.cmp-nmargin.neg { color: var(--sanchez); }
+.cmp-swing { display: flex; gap: 18px; flex-wrap: wrap; margin: 12px 0 4px; font-size: 0.8rem; }
+.cmp-swing b { font-size: 1rem; }
+.cmp-controls { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; margin: 12px 0; }
+.cmp-search, .cmp-sel { background: var(--card-soft); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; font-size: 0.74rem; color: var(--text); font-family: inherit; }
+.cmp-scroll { max-height: 620px; overflow-y: auto; border-radius: 8px; }
+.cmp-table { width: 100%; font-size: 0.74rem; font-variant-numeric: tabular-nums; border-collapse: collapse; }
+.cmp-table th { position: sticky; top: 0; background: var(--card); text-align: right; padding: 9px 6px; font-size: 0.58rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); z-index: 1; }
+.cmp-table th:first-child { text-align: left; }
+.cmp-table td { padding: 8px 6px; border-bottom: 1px solid var(--border-soft); text-align: right; }
+.cmp-table td:first-child { text-align: left; }
+.cmp-table td.up { color: var(--keiko); font-weight: 700; }
+.cmp-table td.down { color: var(--sanchez); font-weight: 700; }
+.cmp-table td.flat { color: var(--text-muted); }
+.cmp-table .pk { color: var(--keiko); font-weight: 700; }
+.cmp-table .ps { color: var(--sanchez); font-weight: 700; }
+.cmp-sub { font-size: 0.62rem; color: var(--text-muted); font-weight: 500; }
+.cmp-dep { color: var(--text-muted); font-size: 0.68rem; }
+.flip-badge { display: inline-block; padding: 2px 7px; border-radius: 99px; font-size: 0.6rem; font-weight: 800; }
+.flip-badge.fb-cak { background: var(--keiko); color: white; }
+.flip-badge.fb-kac { background: var(--sanchez); color: white; }
+.flip-badge.fb-none { color: var(--text-muted); }
+
+/* ============================================================
    FOOTER + SYNC
    ============================================================ */
 .footer { font-size: 0.7rem; color: var(--text-muted); padding: 16px 8px 8px; text-align: center; line-height: 1.6; }
@@ -487,6 +525,9 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
     </button>
     <button class="subnav-btn" data-view="tendencia" onclick="switchView('tendencia')">
       <span class="snb-icon">📈</span><span class="snb-label">Tendencia</span>
+    </button>
+    <button class="subnav-btn" data-view="comparativo" onclick="switchView('comparativo')">
+      <span class="snb-icon">🔀</span><span class="snb-label">2021 vs Hoy</span>
     </button>
     <button class="subnav-btn" data-view="tecnico" onclick="switchView('tecnico')">
       <span class="snb-icon">🔬</span><span class="snb-label">Técnico</span>
@@ -644,9 +685,11 @@ function drawSegundaVuelta() {
   if (view === 'resumen')   html = renderResumenView(sv);
   else if (view === 'mapa') html = renderMapaView(sv);
   else if (view === 'tendencia') html = renderTendenciaView(sv);
+  else if (view === 'comparativo') html = renderComparativoView(sv);
   else if (view === 'tecnico') html = renderTecnicoView(sv);
   container.innerHTML = html;
   if (view === 'mapa') initMapaInteractions(sv);
+  if (view === 'comparativo') initComparativo(sv);
 }
 
 window._svSetScenario = function(sc) {
@@ -912,6 +955,164 @@ async function initMapaInteractions(sv) {
     el.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
   });
 }
+
+// VISTA — COMPARATIVO 2021 vs HOY
+const CMP_SCENS = ['MAS_PROBABLE', 'MOMENTUM', 'ENCUESTAS'];
+const CMP_SCEN_LABEL = { MAS_PROBABLE: '⭐ Más probable', MOMENTUM: '🚀 Momentum', ENCUESTAS: '📊 Encuestas' };
+const CONTINENTES_EXT = new Set(['AFRICA', 'AMERICA', 'ASIA', 'EUROPA', 'OCEANIA']);
+
+function renderComparativoView(sv) {
+  const cmp = sv.comparativo_2021;
+  if (!cmp) return '<div class="card"><div class="card-foot">Comparativo 2021 no disponible — re-buildea el modelo.</div></div>';
+  let scen = window._svActiveScenario;
+  if (!CMP_SCENS.includes(scen)) scen = 'MAS_PROBABLE';
+  const cf = cmp.contrafactual[scen];
+  const n21 = cmp.nacional_2021_oficial;
+  const ext = cmp.voto_extranjero_2021;
+  const ganaK = cf.ganador === 'KEIKO';
+  const picker = CMP_SCENS.map(s => `<button class="sb ${s === scen ? 'on' : ''}" onclick="window._svSetScenario('${s}')">${CMP_SCEN_LABEL[s]}</button>`).join('');
+
+  return `
+    <div class="card">
+      <div class="card-title">🔀 2021 vs Hoy — ¿qué debe cambiar para que Keiko gane?</div>
+      <div class="card-sub">Tomamos el resultado REAL de 2021 (Castillo vs Keiko) por distrito y le aplicamos las preferencias proyectadas de hoy, manteniendo el mismo padrón/turnout de cada distrito. Así ves cuánto se movió el voto y si alcanza para voltear el resultado.</div>
+      <div class="scenario-picker">${picker}</div>
+
+      <div class="cmp-nat">
+        <div class="cmp-natcard">
+          <div class="cmp-nl">2021 · Resultado real oficial</div>
+          <div class="cmp-nwin sanchez">Ganó Castillo</div>
+          <div class="cmp-nbar"><div style="width:${n21.pct_K}%;background:var(--keiko)"></div><div style="width:${n21.pct_C}%;background:var(--sanchez)"></div></div>
+          <div class="cmp-nrow"><span class="pk" style="color:var(--keiko)">Keiko ${n21.pct_K}%</span><span class="ps" style="color:var(--sanchez)">Castillo ${n21.pct_C}%</span></div>
+          <div class="cmp-nmargin neg">Castillo +${fmt(Math.abs(n21.margen))} votos</div>
+        </div>
+        <div class="cmp-natcard ${ganaK ? 'win-k' : 'win-s'}">
+          <div class="cmp-nl">Hoy · Si 2021 se repite con preferencias actuales (${CMP_SCEN_LABEL[scen].replace(/^.. /, '')})</div>
+          <div class="cmp-nwin ${ganaK ? 'keiko' : 'sanchez'}">${ganaK ? 'Gana Keiko' : 'Gana Sánchez'}</div>
+          <div class="cmp-nbar"><div style="width:${cf.pct_keiko}%;background:var(--keiko)"></div><div style="width:${cf.pct_sanchez}%;background:var(--sanchez)"></div></div>
+          <div class="cmp-nrow"><span class="pk" style="color:var(--keiko)">Keiko ${cf.pct_keiko}%</span><span class="ps" style="color:var(--sanchez)">Sánchez ${cf.pct_sanchez}%</span></div>
+          <div class="cmp-nmargin ${ganaK ? 'pos' : 'neg'}">${ganaK ? 'Keiko' : 'Sánchez'} ${cf.margen_votos > 0 ? '+' : ''}${fmt(cf.margen_votos)} votos</div>
+        </div>
+      </div>
+
+      <div class="cmp-swing">
+        <div><b style="color:var(--keiko)">${cf.distritos_volteados_C_a_K}</b> distritos voltean <span style="color:var(--sanchez)">Castillo</span> → <span style="color:var(--keiko)">Keiko</span></div>
+        <div><b style="color:var(--sanchez)">${cf.distritos_volteados_K_a_C}</b> voltean <span style="color:var(--keiko)">Keiko</span> → <span style="color:var(--sanchez)">Sánchez</span></div>
+      </div>
+      <div class="card-foot">Cobertura: ${cf.cobertura_pct}% del voto válido (${fmt(cf.n_distritos_proyectados)} distritos proyectados) + voto extranjero mantenido de 2021 (Keiko +${fmt(ext.margen)}). ${cmp.meta.calibrado ? 'Conteos 2021 calibrados al cómputo oficial 100% (margen real Castillo +44,263).' : 'Conteos 2021 oficiales ONPE 100%.'}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Distrito por distrito — monitor de swing</div>
+      <div class="card-sub"><b>Δpp</b> = cuánto subió/bajó el % de Keiko vs 2021. <b>Δvotos</b> = cuántos votos representa ese cambio sobre el padrón 2021 de ese distrito. Ordena por impacto, busca un distrito o filtra por departamento.</div>
+      <div class="cmp-controls">
+        <input id="cmpSearch" class="cmp-search" type="text" placeholder="🔎 Buscar distrito o provincia…" oninput="window._cmpRender()">
+        <select id="cmpDep" class="cmp-sel" onchange="window._cmpRender()"><option value="">Todos los departamentos</option></select>
+        <select id="cmpSort" class="cmp-sel" onchange="window._cmpRender()">
+          <option value="dvotos">Orden: Δvotos (impacto)</option>
+          <option value="dpp">Orden: Δpp</option>
+          <option value="flip">Orden: volteos primero</option>
+          <option value="val">Orden: tamaño del distrito</option>
+        </select>
+      </div>
+      <div id="cmpTableWrap" class="cmp-scroll"><div class="card-foot">Cargando baseline 2021…</div></div>
+    </div>
+  `;
+}
+
+async function ensureBaseline2021() {
+  if (window._baseline2021) return window._baseline2021;
+  try {
+    const res = await fetch('baseline_2021_2v.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    window._baseline2021 = await res.json();
+    return window._baseline2021;
+  } catch (e) {
+    console.error('baseline_2021_2v.json fetch falló:', e);
+    return null;
+  }
+}
+
+async function initComparativo(sv) {
+  const wrap = document.getElementById('cmpTableWrap');
+  if (!wrap) return;
+  const base = await ensureBaseline2021();
+  if (!base) { wrap.innerHTML = '<div class="card-foot">⚠️ No se pudo cargar baseline_2021_2v.json.</div>'; return; }
+  let scen = window._svActiveScenario;
+  if (!CMP_SCENS.includes(scen)) scen = 'MAS_PROBABLE';
+  const d26 = new Map((sv.escenarios[scen].distritos || []).map(d => [String(d.ubigeo), d]));
+
+  const rows = [];
+  for (const b of base.distritos) {
+    if (CONTINENTES_EXT.has(b.departamento)) continue;
+    const m = d26.get(String(b.ubigeo));
+    if (!m) continue;
+    const k21 = b.pct_K, k26 = m.pct_keiko;
+    const dpp = +(k26 - k21).toFixed(2);
+    const dvotos = Math.round(dpp / 100 * b.validos);
+    const g26 = k26 >= 50 ? 'K' : 'S';
+    // 'C' (Castillo 2021) y 'S' (Sánchez 2026) son el MISMO polo anti-Keiko.
+    // Solo es volteo si cambia el bando Keiko vs anti-Keiko.
+    const won21K = b.ganador === 'K';
+    const won26K = g26 === 'K';
+    rows.push({
+      dist: b.distrito, prov: b.provincia, dep: b.departamento,
+      k21, vk21: b.votos_K, val: b.validos, g21: b.ganador,
+      k26, dpp, dvotos, g26,
+      flip: won21K === won26K ? 0 : (won26K ? 1 : -1),
+    });
+  }
+  window._cmpRows = rows;
+
+  const depSel = document.getElementById('cmpDep');
+  if (depSel && depSel.options.length <= 1) {
+    [...new Set(rows.map(r => r.dep))].sort().forEach(dep => {
+      const o = document.createElement('option');
+      o.value = dep; o.textContent = titleCase(dep);
+      depSel.appendChild(o);
+    });
+  }
+  window._cmpRender();
+}
+
+window._cmpRender = function () {
+  const wrap = document.getElementById('cmpTableWrap');
+  if (!wrap) return;
+  const rows = window._cmpRows || [];
+  const q = (document.getElementById('cmpSearch')?.value || '').toLowerCase().trim();
+  const dep = document.getElementById('cmpDep')?.value || '';
+  const sort = document.getElementById('cmpSort')?.value || 'dvotos';
+  let f = rows;
+  if (dep) f = f.filter(r => r.dep === dep);
+  if (q) f = f.filter(r => r.dist.toLowerCase().includes(q) || r.prov.toLowerCase().includes(q) || r.dep.toLowerCase().includes(q));
+  if (sort === 'dvotos') f = [...f].sort((a, b) => b.dvotos - a.dvotos);
+  else if (sort === 'dpp') f = [...f].sort((a, b) => b.dpp - a.dpp);
+  else if (sort === 'flip') f = [...f].sort((a, b) => b.flip - a.flip || b.dvotos - a.dvotos);
+  else if (sort === 'val') f = [...f].sort((a, b) => b.val - a.val);
+
+  const CAP = 300;
+  const show = f.slice(0, CAP);
+  const fb = r => r.flip === 1 ? '<span class="flip-badge fb-cak">C→K</span>' : r.flip === -1 ? '<span class="flip-badge fb-kac">K→S</span>' : '<span class="flip-badge fb-none">—</span>';
+  wrap.innerHTML = `
+    <div class="card-foot" style="margin:0 0 8px">Mostrando ${fmt(Math.min(CAP, f.length))} de ${fmt(f.length)} distritos${f.length > CAP ? ' (afina con búsqueda/filtro)' : ''}.</div>
+    <table class="cmp-table">
+      <thead><tr><th>Distrito</th><th>Depto</th><th>K 2021</th><th>K hoy</th><th>Δpp</th><th>Δvotos</th><th>2021→hoy</th></tr></thead>
+      <tbody>
+        ${show.map(r => `
+          <tr>
+            <td><b>${titleCase(r.dist)}</b><div class="cmp-sub">${titleCase(r.prov)}</div></td>
+            <td class="cmp-dep">${titleCase(r.dep)}</td>
+            <td>${r.k21.toFixed(1)}%<div class="cmp-sub">${fmt(r.vk21)} v</div></td>
+            <td class="${r.k26 >= 50 ? 'pk' : 'ps'}">${r.k26.toFixed(1)}%</td>
+            <td class="${r.dpp > 0 ? 'up' : r.dpp < 0 ? 'down' : 'flat'}">${r.dpp > 0 ? '+' : ''}${r.dpp.toFixed(1)}</td>
+            <td class="${r.dvotos > 0 ? 'up' : r.dvotos < 0 ? 'down' : 'flat'}">${r.dvotos > 0 ? '+' : ''}${fmt(r.dvotos)}</td>
+            <td>${fb(r)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+};
 
 // VISTA 3 — TENDENCIA
 function renderTendenciaView(sv) {
