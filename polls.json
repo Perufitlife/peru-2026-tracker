@@ -169,6 +169,60 @@
         }
       },
       "url": "https://rpp.pe/politica/elecciones/keiko-fujimori-vs-roberto-sanchez-asi-va-la-intencion-de-voto-presidencial-a-18-dias-de-la-segunda-vuelta-segun-ipsos-noticia-1689251"
+    },
+    {
+      "pollster": "DATUM",
+      "client": "América Multimedia",
+      "fecha_campo": [
+        "2026-05-17",
+        "2026-05-20"
+      ],
+      "fecha_publicacion": "2026-05-22",
+      "n": 1200,
+      "error_pp": 2.8,
+      "tipo": "nacional",
+      "resultados": {
+        "nacional": {
+          "k": 39.5,
+          "s": 36.1,
+          "blanco_nulo": 15.9,
+          "indeciso": 8.5
+        },
+        "macrozonas": {
+          "lima_callao": {
+            "k": 48.8,
+            "s": 25.6,
+            "blanco_nulo": 15.4,
+            "indeciso": 10.2
+          },
+          "norte": {
+            "k": 41.1,
+            "s": 36.4,
+            "blanco_nulo": 17.2,
+            "indeciso": 5.3
+          },
+          "centro": {
+            "k": 30.1,
+            "s": 47.3,
+            "blanco_nulo": 15.1,
+            "indeciso": 7.5
+          },
+          "sur": {
+            "k": 27.9,
+            "s": 44.7,
+            "blanco_nulo": 16.8,
+            "indeciso": 10.6
+          },
+          "oriente": {
+            "k": 33,
+            "s": 45.2,
+            "blanco_nulo": 13.9,
+            "indeciso": 7.9
+          }
+        }
+      },
+      "url": "https://larepublica.pe/politica/2026/05/22/segunda-vuelta-keiko-fujimori-con-395-y-roberto-sanchez-con-361-en-intencion-de-voto-segun-datum-hnews-1833502",
+      "id": "datum-2026-05-20"
     }
   ]
 }
