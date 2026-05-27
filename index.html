@@ -480,6 +480,19 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
 .flip-badge.fb-cak { background: var(--keiko); color: white; }
 .flip-badge.fb-kac { background: var(--sanchez); color: white; }
 .flip-badge.fb-none { color: var(--text-muted); }
+.biz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; margin-top: 12px; }
+.biz-card { background: var(--card-soft); border-radius: 10px; padding: 10px 12px; border-left: 3px solid var(--border); }
+.biz-card.biz-k { border-left-color: var(--keiko); }
+.biz-card.biz-s { border-left-color: var(--sanchez); }
+.biz-name { font-size: 0.8rem; font-weight: 800; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.biz-dep { font-size: 0.58rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.biz-pct { font-size: 1.15rem; font-weight: 800; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.biz-pct.pk { color: var(--keiko); }
+.biz-pct.ps { color: var(--sanchez); }
+.biz-d { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); margin-left: 4px; }
+.biz-foot { font-size: 0.62rem; color: var(--text-muted); margin-top: 5px; font-variant-numeric: tabular-nums; }
+.cmp-table tr.biz-row td { background: rgba(249, 115, 22, 0.07); }
+.cmp-table tr.biz-row td:first-child { box-shadow: inset 3px 0 0 var(--keiko); }
 
 /* ============================================================
    FOOTER + SYNC
@@ -1002,6 +1015,8 @@ function renderComparativoView(sv) {
       <div class="card-foot">Cobertura: ${cf.cobertura_pct}% del voto válido (${fmt(cf.n_distritos_proyectados)} distritos proyectados) + voto extranjero mantenido de 2021 (Keiko +${fmt(ext.margen)}). ${cmp.meta.calibrado ? 'Conteos 2021 calibrados al cómputo oficial 100% (margen real Castillo +44,263).' : 'Conteos 2021 oficiales ONPE 100%.'}</div>
     </div>
 
+    <div id="cmpBisagra"></div>
+
     <div class="card">
       <div class="card-title">📋 Distrito por distrito — monitor de swing</div>
       <div class="card-sub"><b>Δpp</b> = cuánto subió/bajó el % de Keiko vs 2021. <b>Δvotos</b> = cuántos votos representa ese cambio sobre el padrón 2021 de ese distrito. Ordena por impacto, busca un distrito o filtra por departamento.</div>
@@ -1011,6 +1026,7 @@ function renderComparativoView(sv) {
         <select id="cmpSort" class="cmp-sel" onchange="window._cmpRender()">
           <option value="dvotos">Orden: Δvotos (impacto)</option>
           <option value="dpp">Orden: Δpp</option>
+          <option value="bisagra">Orden: bisagra (más cerrados)</option>
           <option value="flip">Orden: volteos primero</option>
           <option value="val">Orden: tamaño del distrito</option>
         </select>
@@ -1072,7 +1088,38 @@ async function initComparativo(sv) {
       depSel.appendChild(o);
     });
   }
+  renderCmpBisagra();
   window._cmpRender();
+}
+
+// Watchlist de distritos bisagra (Keiko hoy entre 45-55% → un swing chico cambia el ganador)
+function renderCmpBisagra() {
+  const el = document.getElementById('cmpBisagra');
+  if (!el) return;
+  const rows = window._cmpRows || [];
+  const biz = rows.filter(r => Math.abs(r.k26 - 50) <= 5).sort((a, b) => b.val - a.val);
+  const totalVal = biz.reduce((a, r) => a + r.val, 0);
+  const top = biz.slice(0, 12);
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">🎯 Distritos bisagra — los que definen</div>
+      <div class="card-sub">Keiko hoy entre 45% y 55%: un swing chico cambia al ganador. <b>${biz.length}</b> distritos en zona bisagra · <b>${fmt(totalVal)}</b> votos válidos en juego. Estos son los que hay que vigilar cuando salga una encuesta. Top 12 por tamaño:</div>
+      <div class="biz-grid">
+        ${top.map(r => {
+          const kWins = r.k26 >= 50;
+          const dist = Math.abs(r.k26 - 50).toFixed(1);
+          return `
+          <div class="biz-card ${kWins ? 'biz-k' : 'biz-s'}">
+            <div class="biz-name">${titleCase(r.dist)}<span class="biz-dep">${titleCase(r.dep)}</span></div>
+            <div class="biz-pct ${kWins ? 'pk' : 'ps'}">${r.k26.toFixed(1)}%
+              <span class="biz-d">${kWins ? `Keiko +${dist}pp` : `objetivo · a ${dist}pp`}</span>
+            </div>
+            <div class="biz-foot">2021: ${r.g21 === 'K' ? 'Keiko' : 'Castillo'} ${r.k21.toFixed(0)}% → hoy ${r.k26.toFixed(0)}% · ${fmt(r.val)} votos</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
 }
 
 window._cmpRender = function () {
@@ -1087,6 +1134,7 @@ window._cmpRender = function () {
   if (q) f = f.filter(r => r.dist.toLowerCase().includes(q) || r.prov.toLowerCase().includes(q) || r.dep.toLowerCase().includes(q));
   if (sort === 'dvotos') f = [...f].sort((a, b) => b.dvotos - a.dvotos);
   else if (sort === 'dpp') f = [...f].sort((a, b) => b.dpp - a.dpp);
+  else if (sort === 'bisagra') f = [...f].sort((a, b) => Math.abs(a.k26 - 50) - Math.abs(b.k26 - 50));
   else if (sort === 'flip') f = [...f].sort((a, b) => b.flip - a.flip || b.dvotos - a.dvotos);
   else if (sort === 'val') f = [...f].sort((a, b) => b.val - a.val);
 
@@ -1099,7 +1147,7 @@ window._cmpRender = function () {
       <thead><tr><th>Distrito</th><th>Depto</th><th>K 2021</th><th>K hoy</th><th>Δpp</th><th>Δvotos</th><th>2021→hoy</th></tr></thead>
       <tbody>
         ${show.map(r => `
-          <tr>
+          <tr class="${Math.abs(r.k26 - 50) <= 5 ? 'biz-row' : ''}">
             <td><b>${titleCase(r.dist)}</b><div class="cmp-sub">${titleCase(r.prov)}</div></td>
             <td class="cmp-dep">${titleCase(r.dep)}</td>
             <td>${r.k21.toFixed(1)}%<div class="cmp-sub">${fmt(r.vk21)} v</div></td>
