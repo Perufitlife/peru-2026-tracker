@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-05-28T05:27:46.454Z",
+    "generated_at": "2026-05-28T05:37:42.752Z",
     "granularidad": "distrito (1,892 unidades)",
     "fuentes_encuestas": {
       "ipsos_abr_23_24": {
@@ -254637,9 +254637,9 @@
           "prob_sanchez_gana": 0.26,
           "prob_residual": 0.0145,
           "pct_k_implied": 50.9,
-          "volumen_usd": 20331210,
-          "volumen_24h_usd": 58167,
-          "fetched_at": "2026-05-28T05:27:46.308Z",
+          "volumen_usd": 20331268,
+          "volumen_24h_usd": 56784,
+          "fetched_at": "2026-05-28T05:37:42.608Z",
           "url": "https://polymarket.com/event/peru-presidential-election-winner"
         },
         "justificacion": "Blend 3-way ponderado: 30% modelo distrital (RMSE 11pp pero captura tendencias estructurales); 45% encuestas IEP/IPSOS (±2.8pp pero metodología validada); 25% Polymarket (smart money $53M apostado, free of polling biases)."
@@ -303563,7 +303563,7 @@
   },
   "polls_timeseries": {
     "meta": {
-      "generated_at": "2026-05-28T05:27:46.451Z",
+      "generated_at": "2026-05-28T05:37:42.749Z",
       "n_polls": 4,
       "dia_eleccion": "2026-06-07"
     },
@@ -303908,8 +303908,8 @@
           "id": "iep-2026-04-25",
           "pollster": "IEP",
           "n": 1207,
-          "dias": 35.227620960648146,
-          "peso": 97.47876710943818,
+          "dias": 35.2345225462963,
+          "peso": 97.4307248049795,
           "k": 31,
           "s": 32,
           "peso_norm": 0.074
@@ -303918,8 +303918,8 @@
           "id": "ipsos-2026-04-24",
           "pollster": "IPSOS",
           "n": 1210,
-          "dias": 34.727620960648146,
-          "peso": 101.27415893183644,
+          "dias": 34.7345225462963,
+          "peso": 101.22424607264182,
           "k": 38,
           "s": 38,
           "peso_norm": 0.077
@@ -303928,8 +303928,8 @@
           "id": "ipsos-2026-05-17",
           "pollster": "IPSOS",
           "n": 1210,
-          "dias": 11.727620960648148,
-          "peso": 523.5792622274616,
+          "dias": 11.734522546296295,
+          "peso": 523.3212167569446,
           "k": 39,
           "s": 35,
           "peso_norm": 0.396
@@ -303938,8 +303938,8 @@
           "id": "datum-2026-05-20",
           "pollster": "DATUM",
           "n": 1200,
-          "dias": 9.727620960648148,
-          "peso": 598.9911163225845,
+          "dias": 9.734522546296295,
+          "peso": 598.6959042017121,
           "k": 39.5,
           "s": 36.1,
           "peso_norm": 0.453
@@ -304017,15 +304017,15 @@
     "n_sims": 5000,
     "mediana_pct_keiko": 51.62,
     "mediana_pct_sanchez": 48.38,
-    "prob_keiko_gana": 77,
-    "prob_sanchez_gana": 23,
+    "prob_keiko_gana": 77.4,
+    "prob_sanchez_gana": 22.6,
     "ci80_keiko": [
-      48.84,
-      54.47
+      48.88,
+      54.38
     ],
     "ci95_keiko": [
-      47.45,
-      55.85
+      47.38,
+      55.95
     ],
     "parametros": {
       "blend_modelo_propio": {
