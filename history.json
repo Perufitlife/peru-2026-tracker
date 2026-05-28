@@ -6786,7 +6786,7 @@
     }
   },
   {
-    "t": "2026-05-28T08:07:44.554Z",
+    "t": "2026-05-28T08:27:48.047Z",
     "pct": 100,
     "vS": 2015114,
     "vL": 1993905,
@@ -6798,16 +6798,16 @@
       "nacAct": 92766,
       "nacJee": 0,
       "nacPend": 0,
-      "sumDeptCont": 92766,
+      "sumDeptCont": 91202,
       "sumDeptJee": 0,
       "sumDeptPend": 0,
-      "sumDistCont": 92450,
+      "sumDistCont": 80982,
       "sumDistJee": 0,
       "sumDistPend": 0,
-      "deptDriftCont": 0,
+      "deptDriftCont": -1564,
       "deptDriftJee": 0,
       "deptDriftPend": 0,
-      "distDriftCont": -316,
+      "distDriftCont": -11784,
       "distDriftJee": 0,
       "distDriftPend": 0
     },
@@ -6931,11 +6931,6 @@
         "pct": 100,
         "vS": 7748,
         "vL": 6556
-      },
-      "UCAYALI": {
-        "pct": 100,
-        "vS": 29038,
-        "vL": 12894
       },
       "EXTRANJERO": {
         "pct": 100,
