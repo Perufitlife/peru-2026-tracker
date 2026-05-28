@@ -495,6 +495,70 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
 .cmp-table tr.biz-row td:first-child { box-shadow: inset 3px 0 0 var(--keiko); }
 
 /* ============================================================
+   TRACKER 7-JUN — TREE + LIVE INPUT
+   ============================================================ */
+.tr-nat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+.tr-natcard { background: var(--card-soft); border-radius: 12px; padding: 14px; border: 1px solid var(--border-soft); }
+.tr-natcard.live { border-color: var(--keiko); box-shadow: 0 0 0 1px var(--keiko) inset; }
+.tr-nl { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; min-height: 1.6em; }
+.tr-nv { font-size: 1.05rem; font-weight: 800; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+.tr-nv.k { color: var(--keiko); }
+.tr-nv.s { color: var(--sanchez); }
+.tr-nsub { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.tr-controls { display: flex; gap: 8px; margin: 4px 0 14px; align-items: center; flex-wrap: wrap; }
+.tr-progress { font-size: 0.74rem; color: var(--text-muted); flex: 1; }
+.tr-progress b { color: var(--text); }
+.tr-btn { background: var(--card-soft); border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px; font-size: 0.7rem; font-weight: 700; color: var(--text); cursor: pointer; font-family: inherit; }
+.tr-btn:hover { background: var(--card); }
+.tr-btn.danger { color: var(--sanchez); border-color: var(--sanchez); }
+.tr-tree { display: flex; flex-direction: column; gap: 8px; }
+.tr-dep { background: var(--card-soft); border-radius: 10px; border-left: 3px solid var(--border); }
+.tr-dep.gain-k { border-left-color: var(--keiko); }
+.tr-dep.gain-s { border-left-color: var(--sanchez); }
+.tr-dep-head { display: grid; grid-template-columns: 22px 1.5fr 0.9fr 0.9fr 80px; gap: 8px; padding: 11px 12px; align-items: center; cursor: pointer; user-select: none; }
+.tr-dep-head:hover { background: var(--card); }
+.tr-caret { font-size: 0.7rem; color: var(--text-muted); transition: transform 0.15s; display: inline-block; }
+.tr-dep.open > .tr-dep-head .tr-caret { transform: rotate(90deg); }
+.tr-prov.open > .tr-prov-head .tr-caret { transform: rotate(90deg); }
+.tr-dep-name { font-weight: 800; font-size: 0.84rem; }
+.tr-dep-sub { font-size: 0.6rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+.tr-cell { font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+.tr-cell .lbl { font-size: 0.55rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; display: block; }
+.tr-cell .val { font-weight: 700; }
+.tr-delta { font-size: 0.7rem; font-weight: 800; padding: 4px 8px; border-radius: 99px; text-align: center; }
+.tr-delta.up { background: var(--keiko); color: white; }
+.tr-delta.down { background: var(--sanchez); color: white; }
+.tr-delta.flat { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.tr-dep-body { display: none; padding: 0 12px 10px 36px; }
+.tr-dep.open > .tr-dep-body { display: block; }
+.tr-prov { margin-top: 6px; background: var(--card); border-radius: 8px; }
+.tr-prov-head { display: grid; grid-template-columns: 20px 1.5fr 0.9fr 0.9fr 80px; gap: 8px; padding: 8px 10px; align-items: center; cursor: pointer; user-select: none; }
+.tr-prov-head:hover { background: var(--card-soft); }
+.tr-prov-name { font-weight: 700; font-size: 0.76rem; }
+.tr-prov-body { display: none; padding: 4px 10px 10px 26px; }
+.tr-prov.open > .tr-prov-body { display: block; }
+.tr-dist { display: grid; grid-template-columns: 1.4fr 1.2fr 100px 70px; gap: 8px; padding: 7px 0; align-items: center; border-bottom: 1px solid var(--border-soft); font-size: 0.72rem; }
+.tr-dist:last-child { border-bottom: none; }
+.tr-dist-name { font-weight: 700; }
+.tr-dist-name .sub { font-size: 0.58rem; color: var(--text-muted); font-weight: 500; margin-top: 1px; }
+.tr-dist-2021 { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.tr-dist-2021 b { color: var(--text); }
+.tr-input { background: var(--card-soft); border: 1px solid var(--border); border-radius: 6px; padding: 5px 7px; font-size: 0.74rem; font-weight: 700; width: 92px; text-align: right; color: var(--text); font-family: inherit; font-variant-numeric: tabular-nums; }
+.tr-input.set { border-color: var(--keiko); background: rgba(249,115,22,0.06); }
+.tr-input::placeholder { color: var(--text-muted); font-weight: 500; }
+.tr-dist-d { font-size: 0.72rem; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.tr-dist-d.up { color: var(--keiko); }
+.tr-dist-d.down { color: var(--sanchez); }
+.tr-dist-d.flat { color: var(--text-muted); font-weight: 600; }
+@media (max-width: 640px) {
+  .tr-nat { grid-template-columns: 1fr; }
+  .tr-dep-head, .tr-prov-head { grid-template-columns: 20px 1fr auto; }
+  .tr-dep-head .tr-cell, .tr-prov-head .tr-cell { display: none; }
+  .tr-dist { grid-template-columns: 1fr 90px 60px; }
+  .tr-dist-2021 { display: none; }
+}
+
+/* ============================================================
    FOOTER + SYNC
    ============================================================ */
 .footer { font-size: 0.7rem; color: var(--text-muted); padding: 16px 8px 8px; text-align: center; line-height: 1.6; }
@@ -541,6 +605,9 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
     </button>
     <button class="subnav-btn" data-view="comparativo" onclick="switchView('comparativo')">
       <span class="snb-icon">🔀</span><span class="snb-label">2021 vs Hoy</span>
+    </button>
+    <button class="subnav-btn" data-view="tracker" onclick="switchView('tracker')">
+      <span class="snb-icon">🗳️</span><span class="snb-label">Tracker 7-Jun</span>
     </button>
     <button class="subnav-btn" data-view="tecnico" onclick="switchView('tecnico')">
       <span class="snb-icon">🔬</span><span class="snb-label">Técnico</span>
@@ -699,10 +766,12 @@ function drawSegundaVuelta() {
   else if (view === 'mapa') html = renderMapaView(sv);
   else if (view === 'tendencia') html = renderTendenciaView(sv);
   else if (view === 'comparativo') html = renderComparativoView(sv);
+  else if (view === 'tracker') html = renderTrackerView(sv);
   else if (view === 'tecnico') html = renderTecnicoView(sv);
   container.innerHTML = html;
   if (view === 'mapa') initMapaInteractions(sv);
   if (view === 'comparativo') initComparativo(sv);
+  if (view === 'tracker') initTracker(sv);
 }
 
 window._svSetScenario = function(sc) {
@@ -1160,6 +1229,276 @@ window._cmpRender = function () {
       </tbody>
     </table>
   `;
+};
+
+// VISTA — TRACKER 7-JUN (conteo en vivo vs 2021, interactivo)
+const TR_STORAGE_KEY = 'onpe_tracker_inputs_v1';
+const TR_CONTINENTES = new Set(['AFRICA', 'AMERICA', 'ASIA', 'EUROPA', 'OCEANIA']);
+
+function trGetInputs() {
+  try { return JSON.parse(localStorage.getItem(TR_STORAGE_KEY) || '{}'); } catch { return {}; }
+}
+function trSetInputs(v) {
+  try { localStorage.setItem(TR_STORAGE_KEY, JSON.stringify(v)); } catch {}
+}
+function trCssEsc(s) { return (s || '').replace(/"/g, '\\"'); }
+
+function renderTrackerView(sv) {
+  return `
+    <div class="card">
+      <div class="card-title">🗳️ Tracker 7-Jun — Conteo en vivo vs 2021</div>
+      <div class="card-sub">Estructura completa <b>Depto → Provincia → Distrito</b> con el resultado real 2021 (Keiko vs Castillo). Conforme ONPE libere resultados el día de la elección, ingresa el % de Keiko de cada distrito en su input — el tablero compara automáticamente contra 2021, calcula Δpp, y proyecta el nacional en vivo. Los distritos sin dato aún asumen el resultado 2021 (proyección refina conforme metes más). Tus entradas quedan guardadas en este navegador.</div>
+      <div id="trNat" class="tr-nat"></div>
+      <div class="tr-controls">
+        <span class="tr-progress" id="trProgress">Cargando…</span>
+        <button class="tr-btn" onclick="window._trExpandTop()">▶ Abrir top 5 deptos</button>
+        <button class="tr-btn danger" onclick="window._trReset()">↺ Borrar mis datos</button>
+      </div>
+      <div id="trTree" class="tr-tree"><div class="card-foot">Cargando estructura 2021…</div></div>
+    </div>
+  `;
+}
+
+async function initTracker(sv) {
+  const treeEl = document.getElementById('trTree');
+  if (!treeEl) return;
+  const base = await ensureBaseline2021();
+  if (!base) { treeEl.innerHTML = '<div class="card-foot">⚠️ No se pudo cargar baseline 2021.</div>'; return; }
+
+  // Agrupa: depto → provincia → distritos (sorted by validos desc)
+  const tree = {};
+  for (const d of base.distritos) {
+    const dep = d.departamento;
+    if (!tree[dep]) tree[dep] = {};
+    if (!tree[dep][d.provincia]) tree[dep][d.provincia] = [];
+    tree[dep][d.provincia].push(d);
+  }
+  for (const dep of Object.keys(tree)) {
+    for (const prov of Object.keys(tree[dep])) {
+      tree[dep][prov].sort((a, b) => b.validos - a.validos);
+    }
+  }
+
+  // Orden deptos por válidos desc; foreign al final
+  const depAggs = Object.entries(tree).map(([dep, provs]) => {
+    let val = 0;
+    for (const ds of Object.values(provs)) for (const d of ds) val += d.validos;
+    return { dep, validos: val, isForeign: TR_CONTINENTES.has(dep) };
+  }).sort((a, b) => (a.isForeign - b.isForeign) || (b.validos - a.validos));
+
+  window._trTree = tree;
+  window._trDepOrder = depAggs.map(x => x.dep);
+
+  treeEl.innerHTML = depAggs.map(({ dep, isForeign }) => trRenderDepCard(dep, tree[dep], isForeign)).join('');
+  window._trRecompute();
+}
+
+function trRenderDepCard(dep, provs, isForeign) {
+  let distCount = 0;
+  for (const ds of Object.values(provs)) distCount += ds.length;
+  return `
+    <div class="tr-dep" data-dep="${trCssEsc(dep)}">
+      <div class="tr-dep-head" onclick="window._trToggleDep('${trCssEsc(dep)}')">
+        <span class="tr-caret">▶</span>
+        <div>
+          <div class="tr-dep-name">${titleCase(dep)}${isForeign ? ' <span class="tr-dep-sub" style="display:inline">(exterior)</span>' : ''}</div>
+          <div class="tr-dep-sub">${Object.keys(provs).length} prov · ${distCount} distritos</div>
+        </div>
+        <div class="tr-cell"><span class="lbl">2021 K</span><span class="val" data-cell="k21">—</span></div>
+        <div class="tr-cell"><span class="lbl">Live K</span><span class="val" data-cell="klive">—</span></div>
+        <div class="tr-delta flat" data-cell="delta">—</div>
+      </div>
+      <div class="tr-dep-body" data-body-rendered=""></div>
+    </div>
+  `;
+}
+
+window._trToggleDep = function (dep) {
+  const el = document.querySelector(`.tr-dep[data-dep="${CSS.escape(dep)}"]`);
+  if (!el) return;
+  const body = el.querySelector('.tr-dep-body');
+  const open = el.classList.toggle('open');
+  if (open && !body.dataset.bodyRendered) {
+    body.innerHTML = trRenderProvincias(dep, window._trTree[dep]);
+    body.dataset.bodyRendered = '1';
+    window._trRecompute();
+  }
+};
+
+function trRenderProvincias(dep, provs) {
+  const provEntries = Object.entries(provs).map(([prov, dists]) => {
+    const val = dists.reduce((a, d) => a + d.validos, 0);
+    return { prov, dists, val };
+  }).sort((a, b) => b.val - a.val);
+  return provEntries.map(({ prov, dists }) => `
+    <div class="tr-prov" data-dep="${trCssEsc(dep)}" data-prov="${trCssEsc(prov)}">
+      <div class="tr-prov-head" onclick="window._trToggleProv(this)">
+        <span class="tr-caret">▶</span>
+        <div>
+          <div class="tr-prov-name">${titleCase(prov)}</div>
+          <div class="tr-dep-sub">${dists.length} distritos</div>
+        </div>
+        <div class="tr-cell"><span class="lbl">2021 K</span><span class="val" data-cell="k21">—</span></div>
+        <div class="tr-cell"><span class="lbl">Live K</span><span class="val" data-cell="klive">—</span></div>
+        <div class="tr-delta flat" data-cell="delta">—</div>
+      </div>
+      <div class="tr-prov-body">${trRenderDistritos(dists)}</div>
+    </div>
+  `).join('');
+}
+
+window._trToggleProv = function (headEl) {
+  headEl.parentElement.classList.toggle('open');
+  window._trRecompute();
+};
+
+function trRenderDistritos(dists) {
+  const inputs = trGetInputs();
+  return dists.map(d => {
+    const cur = inputs[d.ubigeo];
+    return `
+    <div class="tr-dist" data-ubi="${d.ubigeo}">
+      <div class="tr-dist-name">${titleCase(d.distrito)}<div class="sub">${fmt(d.validos)} válidos 2021</div></div>
+      <div class="tr-dist-2021"><b>${d.pct_K.toFixed(1)}%</b> K · ${fmt(d.votos_K)} v · ${d.ganador === 'K' ? 'Keiko' : 'Castillo'} ganó</div>
+      <input class="tr-input ${cur != null ? 'set' : ''}" type="number" min="0" max="100" step="0.1" placeholder="K % hoy" value="${cur != null ? cur : ''}" oninput="window._trOnInput('${d.ubigeo}', this)">
+      <div class="tr-dist-d flat" data-cell="delta">—</div>
+    </div>`;
+  }).join('');
+}
+
+window._trOnInput = function (ubigeo, el) {
+  const v = el.value.trim();
+  const inputs = trGetInputs();
+  if (v === '' || isNaN(parseFloat(v))) {
+    delete inputs[ubigeo];
+    el.classList.remove('set');
+  } else {
+    inputs[ubigeo] = Math.max(0, Math.min(100, parseFloat(v)));
+    el.classList.add('set');
+  }
+  trSetInputs(inputs);
+  window._trRecompute();
+};
+
+window._trReset = function () {
+  if (!confirm('Borrar todos los % ingresados del tracker? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem(TR_STORAGE_KEY);
+  drawSegundaVuelta();
+};
+
+window._trExpandTop = function () {
+  (window._trDepOrder || []).slice(0, 5).forEach(dep => {
+    const el = document.querySelector(`.tr-dep[data-dep="${CSS.escape(dep)}"]`);
+    if (el && !el.classList.contains('open')) window._trToggleDep(dep);
+  });
+};
+
+window._trRecompute = function () {
+  const tree = window._trTree;
+  if (!tree) return;
+  const inputs = trGetInputs();
+  let natVK21 = 0, natVC21 = 0, natVKlive = 0, natVSlive = 0;
+  let distWithInput = 0, valWithInput = 0, totalDists = 0, totalVal = 0;
+
+  for (const dep of Object.keys(tree)) {
+    let depK21 = 0, depC21 = 0, depKlive = 0, depSlive = 0, depVal = 0;
+    for (const prov of Object.keys(tree[dep])) {
+      let pK21 = 0, pC21 = 0, pKlive = 0, pSlive = 0, pVal = 0;
+      for (const d of tree[dep][prov]) {
+        const has = inputs[d.ubigeo] != null;
+        const pctK_eff = has ? inputs[d.ubigeo] : d.pct_K;
+        // Cuando hay input usamos validos × pct/100; cuando no, los votos crudos 2021 (precisión exacta).
+        const vK_eff = has ? d.validos * pctK_eff / 100 : d.votos_K;
+        const vS_eff = has ? d.validos - vK_eff : d.votos_C;
+        pK21 += d.votos_K; pC21 += d.votos_C;
+        pKlive += vK_eff; pSlive += vS_eff;
+        pVal += d.validos;
+        totalDists++; totalVal += d.validos;
+        if (has) { distWithInput++; valWithInput += d.validos; }
+        // Celda Δpp del distrito (si está renderizada)
+        const distEl = document.querySelector(`.tr-dist[data-ubi="${d.ubigeo}"] [data-cell="delta"]`);
+        if (distEl) {
+          if (!has) { distEl.textContent = '—'; distEl.className = 'tr-dist-d flat'; }
+          else {
+            const dlt = pctK_eff - d.pct_K;
+            distEl.textContent = (dlt > 0 ? '+' : '') + dlt.toFixed(1) + 'pp';
+            distEl.className = 'tr-dist-d ' + (Math.abs(dlt) < 0.05 ? 'flat' : dlt > 0 ? 'up' : 'down');
+          }
+        }
+      }
+      depK21 += pK21; depC21 += pC21; depKlive += pKlive; depSlive += pSlive; depVal += pVal;
+      const provEl = document.querySelector(`.tr-prov[data-dep="${CSS.escape(dep)}"][data-prov="${CSS.escape(prov)}"]`);
+      if (provEl) {
+        const k21 = pK21 / pVal * 100;
+        const klive = pKlive / (pKlive + pSlive) * 100;
+        const delta = klive - k21;
+        const head = provEl.querySelector('.tr-prov-head');
+        if (head) {
+          head.querySelector('[data-cell="k21"]').textContent = k21.toFixed(1) + '%';
+          head.querySelector('[data-cell="klive"]').textContent = klive.toFixed(1) + '%';
+          const dc = head.querySelector('[data-cell="delta"]');
+          dc.textContent = (delta > 0 ? '+' : '') + delta.toFixed(1) + 'pp';
+          dc.className = 'tr-delta ' + (Math.abs(delta) < 0.1 ? 'flat' : delta > 0 ? 'up' : 'down');
+        }
+      }
+    }
+    natVK21 += depK21; natVC21 += depC21; natVKlive += depKlive; natVSlive += depSlive;
+    const depEl = document.querySelector(`.tr-dep[data-dep="${CSS.escape(dep)}"]`);
+    if (depEl) {
+      const k21 = depK21 / depVal * 100;
+      const klive = depKlive / (depKlive + depSlive) * 100;
+      const delta = klive - k21;
+      depEl.classList.remove('gain-k', 'gain-s');
+      if (Math.abs(delta) >= 0.5) depEl.classList.add(delta > 0 ? 'gain-k' : 'gain-s');
+      const head = depEl.querySelector('.tr-dep-head');
+      head.querySelector('[data-cell="k21"]').textContent = k21.toFixed(1) + '%';
+      head.querySelector('[data-cell="klive"]').textContent = klive.toFixed(1) + '%';
+      const dc = head.querySelector('[data-cell="delta"]');
+      dc.textContent = (delta > 0 ? '+' : '') + delta.toFixed(1) + 'pp';
+      dc.className = 'tr-delta ' + (Math.abs(delta) < 0.1 ? 'flat' : delta > 0 ? 'up' : 'down');
+    }
+  }
+
+  // Tarjetas nacionales
+  const natEl = document.getElementById('trNat');
+  if (natEl) {
+    const totLive = natVKlive + natVSlive;
+    const pctK_live = natVKlive / totLive * 100;
+    const pctS_live = 100 - pctK_live;
+    const pctK_21 = natVK21 / (natVK21 + natVC21) * 100;
+    const delta = pctK_live - pctK_21;
+    const ganaK = natVKlive > natVSlive;
+    const winPct = ganaK ? pctK_live : pctS_live;
+    const winMargin = Math.abs(natVKlive - natVSlive);
+    const noData = distWithInput === 0;
+    natEl.innerHTML = `
+      <div class="tr-natcard">
+        <div class="tr-nl">2021 · Real oficial</div>
+        <div class="tr-nv s">Castillo ganó · 50.13%</div>
+        <div class="tr-nsub">K 8,792,117 · C 8,836,380 · margen 44,263</div>
+      </div>
+      <div class="tr-natcard live">
+        <div class="tr-nl">Live · ${noData ? 'sin datos aún (replica 2021)' : `con ${distWithInput} distrito${distWithInput > 1 ? 's' : ''} ingresado${distWithInput > 1 ? 's' : ''}`}</div>
+        <div class="tr-nv ${ganaK ? 'k' : 's'}">${ganaK ? 'Keiko' : 'Sánchez'} ${winPct.toFixed(2)}%</div>
+        <div class="tr-nsub">K ${fmt(Math.round(natVKlive))} · S ${fmt(Math.round(natVSlive))} · margen ${fmt(Math.round(winMargin))}</div>
+      </div>
+      <div class="tr-natcard">
+        <div class="tr-nl">Δ Live vs 2021 (en pp de Keiko)</div>
+        <div class="tr-nv ${Math.abs(delta) < 0.01 ? 's' : delta > 0 ? 'k' : 's'}" style="${Math.abs(delta) < 0.01 ? 'color:var(--text-muted)' : ''}">${delta > 0 ? '+' : ''}${delta.toFixed(2)}pp</div>
+        <div class="tr-nsub">${noData ? 'Mete % de Keiko en cada distrito conforme ONPE libere' :
+          Math.abs(delta) < 0.05 ? 'Idéntico a 2021' :
+          delta > 0 && ganaK ? 'Keiko viene mejor · GANA' :
+          delta > 0 && !ganaK ? 'Keiko viene mejor pero aún pierde' :
+          delta < 0 && ganaK ? 'Keiko viene peor pero aún gana' :
+          'Keiko viene peor · pierde de nuevo'}</div>
+      </div>
+    `;
+  }
+  const prog = document.getElementById('trProgress');
+  if (prog) {
+    const pctCovered = totalVal ? valWithInput / totalVal * 100 : 0;
+    prog.innerHTML = `<b>${distWithInput}</b> de ${fmt(totalDists)} distritos con dato · <b>${pctCovered.toFixed(1)}%</b> del voto válido 2021 cubierto`;
+  }
 };
 
 // VISTA 3 — TENDENCIA

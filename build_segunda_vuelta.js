@@ -271,8 +271,8 @@ function correrEncuestas() {
         sanchez_proy: Math.round(sProy),
         abstencion_inducida: Math.round(abst),
         validos_proy: Math.round(validos),
-        pct_keiko: +(kProy / validos * 100).toFixed(2),
-        pct_sanchez: +(sProy / validos * 100).toFixed(2),
+        pct_keiko: validos > 0 ? +(kProy / validos * 100).toFixed(2) : 0,
+        pct_sanchez: validos > 0 ? +(sProy / validos * 100).toFixed(2) : 0,
         margen: Math.round(kProy - sProy),
         ganador: kProy > sProy ? "K" : "S",
         pct_castillo_1v_2021: d.pct_castillo_1v_2021,
@@ -460,10 +460,15 @@ const enc = correrEncuestas();
 // el titular. Se recalcula solo en cada build conforme entran encuestas nuevas.
 const TARGET_ENC_K = pollsAnalysis.anclaje_doble?.promedio_ponderado?.val_k;
 if (TARGET_ENC_K) {
-  const totVal = enc.distritos.reduce((a, d) => a + d.validos_proy, 0);
-  const curK = enc.distritos.reduce((a, d) => a + d.validos_proy * d.pct_keiko / 100, 0) / totVal * 100;
+  // Filtra distritos sin votos (ONPE puede traer distritos vacíos durante el conteo)
+  const isValidDist = d => Number.isFinite(d.validos_proy) && d.validos_proy > 0 && Number.isFinite(d.pct_keiko);
+  const totVal = enc.distritos.reduce((a, d) => isValidDist(d) ? a + d.validos_proy : a, 0);
+  const curK = totVal > 0
+    ? enc.distritos.reduce((a, d) => isValidDist(d) ? a + d.validos_proy * d.pct_keiko / 100 : a, 0) / totVal * 100
+    : 0;
   const SWING_ENC_PP = TARGET_ENC_K - curK;
   enc.distritos = enc.distritos.map(d => {
+    if (!isValidDist(d)) return d;  // distritos vacíos: dejarlos como están (no propagar NaN)
     const pct_K = Math.max(3, Math.min(97, d.pct_keiko + SWING_ENC_PP));
     const pct_S = 100 - pct_K;
     const k = Math.round(d.validos_proy * pct_K / 100);
