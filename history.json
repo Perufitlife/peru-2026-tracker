@@ -6786,7 +6786,7 @@
     }
   },
   {
-    "t": "2026-05-28T08:27:48.047Z",
+    "t": "2026-05-28T08:57:41.288Z",
     "pct": 100,
     "vS": 2015114,
     "vL": 1993905,
@@ -6801,13 +6801,13 @@
       "sumDeptCont": 91202,
       "sumDeptJee": 0,
       "sumDeptPend": 0,
-      "sumDistCont": 80982,
+      "sumDistCont": 88659,
       "sumDistJee": 0,
       "sumDistPend": 0,
       "deptDriftCont": -1564,
       "deptDriftJee": 0,
       "deptDriftPend": 0,
-      "distDriftCont": -11784,
+      "distDriftCont": -4107,
       "distDriftJee": 0,
       "distDriftPend": 0
     },
