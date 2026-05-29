@@ -559,6 +559,101 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
 }
 
 /* ============================================================
+   HOME — HERO 44K + SIMULADOR INTERACTIVO
+   ============================================================ */
+.home-hero { background: linear-gradient(135deg, #0F172A, #1E293B); color: white; border-radius: 16px; padding: 28px 22px; margin: 14px 0; box-shadow: var(--shadow-lg); }
+.home-hero-lbl { font-size: 0.62rem; font-weight: 800; color: rgba(255,255,255,0.78); text-transform: uppercase; letter-spacing: 0.6px; }
+.home-hero-big { font-size: 4.2rem; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; line-height: 1; margin: 10px 0 4px; background: linear-gradient(90deg, #FBBF24, #F97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.home-hero-sub { font-size: 0.86rem; line-height: 1.6; max-width: 520px; color: rgba(255,255,255,0.85); }
+.home-hero-sub b { color: white; font-weight: 800; }
+.home-hero-scale { display: flex; align-items: center; gap: 10px; margin-top: 18px; font-size: 0.66rem; color: rgba(255,255,255,0.55); font-weight: 600; }
+.home-hero-scale-bar { flex: 1; height: 16px; background: rgba(255,255,255,0.08); border-radius: 4px; position: relative; overflow: hidden; }
+.home-hero-scale-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0.25%; background: linear-gradient(90deg, #FBBF24, #F97316); min-width: 3px; }
+.home-hero-scale-pct { font-weight: 800; color: #FBBF24; }
+
+.sim-card { padding: 18px 16px 16px; }
+.sim-presets { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 16px; }
+.sim-preset { background: var(--card-soft); border: 1px solid var(--border); border-radius: 99px; padding: 10px 14px; font-size: 0.7rem; font-weight: 700; cursor: pointer; color: var(--text); font-family: inherit; transition: all 0.12s; min-height: 40px; display: inline-flex; align-items: center; }
+.sim-preset:hover { background: var(--card); border-color: var(--text-muted); }
+.sim-preset:focus-visible { outline: 2px solid var(--keiko); outline-offset: 2px; }
+.sim-preset.active { background: var(--text); color: white; border-color: var(--text); }
+.sim-slider { outline: none; }
+.sim-slider:focus-visible { box-shadow: 0 0 0 2px var(--keiko), 0 0 0 4px var(--card); border-radius: 4px; }
+.cta-buttons button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+.sim-header { display: grid; grid-template-columns: 1.6fr 60px 1fr 60px; gap: 10px; padding: 6px 4px 4px; font-size: 0.55rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); }
+.sim-header > div:nth-child(2), .sim-header > div:nth-child(4) { text-align: center; }
+.sim-header > div:nth-child(3) { text-align: center; }
+.sim-region { display: grid; grid-template-columns: 1.6fr 60px 1fr 60px; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border-soft); align-items: center; font-size: 0.74rem; }
+.sim-region:last-of-type { border-bottom: none; }
+.sim-region-name { font-weight: 700; }
+.sim-region-name .em { margin-right: 6px; font-size: 0.9rem; }
+.sim-region-sub { font-size: 0.58rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+.sim-region-base { color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: center; font-weight: 700; font-size: 0.72rem; }
+.sim-slider-wrap { display: flex; align-items: center; gap: 8px; }
+.sim-slider { flex: 1; height: 18px; -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
+.sim-slider::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(90deg, var(--sanchez) 0%, var(--border) 50%, var(--keiko) 100%); border-radius: 2px; }
+.sim-slider::-moz-range-track { height: 4px; background: linear-gradient(90deg, var(--sanchez) 0%, var(--border) 50%, var(--keiko) 100%); border-radius: 2px; }
+.sim-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: white; border: 2px solid var(--text); border-radius: 50%; margin-top: -6px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.sim-slider::-moz-range-thumb { width: 14px; height: 14px; background: white; border: 2px solid var(--text); border-radius: 50%; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.sim-current { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; min-width: 50px; font-size: 0.78rem; }
+.sim-current.up { color: var(--keiko); }
+.sim-current.down { color: var(--sanchez); }
+.sim-current.flat { color: var(--text-muted); }
+.sim-today { color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: center; font-weight: 700; font-size: 0.72rem; }
+.sim-today-sub { font-size: 0.55rem; color: var(--text-muted); font-weight: 500; margin-top: 1px; }
+.sim-foot { font-size: 0.66rem; color: var(--text-muted); margin-top: 12px; line-height: 1.5; }
+
+.sim-result { background: white; border-radius: 12px; padding: 16px; margin-top: 18px; border: 2px solid var(--border-soft); transition: border-color 0.15s; }
+.sim-result.k { border-color: var(--keiko); }
+.sim-result.s { border-color: var(--sanchez); }
+.sim-result-lbl { font-size: 0.58rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.sim-result-winner { font-size: 1.5rem; font-weight: 900; margin: 4px 0; }
+.sim-result-winner.k { color: var(--keiko); }
+.sim-result-winner.s { color: var(--sanchez); }
+.sim-result-bar { display: flex; height: 20px; border-radius: 6px; overflow: hidden; background: var(--border); margin: 10px 0; }
+.sim-result-bar > div { transition: width 0.2s; }
+.sim-result-sub { display: flex; justify-content: space-between; font-size: 0.74rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sim-result-sub .pk { color: var(--keiko); }
+.sim-result-sub .ps { color: var(--sanchez); }
+.sim-result-margin { font-size: 0.84rem; font-weight: 800; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.sim-result-margin .pk { color: var(--keiko); }
+.sim-result-margin .ps { color: var(--sanchez); }
+.sim-result-explain { font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+
+/* Encuestas mini */
+.ancla-card { background: linear-gradient(135deg, rgba(249,115,22,0.10), rgba(249,115,22,0.02)); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid var(--keiko); }
+.ancla-lbl { font-size: 0.58rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.ancla-big { font-size: 1.05rem; font-weight: 900; color: var(--text); margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+.ancla-sub { font-size: 0.72rem; color: var(--text-muted); }
+.ancla-sub b { color: var(--text); }
+.polls-mini { display: flex; flex-direction: column; gap: 0; }
+.polls-mini-head { display: grid; grid-template-columns: 1.4fr 60px 60px 80px; gap: 8px; padding: 8px 4px; font-size: 0.55rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); }
+.polls-mini-head > div:not(:first-child) { text-align: right; }
+.polls-mini-row { display: grid; grid-template-columns: 1.4fr 60px 60px 80px; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--border-soft); align-items: center; font-size: 0.74rem; font-variant-numeric: tabular-nums; }
+.polls-mini-row:last-child { border-bottom: none; }
+.polls-mini-name { font-weight: 700; }
+.polls-mini-date { font-size: 0.6rem; color: var(--text-muted); margin-left: 6px; font-weight: 500; }
+.polls-mini-k { color: var(--keiko); font-weight: 700; text-align: right; }
+.polls-mini-s { color: var(--sanchez); font-weight: 700; text-align: right; }
+.polls-mini-val { font-weight: 800; text-align: right; }
+
+@media (max-width: 640px) {
+  .home-hero { padding: 22px 18px; }
+  .home-hero-big { font-size: 3rem; }
+  .home-hero-sub { font-size: 0.78rem; }
+  .sim-header { display: none; }
+  .sim-region { grid-template-columns: 1fr 80px; row-gap: 6px; }
+  .sim-region-name { grid-column: 1 / 2; }
+  .sim-region-base { grid-column: 2 / 3; text-align: right; }
+  .sim-slider-wrap { grid-column: 1 / 3; }
+  .sim-today { grid-column: 1 / 3; text-align: left; font-size: 0.62rem; }
+  .sim-today::before { content: 'Modelo hoy: '; color: var(--text-muted); }
+  .polls-mini-head, .polls-mini-row { grid-template-columns: 1fr 50px 80px; }
+  .polls-mini-head > :nth-child(3), .polls-mini-row > :nth-child(3) { display: none; }
+}
+
+/* ============================================================
    FOOTER + SYNC
    ============================================================ */
 .footer { font-size: 0.7rem; color: var(--text-muted); padding: 16px 8px 8px; text-align: center; line-height: 1.6; }
@@ -769,6 +864,7 @@ function drawSegundaVuelta() {
   else if (view === 'tracker') html = renderTrackerView(sv);
   else if (view === 'tecnico') html = renderTecnicoView(sv);
   container.innerHTML = html;
+  if (view === 'resumen') initResumen(sv);
   if (view === 'mapa') initMapaInteractions(sv);
   if (view === 'comparativo') initComparativo(sv);
   if (view === 'tracker') initTracker(sv);
@@ -806,8 +902,319 @@ function renderScenarioButtons(scKey) {
   `;
 }
 
-// VISTA 1 — RESUMEN
+// ============================================================
+// VISTA 1 — RESUMEN (nueva home: kindergarten + simulador interactivo)
+// ============================================================
+const HOME_REGIONS = [
+  { id: 'lima',       label: 'Lima Metro + Callao',     emoji: '🏙️', deptos: ['LIMA','CALLAO'] },
+  { id: 'norte',      label: 'Costa Norte (incl. Áncash)', emoji: '🌊', deptos: ['TUMBES','PIURA','LAMBAYEQUE','LA LIBERTAD','ÁNCASH','ANCASH'] },
+  { id: 'sierranort', label: 'Sierra Norte (Cajamarca/Amazonas)', emoji: '⛰️', deptos: ['CAJAMARCA','AMAZONAS'] },
+  { id: 'centro',     label: 'Sierra Centro',           emoji: '🌽', deptos: ['JUNÍN','JUNIN','HUÁNUCO','HUANUCO','PASCO'] },
+  { id: 'costasur',   label: 'Costa Sur urbana',        emoji: '🏖️', deptos: ['ICA','AREQUIPA','MOQUEGUA','TACNA'] },
+  { id: 'sierrasur',  label: 'Sierra Sur (bastión Castillo)', emoji: '🦙', deptos: ['APURÍMAC','APURIMAC','AYACUCHO','HUANCAVELICA','PUNO','CUSCO'] },
+  { id: 'selva',      label: 'Selva / Oriente',         emoji: '🌳', deptos: ['LORETO','UCAYALI','MADRE DE DIOS','SAN MARTÍN','SAN MARTIN'] },
+  { id: 'exterior',   label: 'Voto extranjero',         emoji: '✈️', deptos: ['AFRICA','AMERICA','ASIA','EUROPA','OCEANIA'] },
+];
+
 function renderResumenView(sv) {
+  const mc = sv.monte_carlo;
+  const tw = sv.polls_timeseries?.tripwires || [];
+  const ancla = sv.polls_timeseries?.anclaje_doble?.promedio_ponderado;
+  // Cifras 2021 dinámicas desde el JSON cargado
+  const n21 = sv.comparativo_2021?.nacional_2021_oficial;
+  const margen21 = Math.abs(n21?.margen ?? 44263);
+  const validos21 = n21?.validos ?? 17628497;
+  const pctMargen21 = (margen21 / validos21 * 100).toFixed(2);
+  const validos21Mn = (validos21 / 1e6).toFixed(1) + 'M';
+  const margenFmt = margen21.toLocaleString('es-PE');
+  const pctKbaseline = n21?.pct_K ?? 49.875;
+
+  return `
+    <!-- HERO kindergarten: el margen razor-thin que define la elección -->
+    <div class="home-hero">
+      <div class="home-hero-lbl">El número que define la elección</div>
+      <div class="home-hero-big">${margenFmt}</div>
+      <div class="home-hero-sub">
+        Eso ganó Castillo a Keiko en 2021. Es el <b>${pctMargen21}% del electorado</b>. Una gota.
+        Para que Keiko voltee el 7-jun basta con cambios <b>mínimos</b> en distritos clave.
+        Las encuestas hoy le dan ${ancla ? `<b>+${(ancla.val_k - pctKbaseline).toFixed(1)}pp sobre 2021</b>` : '<b>ventaja clara</b>'} —
+        mucho más de lo que necesita.
+      </div>
+      <div class="home-hero-scale">
+        <span>${validos21Mn} votos válidos</span>
+        <div class="home-hero-scale-bar"><div class="home-hero-scale-fill" style="width:${Math.max(pctMargen21 * 4, 0.5)}%"></div></div>
+        <span class="home-hero-scale-pct">${pctMargen21}%</span>
+      </div>
+    </div>
+
+    <!-- SIMULADOR interactivo: sliders por región -->
+    <div class="card sim-card">
+      <div class="card-title">🎮 Mueve los % de Keiko por región — mira qué pasa</div>
+      <div class="card-sub">Cada slider arranca en el % real de Keiko 2021 en esa región (la "base"). Mueve cualquiera y verás el nacional recalculándose. El voto extranjero ya está incluido — siempre vota fuerte pro-Keiko. Si la elección 2021 se repitiera con tus ajustes, esto saldría:</div>
+      <div class="sim-presets" id="simPresets">
+        <button class="sim-preset active" data-preset="exacto">🟰 Idéntico 2021</button>
+        <button class="sim-preset" data-preset="lima1">🏙️ +1pp en Lima</button>
+        <button class="sim-preset" data-preset="sursube">🦙 Sierra Sur sube a 22%</button>
+        <button class="sim-preset" data-preset="iep">📊 IEP mayo 2026</button>
+        <button class="sim-preset" data-preset="anclaje">⭐ Anclaje hoy</button>
+      </div>
+      <div class="sim-header">
+        <div></div>
+        <div>2021</div>
+        <div>Tu ajuste</div>
+        <div>Hoy</div>
+      </div>
+      <div id="simRegions"><div class="card-foot">Cargando estructura 2021…</div></div>
+      <div id="simResult"></div>
+      <div class="sim-foot">
+        Métrica: para cada región, multiplicamos válidos 2021 × tu %K → votos K simulados. Sumamos las 8 regiones (cobertura 100% del padrón válido oficial). El voto extranjero se incluye automáticamente.
+      </div>
+    </div>
+
+    <!-- ENCUESTAS mini -->
+    <div class="card">
+      <div class="card-title">📊 Lo que dicen las encuestas hoy</div>
+      <div class="card-sub">${(sv.polls_timeseries?.polls_resumen?.length || 0)} encuestas cargadas. La más fresca pesa más en el "anclaje doble" (promedio ponderado por recencia).</div>
+      <div id="pollsMini"></div>
+    </div>
+
+    ${tw.length > 0 ? `
+    <div class="card">
+      <div class="card-title">🚦 Lo que hay que vigilar</div>
+      <div class="card-sub">3 semáforos que pueden mover la elección. Rojo = riesgo, verde = favorable.</div>
+      ${renderTripwiresInline(tw)}
+    </div>` : ''}
+
+    <div class="card cta-card">
+      <div class="card-title">¿Quieres más detalle?</div>
+      <div class="cta-buttons">
+        <button onclick="switchView('mapa')">🗺️ Mapa</button>
+        <button onclick="switchView('comparativo')">🔀 2021 vs Hoy completo</button>
+        <button onclick="switchView('tracker')">🗳️ Tracker 7-Jun</button>
+        <button onclick="switchView('tecnico')">🔬 Técnico (Monte Carlo, escenarios)</button>
+      </div>
+    </div>
+  `;
+}
+
+async function initResumen(sv) {
+  const base = await ensureBaseline2021();
+  if (!base) return;
+
+  // Aggregar por región (2021 real)
+  const aggs = {};
+  for (const reg of HOME_REGIONS) {
+    const set = new Set(reg.deptos);
+    const dists = base.distritos.filter(d => set.has(d.departamento));
+    const val = dists.reduce((a, d) => a + d.validos, 0);
+    const k = dists.reduce((a, d) => a + d.votos_K, 0);
+    const c = dists.reduce((a, d) => a + d.votos_C, 0);
+    aggs[reg.id] = { ...reg, validos: val, vK_2021: k, vC_2021: c, pctK_2021: val ? (k / val * 100) : 0, n_dists: dists.length };
+  }
+  window._homeAggs = aggs;
+
+  // Aggregar pct_keiko HOY (del modelo MÁS_PROBABLE) por región
+  const mpDists = sv.escenarios?.MAS_PROBABLE?.distritos || [];
+  const depByUbi = new Map(base.distritos.map(d => [String(d.ubigeo), d.departamento]));
+  const todayByReg = {};
+  for (const reg of HOME_REGIONS) {
+    const set = new Set(reg.deptos);
+    let vK = 0, val = 0;
+    for (const d of mpDists) {
+      const baseDep = depByUbi.get(String(d.ubigeo));
+      if (!baseDep || !set.has(baseDep)) continue;
+      const baseDist = base.distritos.find(x => String(x.ubigeo) === String(d.ubigeo));
+      if (!baseDist) continue;
+      val += baseDist.validos;
+      vK += baseDist.validos * d.pct_keiko / 100;
+    }
+    todayByReg[reg.id] = val ? (vK / val * 100) : aggs[reg.id].pctK_2021;
+  }
+  // Voto extranjero: el modelo no proyecta extranjero, mantener 2021
+  todayByReg.exterior = aggs.exterior.pctK_2021;
+  window._homeToday = todayByReg;
+
+  // Estado inicial: idéntico 2021
+  window._homeUserPct = {};
+  for (const reg of HOME_REGIONS) window._homeUserPct[reg.id] = aggs[reg.id].pctK_2021;
+
+  renderHomeRegionsRows();
+  wireHomePresets();
+  renderHomePollsMini(sv);
+  window._homeRecompute();
+}
+
+function renderHomeRegionsRows() {
+  const aggs = window._homeAggs;
+  const todayByReg = window._homeToday || {};
+  const el = document.getElementById('simRegions');
+  if (!el || !aggs) return;
+  el.innerHTML = HOME_REGIONS.map(reg => {
+    const a = aggs[reg.id];
+    const cur = window._homeUserPct[reg.id];
+    const today = todayByReg[reg.id];
+    return `
+      <div class="sim-region" data-reg="${reg.id}">
+        <div class="sim-region-name"><span class="em">${reg.emoji}</span>${reg.label}<div class="sim-region-sub">${fmt(a.validos)} válidos · ${a.n_dists} distritos</div></div>
+        <div class="sim-region-base">${a.pctK_2021.toFixed(1)}%</div>
+        <div class="sim-slider-wrap">
+          <input type="range" class="sim-slider" min="5" max="95" step="0.5" value="${cur.toFixed(1)}" data-reg="${reg.id}" oninput="window._homeOnSlider(this)" aria-label="K% en ${reg.label}">
+          <div class="sim-current" data-cell="cur">${cur.toFixed(1)}%</div>
+        </div>
+        <div class="sim-today">${today.toFixed(1)}%<div class="sim-today-sub">modelo</div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function wireHomePresets() {
+  document.querySelectorAll('#simPresets .sim-preset').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('#simPresets .sim-preset').forEach(b => b.classList.toggle('active', b === btn));
+      window._homeApplyPreset(btn.dataset.preset);
+    };
+  });
+}
+
+function renderHomePollsMini(sv) {
+  const el = document.getElementById('pollsMini');
+  if (!el) return;
+  const polls = sv.polls_timeseries?.polls_resumen || [];
+  const ancla = sv.polls_timeseries?.anclaje_doble?.promedio_ponderado;
+  const mc = sv.monte_carlo;
+  const sorted = [...polls].sort((a, b) => new Date(b.fecha_campo[1]) - new Date(a.fecha_campo[1]));
+
+  el.innerHTML = `
+    <div class="ancla-card">
+      <div class="ancla-lbl">Anclaje doble (recencia-ponderado · sobre voto válido)</div>
+      <div class="ancla-big">Keiko ${ancla ? ancla.val_k.toFixed(2) : '—'}% · Sánchez ${ancla ? ancla.val_s.toFixed(2) : '—'}%</div>
+      <div class="ancla-sub">
+        Δ vs 2021 real: <b>${ancla ? '+' + (ancla.val_k - 49.875).toFixed(2) : '—'}pp Keiko</b>
+        ${mc ? ` · Monte Carlo P(Keiko gana): <b>${mc.prob_keiko_gana}%</b>` : ''}
+      </div>
+    </div>
+    <div class="polls-mini">
+      <div class="polls-mini-head">
+        <div>Encuesta</div><div>K%</div><div>S%</div><div>K sobre válido</div>
+      </div>
+      ${sorted.map(p => {
+        const vk = (p.nacional.k + p.nacional.s) > 0 ? p.nacional.k / (p.nacional.k + p.nacional.s) * 100 : 0;
+        return `
+        <div class="polls-mini-row">
+          <div class="polls-mini-name">${p.pollster}<span class="polls-mini-date">${p.fecha_campo[1]}</span></div>
+          <div class="polls-mini-k">${p.nacional.k}%</div>
+          <div class="polls-mini-s">${p.nacional.s}%</div>
+          <div class="polls-mini-val">${vk.toFixed(1)}%</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+window._homeOnSlider = function (el) {
+  const reg = el.dataset.reg;
+  const aggs = window._homeAggs;
+  if (!aggs || !aggs[reg] || !window._homeUserPct) return;  // race guard
+  const v = parseFloat(el.value);
+  if (isNaN(v)) return;
+  window._homeUserPct[reg] = v;
+  const row = el.closest('.sim-region');
+  const cur = row?.querySelector('[data-cell="cur"]');
+  if (cur) {
+    cur.textContent = v.toFixed(1) + '%';
+    const base = aggs[reg].pctK_2021;
+    cur.className = 'sim-current ' + (v > base + 0.05 ? 'up' : v < base - 0.05 ? 'down' : 'flat');
+  }
+  document.querySelectorAll('#simPresets .sim-preset').forEach(b => b.classList.remove('active'));
+  window._homeRecompute();
+};
+
+window._homeApplyPreset = function (preset) {
+  const aggs = window._homeAggs;
+  const today = window._homeToday || {};
+  if (!aggs) return;
+  const u = {};
+  // Default: idéntico 2021 (también es el caso 'exacto')
+  for (const reg of HOME_REGIONS) u[reg.id] = aggs[reg.id].pctK_2021;
+
+  if (preset === 'lima1') {
+    u.lima = aggs.lima.pctK_2021 + 1;
+  } else if (preset === 'sursube') {
+    u.sierrasur = 22;
+  } else if (preset === 'iep') {
+    // IEP mayo 2026 estimado por región (sobre voto válido).
+    // OJO: Es una estimación derivada del reporte público de La República (cifras
+    // sobre total con 32% indecisos+B/N nacional). Para anclaje exacto del modelo
+    // hoy usa preset "Anclaje hoy" o vista Técnico.
+    u.lima = 77; u.norte = 51; u.sierranort = 50; u.centro = 39;
+    u.costasur = 45; u.sierrasur = 45; u.selva = 50;
+    u.exterior = (aggs.exterior && aggs.exterior.pctK_2021) || 65;
+  } else if (preset === 'anclaje') {
+    for (const reg of HOME_REGIONS) u[reg.id] = today[reg.id] != null ? today[reg.id] : aggs[reg.id].pctK_2021;
+  }
+
+  // Clamp con guard contra NaN
+  for (const reg of HOME_REGIONS) {
+    const val = u[reg.id];
+    u[reg.id] = (val == null || isNaN(val)) ? aggs[reg.id].pctK_2021 : Math.max(5, Math.min(95, val));
+  }
+  window._homeUserPct = u;
+
+  for (const reg of HOME_REGIONS) {
+    const slider = document.querySelector(`.sim-slider[data-reg="${reg.id}"]`);
+    const cell = document.querySelector(`.sim-region[data-reg="${reg.id}"] [data-cell="cur"]`);
+    if (slider) slider.value = u[reg.id].toFixed(1);
+    if (cell) {
+      cell.textContent = u[reg.id].toFixed(1) + '%';
+      const base = aggs[reg.id].pctK_2021;
+      cell.className = 'sim-current ' + (u[reg.id] > base + 0.05 ? 'up' : u[reg.id] < base - 0.05 ? 'down' : 'flat');
+    }
+  }
+  window._homeRecompute();
+};
+
+window._homeRecompute = function () {
+  const aggs = window._homeAggs;
+  const userPct = window._homeUserPct;
+  if (!aggs || !userPct) return;
+  let totK = 0, totS = 0, totVal = 0;
+  for (const reg of HOME_REGIONS) {
+    const a = aggs[reg.id];
+    if (!a) continue;
+    let pctK = userPct[reg.id];
+    if (pctK == null || isNaN(pctK)) pctK = a.pctK_2021;
+    const kVotes = a.validos * pctK / 100;
+    totK += kVotes; totS += (a.validos - kVotes); totVal += a.validos;
+  }
+  const margin = totK - totS;
+  const pctKnat = totVal ? totK / totVal * 100 : 0;
+  const pctSnat = 100 - pctKnat;
+  const ganaK = margin > 0;
+  // Margen 2021 oficial dinámico desde el JSON cargado
+  const margen2021 = window._svData?.comparativo_2021?.nacional_2021_oficial?.margen ?? -44263;
+  const deltaVs21 = margin - margen2021;
+  const resultEl = document.getElementById('simResult');
+  if (!resultEl) return;
+  resultEl.innerHTML = `
+    <div class="sim-result ${ganaK ? 'k' : 's'}">
+      <div class="sim-result-lbl">Resultado nacional con tus ajustes</div>
+      <div class="sim-result-winner ${ganaK ? 'k' : 's'}">${ganaK ? '🟠 KEIKO gana' : '🔴 SÁNCHEZ gana'}</div>
+      <div class="sim-result-bar">
+        <div style="width:${pctKnat}%; background:var(--keiko)"></div>
+        <div style="width:${pctSnat}%; background:var(--sanchez)"></div>
+      </div>
+      <div class="sim-result-sub">
+        <span class="pk">Keiko ${pctKnat.toFixed(2)}% · ${fmt(Math.round(totK))} votos</span>
+        <span class="ps">Sánchez ${pctSnat.toFixed(2)}% · ${fmt(Math.round(totS))} votos</span>
+      </div>
+      <div class="sim-result-margin">Margen: <span class="${ganaK ? 'pk' : 'ps'}">${margin > 0 ? '+' : ''}${fmt(Math.round(margin))} votos (${margin > 0 ? '+' : ''}${(margin / totVal * 100).toFixed(2)}%)</span></div>
+      <div class="sim-result-explain">vs 2021 real (Castillo +44,263): <b>${deltaVs21 > 0 ? '+' : ''}${fmt(Math.round(deltaVs21))}</b> votos más a favor de Keiko que en 2021.</div>
+    </div>
+  `;
+};
+
+// VISTA 1 OLD — RESUMEN (deprecated, kept for reference but not used)
+function renderResumenViewOld(sv) {
   const mp = sv.escenarios.MAS_PROBABLE;
   const mom = sv.escenarios.MOMENTUM;
   const enc = sv.escenarios.ENCUESTAS;
