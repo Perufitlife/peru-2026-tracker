@@ -1000,9 +1000,10 @@ function renderResumenView(sv) {
       <div class="home-hero-lbl">El número que define la elección</div>
       <div class="home-hero-big">${margenFmt}</div>
       <div class="home-hero-sub">
-        Eso ganó Castillo a Keiko en 2021. Es el <b>${pctMargen21}% del electorado</b>. Una gota.
+        Eso ganó Castillo a Keiko en 2021. Es <b>1 de cada ${Math.round(validos21 / margen21)} votantes</b> —
+        el <b>${pctMargen21}% del electorado</b>. Una gota.
         Para que Keiko voltee el 7-jun basta con cambios <b>mínimos</b> en distritos clave.
-        Las encuestas hoy le dan ${ancla ? `<b>+${(ancla.val_k - pctKbaseline).toFixed(1)}pp sobre 2021</b>` : '<b>ventaja clara</b>'} —
+        Las encuestas hoy le dan ${ancla ? `<b>+${(ancla.val_k - pctKbaseline).toFixed(1)} puntos porcentuales sobre 2021</b>` : '<b>ventaja clara</b>'} —
         mucho más de lo que necesita.
       </div>
       <div class="home-hero-scale">
@@ -1015,13 +1016,14 @@ function renderResumenView(sv) {
     <!-- SIMULADOR interactivo: sliders por región -->
     <div class="card sim-card">
       <div class="card-title">🎮 Mueve los % de Keiko por región — mira qué pasa</div>
-      <div class="card-sub">Cada slider arranca en el % real de Keiko 2021 en esa región (la "base"). Mueve cualquiera y verás el nacional recalculándose. El voto extranjero ya está incluido — siempre vota fuerte pro-Keiko. Si la elección 2021 se repitiera con tus ajustes, esto saldría:</div>
+      <div class="card-sub">Cada slider arranca en el % real de Keiko 2021 en esa región (la "base"). Mueve cualquiera y verás el nacional recalculándose. <b>Voto extranjero:</b> en 2021 Keiko ganó 66.6% afuera (+101K votos netos); en 1V-2026 López Aliaga lideró el exterior, así que el slider está editable — puedes bajarlo a 55% si crees que el patrón se rompió. Si la elección se repitiera con tus ajustes, esto saldría:</div>
       <div class="sim-presets" id="simPresets">
-        <button class="sim-preset active" data-preset="exacto">🟰 Idéntico 2021</button>
-        <button class="sim-preset" data-preset="lima1">🏙️ +1pp en Lima</button>
-        <button class="sim-preset" data-preset="sursube">🦙 Sierra Sur sube a 22%</button>
-        <button class="sim-preset" data-preset="iep">📊 IEP mayo 2026</button>
-        <button class="sim-preset" data-preset="anclaje">⭐ Anclaje hoy</button>
+        <button class="sim-preset active" data-preset="exacto" title="2021 idéntico: Castillo ganó por 44,263 votos. Castillo y Sánchez son el mismo polo anti-Keiko">🟰 Idéntico 2021</button>
+        <button class="sim-preset" data-preset="lima1" title="Sube +1pp solo en Lima Metro. Mira que con apenas 1 punto extra ahí, Keiko ya gana">🏙️ +1pp en Lima</button>
+        <button class="sim-preset" data-preset="sursube" title="Sierra Sur sube a 22% (vs 14.97% en 2021). Su bastión castillista cede un poco">🦙 Sierra Sur 22%</button>
+        <button class="sim-preset" data-preset="encuestas" title="Promedio ponderado de encuestas (IPSOS, IEP, DATUM) aplicado como swing uniforme sobre 2021">📊 Anclaje encuestas</button>
+        <button class="sim-preset" data-preset="iep" title="Estimación regional de IEP mayo 2026 (publicada por La República 28-may)">📈 IEP mayo</button>
+        <button class="sim-preset" data-preset="anclaje" title="Modelo MÁS_PROBABLE: blend de modelo propio + encuestas + Polymarket por distrito">⭐ Modelo blendeado</button>
       </div>
       <div class="sim-header">
         <div></div>
@@ -1099,9 +1101,14 @@ async function initResumen(sv) {
   todayByReg.exterior = aggs.exterior.pctK_2021;
   window._homeToday = todayByReg;
 
-  // Estado inicial: idéntico 2021
+  // Estado inicial: idéntico 2021, o restaurado de localStorage si existe
   window._homeUserPct = {};
-  for (const reg of HOME_REGIONS) window._homeUserPct[reg.id] = aggs[reg.id].pctK_2021;
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('onpe_home_sim_v1') || 'null'); } catch {}
+  for (const reg of HOME_REGIONS) {
+    const v = saved?.[reg.id];
+    window._homeUserPct[reg.id] = (v != null && !isNaN(v)) ? Math.max(5, Math.min(95, v)) : aggs[reg.id].pctK_2021;
+  }
 
   renderHomeRegionsRows();
   wireHomePresets();
@@ -1202,6 +1209,7 @@ window._homeOnSlider = function (el) {
     cur.className = 'sim-current ' + (v > base + 0.05 ? 'up' : v < base - 0.05 ? 'down' : 'flat');
   }
   document.querySelectorAll('#simPresets .sim-preset').forEach(b => b.classList.remove('active'));
+  try { localStorage.setItem('onpe_home_sim_v1', JSON.stringify(window._homeUserPct)); } catch {}
   window._homeRecompute();
 };
 
@@ -1217,6 +1225,13 @@ window._homeApplyPreset = function (preset) {
     u.lima = aggs.lima.pctK_2021 + 1;
   } else if (preset === 'sursube') {
     u.sierrasur = 22;
+  } else if (preset === 'encuestas') {
+    // Anclaje doble nacional aplicado como SWING UNIFORME sobre 2021
+    // (preserva la forma regional 2021, solo desplaza el nivel)
+    const anc_k = window._svData?.polls_timeseries?.anclaje_doble?.promedio_ponderado?.val_k ?? 52.99;
+    const pctK_nat_2021 = window._svData?.comparativo_2021?.nacional_2021_oficial?.pct_K ?? 49.875;
+    const swing = anc_k - pctK_nat_2021;
+    for (const reg of HOME_REGIONS) u[reg.id] = aggs[reg.id].pctK_2021 + swing;
   } else if (preset === 'iep') {
     // IEP mayo 2026 estimado por región (sobre voto válido).
     // OJO: Es una estimación derivada del reporte público de La República (cifras
@@ -1235,6 +1250,7 @@ window._homeApplyPreset = function (preset) {
     u[reg.id] = (val == null || isNaN(val)) ? aggs[reg.id].pctK_2021 : Math.max(5, Math.min(95, val));
   }
   window._homeUserPct = u;
+  try { localStorage.setItem('onpe_home_sim_v1', JSON.stringify(u)); } catch {}
 
   for (const reg of HOME_REGIONS) {
     const slider = document.querySelector(`.sim-slider[data-reg="${reg.id}"]`);
