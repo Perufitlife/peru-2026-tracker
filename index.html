@@ -3,10 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ONPE 2026</title>
+<title>ONPE 2026 · 2da Vuelta — Proyección Keiko vs Sánchez en vivo</title>
+<meta name="description" content="Proyección estadística de la 2da vuelta presidencial Perú 2026 (Keiko Fujimori vs Roberto Sánchez · 7-jun). Simulador interactivo + encuestas IPSOS/IEP/DATUM + comparativo 2021 + tracker en vivo el día D.">
+<meta name="theme-color" content="#0F172A">
+<meta name="color-scheme" content="light">
+<!-- Open Graph (Twitter, WhatsApp, Facebook) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="ONPE 2026 · 2da Vuelta — Proyección en vivo">
+<meta property="og:description" content="Castillo ganó por 44,263 votos en 2021. ¿Qué tiene que cambiar para que Keiko gane el 7-jun? Mueve los % por región y velo en vivo.">
+<meta property="og:url" content="https://perufitlife.github.io/peru-2026-tracker/">
+<meta property="og:locale" content="es_PE">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ONPE 2026 · 2da Vuelta — Proyección en vivo">
+<meta name="twitter:description" content="Simulador interactivo de la 2da vuelta presidencial Perú 2026.">
+<link rel="canonical" href="https://perufitlife.github.io/peru-2026-tracker/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FQZJ7W17KD"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-FQZJ7W17KD');</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "ONPE 2026 — Tracker 2da Vuelta",
+  "url": "https://perufitlife.github.io/peru-2026-tracker/",
+  "description": "Proyección estadística de la 2da vuelta presidencial Perú 2026 con modelo Monte Carlo, encuestas y simulador interactivo.",
+  "applicationCategory": "UtilityApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-PE",
+  "author": { "@type": "Organization", "name": "Perufitlife", "url": "https://github.com/Perufitlife/peru-2026-tracker" }
+}
+</script>
 <style>
 /* ============================================================
    ONPE 2026 — 2da Vuelta · Diseño limpio y minimalista
@@ -99,7 +127,7 @@ a:hover { text-decoration: underline; }
    ============================================================ */
 .subnav {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
   background: white;
   padding: 4px;
@@ -110,18 +138,20 @@ a:hover { text-decoration: underline; }
 }
 .subnav-btn {
   background: none; border: none; padding: 10px 4px; border-radius: 12px;
-  font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+  font-size: 0.65rem; font-weight: 700; color: var(--text-muted);
   cursor: pointer; transition: all 0.18s;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-height: 48px;
 }
 .subnav-btn:hover { color: var(--text); background: var(--card-soft); }
+.subnav-btn:focus-visible { outline: 2px solid var(--keiko); outline-offset: -2px; }
 .subnav-btn.active {
   background: var(--text);
   color: white;
   box-shadow: 0 2px 8px rgba(15,23,42,0.20);
 }
 .snb-icon { font-size: 1rem; line-height: 1; }
-.snb-label { font-size: 0.7rem; letter-spacing: 0.2px; }
+.snb-label { font-size: 0.62rem; letter-spacing: 0.1px; white-space: nowrap; }
 
 /* ============================================================
    TARJETAS GENERALES
@@ -588,14 +618,15 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
 .sim-region:last-of-type { border-bottom: none; }
 .sim-region-name { font-weight: 700; }
 .sim-region-name .em { margin-right: 6px; font-size: 0.9rem; }
-.sim-region-sub { font-size: 0.58rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+.sim-region-sub { font-size: 0.62rem; color: #475569; font-weight: 600; margin-top: 2px; }
 .sim-region-base { color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: center; font-weight: 700; font-size: 0.72rem; }
 .sim-slider-wrap { display: flex; align-items: center; gap: 8px; }
 .sim-slider { flex: 1; height: 18px; -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
 .sim-slider::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(90deg, var(--sanchez) 0%, var(--border) 50%, var(--keiko) 100%); border-radius: 2px; }
 .sim-slider::-moz-range-track { height: 4px; background: linear-gradient(90deg, var(--sanchez) 0%, var(--border) 50%, var(--keiko) 100%); border-radius: 2px; }
+.sim-slider::-moz-range-progress { height: 4px; background: linear-gradient(90deg, var(--sanchez) 0%, var(--border) 50%, var(--keiko) 100%); border-radius: 2px; }
 .sim-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: white; border: 2px solid var(--text); border-radius: 50%; margin-top: -6px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.sim-slider::-moz-range-thumb { width: 14px; height: 14px; background: white; border: 2px solid var(--text); border-radius: 50%; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.sim-slider::-moz-range-thumb { width: 14px; height: 14px; background: white; border: 2px solid var(--text); border-radius: 50%; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); box-sizing: border-box; }
 .sim-current { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; min-width: 50px; font-size: 0.78rem; }
 .sim-current.up { color: var(--keiko); }
 .sim-current.down { color: var(--sanchez); }
@@ -625,7 +656,7 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
 .ancla-card { background: linear-gradient(135deg, rgba(249,115,22,0.10), rgba(249,115,22,0.02)); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid var(--keiko); }
 .ancla-lbl { font-size: 0.58rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
 .ancla-big { font-size: 1.05rem; font-weight: 900; color: var(--text); margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
-.ancla-sub { font-size: 0.72rem; color: var(--text-muted); }
+.ancla-sub { font-size: 0.72rem; color: #5A6470; font-weight: 600; }
 .ancla-sub b { color: var(--text); }
 .polls-mini { display: flex; flex-direction: column; gap: 0; }
 .polls-mini-head { display: grid; grid-template-columns: 1.4fr 60px 60px 80px; gap: 8px; padding: 8px 4px; font-size: 0.55rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); }
@@ -640,17 +671,35 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
 
 @media (max-width: 640px) {
   .home-hero { padding: 22px 18px; }
-  .home-hero-big { font-size: 3rem; }
+  .home-hero-big { font-size: 2.6rem; }
   .home-hero-sub { font-size: 0.78rem; }
   .sim-header { display: none; }
-  .sim-region { grid-template-columns: 1fr 80px; row-gap: 6px; }
-  .sim-region-name { grid-column: 1 / 2; }
+  .sim-region { grid-template-columns: 1fr 70px; row-gap: 8px; padding: 12px 4px; }
+  .sim-region-name { grid-column: 1 / 2; font-size: 0.76rem; }
+  .sim-region-sub { font-size: 0.6rem; }
   .sim-region-base { grid-column: 2 / 3; text-align: right; }
-  .sim-slider-wrap { grid-column: 1 / 3; }
+  .sim-slider-wrap { grid-column: 1 / 3; gap: 10px; }
+  .sim-slider { height: 28px; }
+  .sim-slider::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -9px; }
+  .sim-slider::-moz-range-thumb { width: 20px; height: 20px; }
   .sim-today { grid-column: 1 / 3; text-align: left; font-size: 0.62rem; }
   .sim-today::before { content: 'Modelo hoy: '; color: var(--text-muted); }
+  .sim-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .polls-mini-head, .polls-mini-row { grid-template-columns: 1fr 50px 80px; }
   .polls-mini-head > :nth-child(3), .polls-mini-row > :nth-child(3) { display: none; }
+  /* Subnav: 6 tabs en mobile → scroll horizontal limpio */
+  .subnav { grid-template-columns: repeat(6, minmax(64px, 1fr)); gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .subnav-btn { padding: 8px 2px; min-width: 60px; }
+  .snb-label { font-size: 0.55rem; }
+}
+@media (max-width: 390px) {
+  .home-hero-big { font-size: 2.2rem; }
+  .sim-presets { grid-template-columns: 1fr; }
+  .subnav { grid-template-columns: repeat(3, 1fr); }
+}
+/* Accessibility: respetar preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
 /* ============================================================
@@ -721,7 +770,10 @@ details.method code { background: var(--card-soft); padding: 2px 6px; border-rad
 </div>
 
 <script>
-const fmt = n => n.toLocaleString('es-PE');
+const fmt = n => {
+  if (n == null || (typeof n === 'number' && isNaN(n))) return '—';
+  return Number(n).toLocaleString('es-PE');
+};
 const titleCase = s => {
   if (!s) return '';
   // toLocaleLowerCase para manejar tildes/ñ correctamente
@@ -850,24 +902,37 @@ window.switchView = function(view) {
   drawSegundaVuelta();
 };
 
-function drawSegundaVuelta() {
+async function drawSegundaVuelta() {
   const sv = window._svData;
   const container = document.getElementById('view-container');
   if (!container) return;
-  if (!sv) { container.innerHTML = '<div class="loading">Cargando proyección…</div>'; return; }
+  if (!sv) {
+    container.innerHTML = '<div class="loading" style="text-align:center;padding:40px">⚠️ <b>Cargando proyección…</b><br><span style="font-size:0.8rem;color:var(--text-muted)">Si esto persiste, recarga la página.</span></div>';
+    return;
+  }
   const view = window._svActiveView || 'resumen';
   let html;
-  if (view === 'resumen')   html = renderResumenView(sv);
-  else if (view === 'mapa') html = renderMapaView(sv);
-  else if (view === 'tendencia') html = renderTendenciaView(sv);
-  else if (view === 'comparativo') html = renderComparativoView(sv);
-  else if (view === 'tracker') html = renderTrackerView(sv);
-  else if (view === 'tecnico') html = renderTecnicoView(sv);
+  try {
+    if (view === 'resumen')   html = renderResumenView(sv);
+    else if (view === 'mapa') html = renderMapaView(sv);
+    else if (view === 'tendencia') html = renderTendenciaView(sv);
+    else if (view === 'comparativo') html = renderComparativoView(sv);
+    else if (view === 'tracker') html = renderTrackerView(sv);
+    else if (view === 'tecnico') html = renderTecnicoView(sv);
+  } catch (e) {
+    console.error('Render error in view ' + view + ':', e);
+    container.innerHTML = '<div class="card"><div class="card-foot" style="color:var(--sanchez)">⚠️ Error renderizando vista: ' + e.message + '</div></div>';
+    return;
+  }
   container.innerHTML = html;
-  if (view === 'resumen') initResumen(sv);
-  if (view === 'mapa') initMapaInteractions(sv);
-  if (view === 'comparativo') initComparativo(sv);
-  if (view === 'tracker') initTracker(sv);
+  try {
+    if (view === 'resumen') await initResumen(sv);
+    else if (view === 'mapa') await initMapaInteractions(sv);
+    else if (view === 'comparativo') await initComparativo(sv);
+    else if (view === 'tracker') await initTracker(sv);
+  } catch (e) {
+    console.error('Init error in view ' + view + ':', e);
+  }
 }
 
 window._svSetScenario = function(sc) {
@@ -965,7 +1030,7 @@ function renderResumenView(sv) {
         <div>Hoy</div>
       </div>
       <div id="simRegions"><div class="card-foot">Cargando estructura 2021…</div></div>
-      <div id="simResult"></div>
+      <div id="simResult" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="sim-foot">
         Métrica: para cada región, multiplicamos válidos 2021 × tu %K → votos K simulados. Sumamos las 8 regiones (cobertura 100% del padrón válido oficial). El voto extranjero se incluye automáticamente.
       </div>
@@ -1055,10 +1120,14 @@ function renderHomeRegionsRows() {
     const today = todayByReg[reg.id];
     return `
       <div class="sim-region" data-reg="${reg.id}">
-        <div class="sim-region-name"><span class="em">${reg.emoji}</span>${reg.label}<div class="sim-region-sub">${fmt(a.validos)} válidos · ${a.n_dists} distritos</div></div>
+        <div class="sim-region-name"><span class="em" aria-hidden="true">${reg.emoji}</span>${reg.label}<div class="sim-region-sub">${fmt(a.validos)} válidos · ${a.n_dists} distritos</div></div>
         <div class="sim-region-base">${a.pctK_2021.toFixed(1)}%</div>
         <div class="sim-slider-wrap">
-          <input type="range" class="sim-slider" min="5" max="95" step="0.5" value="${cur.toFixed(1)}" data-reg="${reg.id}" oninput="window._homeOnSlider(this)" aria-label="K% en ${reg.label}">
+          <input type="range" class="sim-slider" min="5" max="95" step="0.5" value="${cur.toFixed(1)}"
+            data-reg="${reg.id}" oninput="window._homeOnSlider(this)"
+            aria-label="Porcentaje de Keiko en ${reg.label}"
+            aria-valuemin="5" aria-valuemax="95" aria-valuenow="${cur.toFixed(1)}"
+            aria-valuetext="${cur.toFixed(1)} por ciento">
           <div class="sim-current" data-cell="cur">${cur.toFixed(1)}%</div>
         </div>
         <div class="sim-today">${today.toFixed(1)}%<div class="sim-today-sub">modelo</div></div>
@@ -1084,30 +1153,35 @@ function renderHomePollsMini(sv) {
   const mc = sv.monte_carlo;
   const sorted = [...polls].sort((a, b) => new Date(b.fecha_campo[1]) - new Date(a.fecha_campo[1]));
 
+  const vk = ancla?.val_k;
+  const vs = ancla?.val_s;
+  const probK = mc?.prob_keiko_gana;
   el.innerHTML = `
     <div class="ancla-card">
       <div class="ancla-lbl">Anclaje doble (recencia-ponderado · sobre voto válido)</div>
-      <div class="ancla-big">Keiko ${ancla ? ancla.val_k.toFixed(2) : '—'}% · Sánchez ${ancla ? ancla.val_s.toFixed(2) : '—'}%</div>
+      <div class="ancla-big">Keiko ${vk != null ? vk.toFixed(2) : '—'}% · Sánchez ${vs != null ? vs.toFixed(2) : '—'}%</div>
       <div class="ancla-sub">
-        Δ vs 2021 real: <b>${ancla ? '+' + (ancla.val_k - 49.875).toFixed(2) : '—'}pp Keiko</b>
-        ${mc ? ` · Monte Carlo P(Keiko gana): <b>${mc.prob_keiko_gana}%</b>` : ''}
+        Δ vs 2021 real: <b>${vk != null ? '+' + (vk - 49.875).toFixed(2) : '—'}pp Keiko</b>
+        ${probK != null ? ` · Monte Carlo P(Keiko gana): <b>${probK}%</b>` : ''}
       </div>
     </div>
+    ${sorted.length === 0 ? '<div class="card-foot">ℹ️ Sin encuestas cargadas aún.</div>' : `
     <div class="polls-mini">
       <div class="polls-mini-head">
         <div>Encuesta</div><div>K%</div><div>S%</div><div>K sobre válido</div>
       </div>
       ${sorted.map(p => {
-        const vk = (p.nacional.k + p.nacional.s) > 0 ? p.nacional.k / (p.nacional.k + p.nacional.s) * 100 : 0;
+        const denom = (p.nacional?.k || 0) + (p.nacional?.s || 0);
+        const vk = denom > 0 ? p.nacional.k / denom * 100 : 0;
         return `
         <div class="polls-mini-row">
-          <div class="polls-mini-name">${p.pollster}<span class="polls-mini-date">${p.fecha_campo[1]}</span></div>
-          <div class="polls-mini-k">${p.nacional.k}%</div>
-          <div class="polls-mini-s">${p.nacional.s}%</div>
+          <div class="polls-mini-name">${p.pollster}<span class="polls-mini-date">${p.fecha_campo?.[1] || '—'}</span></div>
+          <div class="polls-mini-k">${p.nacional?.k ?? '—'}%</div>
+          <div class="polls-mini-s">${p.nacional?.s ?? '—'}%</div>
           <div class="polls-mini-val">${vk.toFixed(1)}%</div>
         </div>`;
       }).join('')}
-    </div>
+    </div>`}
   `;
 }
 
@@ -1118,6 +1192,8 @@ window._homeOnSlider = function (el) {
   const v = parseFloat(el.value);
   if (isNaN(v)) return;
   window._homeUserPct[reg] = v;
+  el.setAttribute('aria-valuenow', v.toFixed(1));
+  el.setAttribute('aria-valuetext', v.toFixed(1) + ' por ciento');
   const row = el.closest('.sim-region');
   const cur = row?.querySelector('[data-cell="cur"]');
   if (cur) {
@@ -1212,78 +1288,6 @@ window._homeRecompute = function () {
     </div>
   `;
 };
-
-// VISTA 1 OLD — RESUMEN (deprecated, kept for reference but not used)
-function renderResumenViewOld(sv) {
-  const mp = sv.escenarios.MAS_PROBABLE;
-  const mom = sv.escenarios.MOMENTUM;
-  const enc = sv.escenarios.ENCUESTAS;
-  const mc = sv.monte_carlo;
-  const tw = sv.polls_timeseries?.tripwires || [];
-  const ganaK = mp.nacional.pct_keiko > mp.nacional.pct_sanchez;
-
-  return `
-    <div class="card hero-card ${ganaK ? 'hero-k' : 'hero-s'}">
-      <div class="hero-label">SI LA ELECCIÓN FUERA HOY</div>
-      <div class="hero-winner">
-        ${ganaK ? '🟠' : '🔵'} <span>GANA ${ganaK ? 'KEIKO' : 'SÁNCHEZ'}</span>
-      </div>
-      <div class="hero-pcts">
-        <div class="hp-side k"><div class="hp-name">Keiko</div><div class="hp-pct">${mp.nacional.pct_keiko.toFixed(1)}%</div></div>
-        <div class="hp-vs">vs</div>
-        <div class="hp-side s"><div class="hp-name">Sánchez</div><div class="hp-pct">${mp.nacional.pct_sanchez.toFixed(1)}%</div></div>
-      </div>
-      <div class="hero-margin">Margen: <b>${fmt(Math.abs(mp.nacional.margen))} votos</b></div>
-      ${mc ? `
-      <div class="hero-prob">
-        Probabilidad de ganar (Monte Carlo · ${fmt(mc.n_sims)} sims):
-        <div class="hero-prob-bar">
-          <div class="hpb-k" style="width:${mc.prob_keiko_gana}%">${mc.prob_keiko_gana}%</div>
-          <div class="hpb-s" style="width:${mc.prob_sanchez_gana}%">${mc.prob_sanchez_gana}%</div>
-        </div>
-      </div>` : ''}
-    </div>
-
-    ${tw.length > 0 ? `
-    <div class="card">
-      <div class="card-title">🚦 Lo que hay que vigilar</div>
-      <div class="card-sub">3 indicadores que mueven la elección. Cambio de color = cambio de escenario.</div>
-      ${renderTripwiresInline(tw)}
-    </div>` : ''}
-
-    <div class="card">
-      <div class="card-title">📊 Cómo lo ve cada modelo</div>
-      <div class="card-sub">3 lentes distintos. Si los 3 apuntan al mismo lado, el resultado es robusto.</div>
-      <div class="models-grid">
-        <div class="model-row ${enc.nacional.ganador === 'Keiko' ? 'win-k' : 'win-s'}">
-          <div class="mr-name">📊 Encuestas</div>
-          <div class="mr-sub">Hoy, según encuestas</div>
-          <div class="mr-pct"><b class="${enc.nacional.ganador === 'Keiko' ? 'pk' : 'ps'}">${enc.nacional[enc.nacional.ganador === 'Keiko' ? 'pct_keiko' : 'pct_sanchez'].toFixed(1)}%</b></div>
-        </div>
-        <div class="model-row ${mp.nacional.ganador === 'Keiko' ? 'win-k' : 'win-s'}">
-          <div class="mr-name">⭐ Más probable</div>
-          <div class="mr-sub">Mezcla modelo + encuestas + Polymarket</div>
-          <div class="mr-pct"><b class="${mp.nacional.ganador === 'Keiko' ? 'pk' : 'ps'}">${mp.nacional[mp.nacional.ganador === 'Keiko' ? 'pct_keiko' : 'pct_sanchez'].toFixed(1)}%</b></div>
-        </div>
-        ${mom ? `
-        <div class="model-row ${mom.nacional.ganador === 'Keiko' ? 'win-k' : 'win-s'}">
-          <div class="mr-name">🚀 Momentum</div>
-          <div class="mr-sub">Si la tendencia sigue al día D</div>
-          <div class="mr-pct"><b class="${mom.nacional.ganador === 'Keiko' ? 'pk' : 'ps'}">${mom.nacional[mom.nacional.ganador === 'Keiko' ? 'pct_keiko' : 'pct_sanchez'].toFixed(1)}%</b></div>
-        </div>` : ''}
-      </div>
-    </div>
-
-    <div class="card cta-card">
-      <div class="card-title">¿Quieres más detalle?</div>
-      <div class="cta-buttons">
-        <button onclick="switchView('mapa')">🗺️ Ver el mapa</button>
-        <button onclick="switchView('tendencia')">📈 Ver tendencias</button>
-        <button onclick="switchView('tecnico')">🔬 Análisis técnico</button>
-      </div>
-    </div>
-  `;
-}
 
 // VISTA 2 — MAPA
 function renderMapaView(sv) {
