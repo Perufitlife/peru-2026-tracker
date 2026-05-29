@@ -223,6 +223,85 @@
       },
       "url": "https://larepublica.pe/politica/2026/05/22/segunda-vuelta-keiko-fujimori-con-395-y-roberto-sanchez-con-361-en-intencion-de-voto-segun-datum-hnews-1833502",
       "id": "datum-2026-05-20"
+    },
+    {
+      "pollster": "IEP",
+      "client": "La República",
+      "fecha_campo": [
+        "2026-05-22",
+        "2026-05-26"
+      ],
+      "fecha_publicacion": "2026-05-28",
+      "n": 1207,
+      "error_pp": 2.8,
+      "tipo": "nacional",
+      "resultados": {
+        "nacional": {
+          "k": 36,
+          "s": 30,
+          "blanco_nulo": 6,
+          "indeciso": 26
+        },
+        "val": {
+          "k": 54.55,
+          "s": 45.45
+        },
+        "regionales_pct_total": {
+          "lima_metropolitana": {
+            "k": 51
+          },
+          "norte": {
+            "k": 32,
+            "s_urbano": 31
+          },
+          "centro": {
+            "k": 26,
+            "s": 40
+          },
+          "sur": {
+            "k": 29,
+            "s": 35
+          },
+          "oriente": {
+            "s": 38
+          },
+          "rural": {
+            "k": 21,
+            "s": 42
+          }
+        },
+        "nse_pct_total": {
+          "ab": {
+            "k": 50
+          },
+          "c": {
+            "k": 40
+          },
+          "de": {
+            "k": 27,
+            "s": 34
+          }
+        },
+        "edad_pct_total": {
+          "18_29": {
+            "k": 41
+          },
+          "30_49": {
+            "k": 32,
+            "s": 34
+          },
+          "50_mas": {
+            "k": 38
+          }
+        },
+        "decision": {
+          "ya_decidido": 65,
+          "podria_cambiar": 9
+        }
+      },
+      "url": "https://larepublica.pe/politica/2026/05/28/encuesta-iep-indecisos-se-duplican-y-llegan-a-26-blanco-y-nulo-cae-al-6-roberto-sanchez-keiko-fujimori-hnews-1026872",
+      "_meta": "n y error_pp no disclosados en artículo; usados los estándar IEP de su ola previa (abril 2026, mismo cliente). Nacional suma 98 (rounding del medio). Regional y NSE en % sobre total, no sobre válido — solo se reportaron algunos lados K/S por región/NSE.",
+      "id": "iep-2026-05-26"
     }
   ]
 }

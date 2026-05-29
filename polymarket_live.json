@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-05-28T09:30:25.286Z",
+  "fetched_at": "2026-05-29T04:33:35.717Z",
   "source": "polymarket_gamma_api",
   "event": {
     "id": "106520",
@@ -11,26 +11,26 @@
     "keiko": {
       "question": "Will Keiko Fujimori win the 2026 Peruvian presidential election?",
       "slug": "will-keiko-fujimori-win-the-2026-peruvian-presidential-election",
-      "price_yes": 0.725,
-      "volume_total": 6980895.157597112,
-      "volume_24h": 24138.264736,
-      "liquidity": 178953.5351,
+      "price_yes": 0.765,
+      "volume_total": 7059481.089546113,
+      "volume_24h": 81750.86144900002,
+      "liquidity": 176474.7338,
       "last_trade_at": null
     },
     "sanchez": {
       "question": "Will Roberto Sánchez Palomino win the 2026 Peruvian presidential election?",
       "slug": "will-roberto-snchez-palomino-win-the-2026-peruvian-presidential-election",
-      "price_yes": 0.2725,
-      "volume_total": 13357557.825763995,
-      "volume_24h": 14825.929430000004,
-      "liquidity": 259321.63087,
+      "price_yes": 0.219,
+      "volume_total": 13415186.722472994,
+      "volume_24h": 61735.51941299999,
+      "liquidity": 274986.53787,
       "last_trade_at": null
     }
   },
-  "prob_keiko_gana": 0.7268,
-  "prob_sanchez_gana": 0.2732,
-  "prob_residual": 0.0025,
-  "pct_k_implied_voto": 50.91,
-  "volumen_usd_total": 20338453,
-  "volumen_24h_usd": 38964
+  "prob_keiko_gana": 0.7774,
+  "prob_sanchez_gana": 0.2226,
+  "prob_residual": 0.016,
+  "pct_k_implied_voto": 51.11,
+  "volumen_usd_total": 20474668,
+  "volumen_24h_usd": 143486
 }
