@@ -302,6 +302,74 @@
       "url": "https://larepublica.pe/politica/2026/05/28/encuesta-iep-indecisos-se-duplican-y-llegan-a-26-blanco-y-nulo-cae-al-6-roberto-sanchez-keiko-fujimori-hnews-1026872",
       "_meta": "n y error_pp no disclosados en artículo; usados los estándar IEP de su ola previa (abril 2026, mismo cliente). Nacional suma 98 (rounding del medio). Regional y NSE en % sobre total, no sobre válido — solo se reportaron algunos lados K/S por región/NSE.",
       "id": "iep-2026-05-26"
+    },
+    {
+      "pollster": "CPI",
+      "client": "RPP Noticias",
+      "fecha_campo": [
+        "2026-05-26",
+        "2026-05-28"
+      ],
+      "fecha_publicacion": "2026-05-29",
+      "n": 1200,
+      "error_pp": 2.8,
+      "tipo": "nacional",
+      "resultados": {
+        "nacional": {
+          "k": 32.5,
+          "s": 29.1,
+          "blanco_nulo": 22.6,
+          "indeciso": 15.8,
+          "no_votaria_original": 2.4,
+          "indeciso_original": 13.4
+        },
+        "val": {
+          "k": 52.76,
+          "s": 47.24
+        },
+        "regionales_pct_total": {
+          "lima_callao": {
+            "k": 45.6,
+            "s": 19.7
+          },
+          "norte": {
+            "k": 32.1,
+            "s": 20.7
+          },
+          "centro_sierra_sur": {
+            "k": 12.9,
+            "s": 53.3
+          },
+          "costa_sur": {
+            "s": 42.8
+          },
+          "oriente": {
+            "k": 36.8
+          }
+        },
+        "indecisos_por_region": {
+          "norte": 19.3,
+          "centro_sierra_sur": 13.7,
+          "oriente": 11.9,
+          "costa_sur": 10.9
+        },
+        "blanco_nulo_por_region": {
+          "costa_sur": 27.5,
+          "norte": 25,
+          "oriente": 24.3,
+          "lima_callao": 22.8,
+          "lima_interior": 22.4,
+          "centro_sierra_sur": 15.6
+        },
+        "indecisos_por_edad": {
+          "40_70": 16.2,
+          "25_39": 10.4,
+          "18_24": 11.2
+        }
+      },
+      "url": "https://www.infobae.com/peru/2026/05/29/ultima-encuesta-cpi-134-de-peruanos-indecisos-y-el-226-votaria-blanco-o-viciado-en-la-segunda-vuelta-entre-keiko-fujimori-y-roberto-sanchez/",
+      "_meta": "n=1200 en 19 departamentos, 95.5% confianza, 97.2% representatividad. Suma nacional = 100 exacto (32.5+29.1+22.6+13.4+2.4).",
+      "id": "cpi-2026-05-28"
     }
   ]
 }
