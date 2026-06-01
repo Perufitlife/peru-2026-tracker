@@ -441,6 +441,86 @@ function anclajeSimulacros(polls) {
 }
 
 // ============================================================
+// TARGET REGIONAL DINÁMICO (B4) — recalibra la forma regional con data de mayo
+// ============================================================
+//
+// La forma regional del escenario ENCUESTAS estaba congelada en IEP-abril (hardcode
+// TARGET_VAL_IEP). Pero los crossbreaks de mayo movieron zonas clave — sobre todo
+// Costa Norte, que pasó de K46 (gana Sánchez, IEP-abr) a K53-61 (gana Keiko, Datum/CPI).
+// Esta función deriva el target por zona IEP como promedio de los crossbreaks regionales
+// reales ponderado por recencia (peso = N·exp(-días/τ)), y lo suaviza 75/25 contra el
+// fallback de abril para no sobreajustar a una sola encuesta. Cae al fallback si una zona
+// no tiene data limpia. Mapeos ambiguos (Datum 'sur', CPI 'centro_sierra_sur') se asignan
+// a su zona dominante (SIERRA_SUR) con esa salvedad documentada.
+
+function valKS(k, s) {
+  return (k != null && s != null && (k + s) > 0) ? +(k / (k + s) * 100).toFixed(1) : null;
+}
+
+function extraerRegionalVal(p) {
+  const out = {};
+  const r = p.resultados || {};
+  const put = (zone, v) => { if (v != null) out[zone] = v; };
+
+  // (1) Ya sobre válido (IEP-abr: regionales_val con k+s≈100)
+  const rv = r.regionales_val;
+  if (rv) {
+    put("LIMA_METRO",    valKS(rv.lima_metro?.k,    rv.lima_metro?.s));
+    put("COSTA_NORTE",   valKS(rv.costa_norte?.k,   rv.costa_norte?.s));
+    put("SIERRA_CENTRO", valKS(rv.sierra_centro?.k, rv.sierra_centro?.s));
+    put("SIERRA_SUR",    valKS(rv.sierra_sur?.k,    rv.sierra_sur?.s));
+    put("ORIENTE",       valKS(rv.oriente?.k,       rv.oriente?.s));
+  }
+  // (2) Macrozonas k/s sobre total (Datum)
+  const mz = r.macrozonas;
+  if (mz) {
+    put("LIMA_METRO",    valKS(mz.lima_callao?.k, mz.lima_callao?.s));
+    put("COSTA_NORTE",   valKS(mz.norte?.k,       mz.norte?.s));
+    put("SIERRA_CENTRO", valKS(mz.centro?.k,      mz.centro?.s));
+    put("ORIENTE",       valKS(mz.oriente?.k,     mz.oriente?.s));
+    put("SIERRA_SUR",    valKS(mz.sur?.k,         mz.sur?.s)); // 'sur' Datum mezcla costa+sierra sur (proxy)
+  }
+  // (3) Regionales sobre total k/s (CPI, IEP-may) — solo claves con AMBOS lados (descarta one-sided)
+  const rt = r.regionales_pct_total;
+  if (rt) {
+    put("LIMA_METRO",    valKS(rt.lima_callao?.k,        rt.lima_callao?.s));
+    put("COSTA_NORTE",   valKS(rt.norte?.k,              rt.norte?.s));              // IEP-may trae s_urbano (no s) → skip
+    put("SIERRA_CENTRO", valKS(rt.centro?.k,             rt.centro?.s));
+    put("SIERRA_SUR",    valKS(rt.centro_sierra_sur?.k,  rt.centro_sierra_sur?.s));  // CPI merge, dominado por sierra sur
+  }
+  return out;
+}
+
+function calcularTargetRegional(polls, fallback, refDate = new Date(), tau = 18) {
+  const ZONES = Object.keys(fallback);
+  const acc = {};
+  ZONES.forEach(z => (acc[z] = { w: 0, wk: 0, fuentes: [] }));
+  for (const p of polls) {
+    if (p.tipo === "simulacro") continue;
+    const reg = extraerRegionalVal(p);
+    const dias = diasEntre(fechaEfectiva(p), refDate);
+    const peso = (p.n || 1000) * Math.exp(-dias / tau);
+    for (const z of Object.keys(reg)) {
+      if (!acc[z]) continue;
+      acc[z].w += peso;
+      acc[z].wk += reg[z] * peso;
+      acc[z].fuentes.push(p.pollster + " " + reg[z]);
+    }
+  }
+  const out = {};
+  for (const z of ZONES) {
+    if (acc[z].w > 0) {
+      const valK = acc[z].wk / acc[z].w;
+      const k = +(0.75 * valK + 0.25 * fallback[z].k).toFixed(1); // suavizado 75/25 vs abril
+      out[z] = { k, s: +(100 - k).toFixed(1), fuentes: acc[z].fuentes, base_abr: fallback[z].k };
+    } else {
+      out[z] = { k: fallback[z].k, s: fallback[z].s, fuentes: ["IEP-abr (fallback)"], base_abr: fallback[z].k };
+    }
+  }
+  return out;
+}
+
+// ============================================================
 // MAIN — analiza polls.json y devuelve objeto completo
 // ============================================================
 
@@ -480,7 +560,7 @@ function analizarPolls(pollsPath = "./polls.json") {
   };
 }
 
-module.exports = { analizarPolls, calcularVelocidades, escenarioMomentum, calcularTripwires, anclajeDoble, anclajeSimulacros };
+module.exports = { analizarPolls, calcularVelocidades, escenarioMomentum, calcularTripwires, anclajeDoble, anclajeSimulacros, calcularTargetRegional, extraerRegionalVal };
 
 // CLI: node polls_engine.js → imprime análisis
 if (require.main === module) {

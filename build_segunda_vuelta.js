@@ -30,7 +30,7 @@
  */
 const fs = require("fs");
 const { execSync } = require("child_process");
-const { analizarPolls } = require("./polls_engine");
+const { analizarPolls, calcularTargetRegional } = require("./polls_engine");
 
 // Regenera el modelo predictivo primero
 try { execSync("node build_predictive.js", { stdio: "pipe" }); } catch (e) {}
@@ -103,6 +103,16 @@ const TARGET_VAL_IEP = {
   SIERRA_SUR:    { k: 32, s: 68 },
   ORIENTE:       { k: 44, s: 56 },
 };
+
+// B4 — Target regional DINÁMICO: recalibra la forma con crossbreaks de mayo (recency-weighted,
+// suavizado 75/25 vs abril). Cae al fallback de abril por zona sin data limpia.
+const pollsRaw = require("./polls.json").polls || [];
+const TARGET_REGIONAL = calcularTargetRegional(pollsRaw, TARGET_VAL_IEP);
+console.log("Target regional recalibrado (válido K, vs abril):");
+for (const z of Object.keys(TARGET_VAL_IEP)) {
+  const r = TARGET_REGIONAL[z], delta = (r.k - TARGET_VAL_IEP[z].k);
+  console.log(`  ${z.padEnd(15)} ${String(r.k).padStart(5)}% K  (abr ${TARGET_VAL_IEP[z].k}%, Δ${delta >= 0 ? '+' : ''}${delta.toFixed(1)}pp)`);
+}
 
 // Lookup forense por ubigeo
 const forense1vMap = new Map();
@@ -204,7 +214,7 @@ function correrEncuestas() {
   const ABST_PROMEDIO = 0.30;  // ~30% de "otros" se abstiene/blanco (de los encuestados 17-24% blanco/nulo + 7-13% NS)
   for (const zonaKey of Object.keys(zonas)) {
     const z = zonas[zonaKey];
-    const tgt = TARGET_VAL_IEP[zonaKey];
+    const tgt = TARGET_REGIONAL[zonaKey] || TARGET_VAL_IEP[zonaKey];
     if (!tgt) continue;
     const targetRatio = tgt.k / 100;  // K / (K+S) sobre valido
 
@@ -488,18 +498,20 @@ if (TARGET_ENC_K) {
       margen: k - s, ganador: k > s ? "K" : "S" };
   });
   enc.reanclaje = { target_k: TARGET_ENC_K, base_k: +curK.toFixed(2), swing_pp: +SWING_ENC_PP.toFixed(2) };
-  console.log(`Re-anclaje ENCUESTAS: ${curK.toFixed(2)}% → ${TARGET_ENC_K}% K (swing ${SWING_ENC_PP > 0 ? '+' : ''}${SWING_ENC_PP.toFixed(2)}pp · forma regional IEP-abr preservada)`);
+  console.log(`Re-anclaje ENCUESTAS: ${curK.toFixed(2)}% → ${TARGET_ENC_K}% K (swing ${SWING_ENC_PP > 0 ? '+' : ''}${SWING_ENC_PP.toFixed(2)}pp · forma regional recalibrada con crossbreaks de mayo)`);
 }
 
 out.escenarios.ENCUESTAS = {
-  label: "Encuestas (forma regional IEP-abr · nivel re-anclado a promedio ponderado IPSOS-may + DATUM)",
+  label: "Encuestas (forma regional recalibrada con crossbreaks de mayo · nivel re-anclado a blend anclaje doble + simulacros)",
+  target_regional: TARGET_REGIONAL,
   ...agregarProvinciaYDepartamento(enc.distritos),
   distritos: enc.distritos,
   calibracion: Object.fromEntries(Object.entries(enc.zonas).map(([k, v]) => [k, {
     base_share_K: +v.baseK.toFixed(4),
     base_share_S: +v.baseS.toFixed(4),
     achieved_pctK: +(v._achieved.totK / (v._achieved.totK + v._achieved.totS) * 100).toFixed(2),
-    target_pctK: TARGET_VAL_IEP[k]?.k ?? null,
+    target_pctK: TARGET_REGIONAL[k]?.k ?? TARGET_VAL_IEP[k]?.k ?? null,
+    target_abril_pctK: TARGET_VAL_IEP[k]?.k ?? null,
     n_distritos: v.distritos.length,
   }])),
   reanclaje: enc.reanclaje ?? null,
