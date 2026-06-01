@@ -370,6 +370,106 @@
       "url": "https://www.infobae.com/peru/2026/05/29/ultima-encuesta-cpi-134-de-peruanos-indecisos-y-el-226-votaria-blanco-o-viciado-en-la-segunda-vuelta-entre-keiko-fujimori-y-roberto-sanchez/",
       "_meta": "n=1200 en 19 departamentos, 95.5% confianza, 97.2% representatividad. Suma nacional = 100 exacto (32.5+29.1+22.6+13.4+2.4).",
       "id": "cpi-2026-05-28"
+    },
+    {
+      "pollster": "DATUM",
+      "client": "El Comercio",
+      "fecha_campo": [
+        "2026-05-26",
+        "2026-05-30"
+      ],
+      "fecha_publicacion": "2026-05-31",
+      "n": 1501,
+      "error_pp": 2.5,
+      "tipo": "nacional",
+      "resultados": {
+        "nacional": {
+          "k": 39.8,
+          "s": 35.9,
+          "blanco_nulo": 13.8,
+          "indeciso": 10.5
+        }
+      },
+      "url": "https://www.infobae.com/peru/2026/05/31/ultima-encuesta-presidencial-datum-keiko-fujimori-398-y-roberto-sanchez-359-pero-voto-de-indecisos-llega-a-casi-25/",
+      "_meta": "Última Datum pre-veda (intención de voto). Indecisos en Lima 27.6%. Simulacro de cédula va aparte (datum-sim-2026-05-30). Verificado ≥2 fuentes: infobae + gestion.pe + trome + elcomercio.",
+      "id": "datum-2026-05-30"
+    },
+    {
+      "pollster": "IPSOS",
+      "client": "Perú21",
+      "fecha_campo": [
+        "2026-05-29",
+        "2026-05-30"
+      ],
+      "fecha_publicacion": "2026-05-31",
+      "n": 1204,
+      "error_pp": 2.8,
+      "tipo": "nacional",
+      "resultados": {
+        "nacional": {
+          "k": 38,
+          "s": 35,
+          "blanco_nulo": 12,
+          "indeciso": 15
+        }
+      },
+      "url": "https://www.ipsos.com/es-pe/ultima-encuesta-publicable-segunda-vuelta-encuesta-peru-21-ipsos-mayo-2026",
+      "_meta": "Última Ipsos publicable pre-veda. Intención espontánea: 12% blanco/viciado + 15% no precisa. Crossbreaks (NO cargados como estratos para no romper momentum, falta otras_ciudades verificado): Lima K52.2/S27.4/BN20.4, rural K24.4/S53.9. Simulacro aparte (ipsos-sim-2026-05-30). Verificado ≥2 fuentes: ipsos.com + infobae + peru21 + caretas + larepublica.",
+      "id": "ipsos-2026-05-30"
+    },
+    {
+      "pollster": "DATUM",
+      "client": "El Comercio",
+      "fecha_campo": [
+        "2026-05-26",
+        "2026-05-30"
+      ],
+      "fecha_publicacion": "2026-05-31",
+      "n": 1501,
+      "error_pp": 2.5,
+      "tipo": "simulacro",
+      "resultados": {
+        "nacional": {
+          "k": 52.9,
+          "s": 47.1
+        },
+        "emitido": {
+          "k": 39.7,
+          "s": 35.4,
+          "blanco": 14.4,
+          "viciado": 10.5
+        }
+      },
+      "url": "https://elcomercio.pe/politica/encuesta-datum-internacional-el-57-considera-que-el-debate-sera-decisivo-para-definir-su-voto-simulacro-de-votacion-intencion-de-voto-keiko-fujimori-roberto-sanchez-fuerza-popular-juntos-por-el-peru-tlcnota-noticia/",
+      "_meta": "SIMULACRO de cédula electoral (k/s sobre voto VÁLIDO). Voto emitido: K39.7/S35.4/blanco14.4/viciado10.5 (n=1501). Medición directa sobre válido, no contamina el anclaje de intención. Verificado ≥2 fuentes: elcomercio + diariocorreo + canaln + infobae.",
+      "id": "datum-sim-2026-05-30"
+    },
+    {
+      "pollster": "IPSOS",
+      "client": "Perú21",
+      "fecha_campo": [
+        "2026-05-29",
+        "2026-05-30"
+      ],
+      "fecha_publicacion": "2026-05-31",
+      "n": 1204,
+      "error_pp": 2.8,
+      "tipo": "simulacro",
+      "resultados": {
+        "nacional": {
+          "k": 51.4,
+          "s": 48.6
+        },
+        "emitido": {
+          "k": 40.4,
+          "s": 38.3,
+          "blanco": 10.5,
+          "viciado": 10.8
+        }
+      },
+      "url": "https://www.ipsos.com/es-pe/ultima-encuesta-publicable-segunda-vuelta-encuesta-peru-21-ipsos-mayo-2026",
+      "_meta": "SIMULACRO de cédula electoral (k/s sobre voto VÁLIDO). Voto emitido: K40.4/S38.3/blanco10.5/viciado10.8 (n=1204). Ventaja K +2.8pp. Verificado ≥2 fuentes: ipsos.com + infobae + eluniversal + larepublica.",
+      "id": "ipsos-sim-2026-05-30"
     }
   ]
 }

@@ -387,7 +387,7 @@ function calcularTripwires(polls) {
 function anclajeDoble(polls, refDate = new Date(), tauDias = 14) {
   const TAU = tauDias;
   const items = polls
-    .filter(p => p.resultados.nacional?.k != null && p.resultados.nacional?.s != null)
+    .filter(p => p.tipo !== "simulacro" && p.resultados.nacional?.k != null && p.resultados.nacional?.s != null)
     .map(p => {
       const dias = diasEntre(fechaEfectiva(p), refDate);
       const peso = p.n * Math.exp(-dias / TAU);
@@ -412,6 +412,35 @@ function anclajeDoble(polls, refDate = new Date(), tauDias = 14) {
 }
 
 // ============================================================
+// ANCLAJE SIMULACROS — promedio ponderado por N de los simulacros de cédula
+// ============================================================
+//
+// Los simulacros de cédula (Datum/Ipsos) miden el resultado DIRECTAMENTE sobre voto
+// válido (k+s=100), excluyendo el limbo de indecisos/blanco-nulo (22-25% en 2026).
+// Son la única estimación directa del balotaje, complementaria al anclaje doble que
+// se calcula sobre intención (total) y luego renormaliza. Se promedian aparte y se
+// blendean en build_segunda_vuelta.js (60% anclaje doble / 40% simulacros).
+
+function anclajeSimulacros(polls) {
+  const sims = polls.filter(p => p.tipo === "simulacro" && p.resultados.nacional?.k != null);
+  if (sims.length === 0) return null;
+  const wTot = sims.reduce((s, p) => s + p.n, 0);
+  const valK = sims.reduce((s, p) => s + p.resultados.nacional.k * p.n, 0) / wTot;
+  return {
+    n_simulacros: sims.length,
+    items: sims.map(p => ({
+      id: p.id, pollster: p.pollster, n: p.n,
+      val_k: p.resultados.nacional.k, val_s: p.resultados.nacional.s,
+      fecha_campo: p.fecha_campo,
+    })),
+    promedio_ponderado: {
+      val_k: +valK.toFixed(2),
+      val_s: +(100 - valK).toFixed(2),
+    },
+  };
+}
+
+// ============================================================
 // MAIN — analiza polls.json y devuelve objeto completo
 // ============================================================
 
@@ -423,11 +452,13 @@ function analizarPolls(pollsPath = "./polls.json") {
   const momentum = escenarioMomentum(polls, velocidades);
   const tripwires = calcularTripwires(polls);
   const ancla = anclajeDoble(polls);
+  const anclaSim = anclajeSimulacros(polls);
 
   return {
     meta: {
       generated_at: new Date().toISOString(),
       n_polls: polls.length,
+      n_simulacros: anclaSim?.n_simulacros || 0,
       dia_eleccion: DIA_ELECCION,
     },
     polls_resumen: polls.map(p => ({
@@ -444,10 +475,11 @@ function analizarPolls(pollsPath = "./polls.json") {
     escenario_momentum: momentum,
     tripwires,
     anclaje_doble: ancla,
+    anclaje_simulacros: anclaSim,
   };
 }
 
-module.exports = { analizarPolls, calcularVelocidades, escenarioMomentum, calcularTripwires, anclajeDoble };
+module.exports = { analizarPolls, calcularVelocidades, escenarioMomentum, calcularTripwires, anclajeDoble, anclajeSimulacros };
 
 // CLI: node polls_engine.js → imprime análisis
 if (require.main === module) {

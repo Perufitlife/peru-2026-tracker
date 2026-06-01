@@ -458,7 +458,17 @@ const enc = correrEncuestas();
 // polls_engine, que pondera todas las encuestas por recencia (al 27-may dominan
 // IPSOS 16-17may + DATUM 17-20may, ~85% del peso). Mantiene la geografía, refresca
 // el titular. Se recalcula solo en cada build conforme entran encuestas nuevas.
-const TARGET_ENC_K = pollsAnalysis.anclaje_doble?.promedio_ponderado?.val_k;
+// Blend 60/40: anclaje doble (intención sobre total, renormalizado a válido) +
+// anclaje simulacros (medición DIRECTA sobre válido de las cédulas Datum/Ipsos).
+// Los simulacros excluyen el limbo 22-25% → mejor estimador del balotaje real; pesan 40%.
+const ANCLA_DOBLE_K = pollsAnalysis.anclaje_doble?.promedio_ponderado?.val_k;
+const ANCLA_SIM_K = pollsAnalysis.anclaje_simulacros?.promedio_ponderado?.val_k;
+const TARGET_ENC_K = (ANCLA_SIM_K != null && ANCLA_DOBLE_K != null)
+  ? +(0.6 * ANCLA_DOBLE_K + 0.4 * ANCLA_SIM_K).toFixed(2)
+  : ANCLA_DOBLE_K;
+if (ANCLA_SIM_K != null) {
+  console.log(`Anclaje blend: doble ${ANCLA_DOBLE_K}% (60%) + simulacros ${ANCLA_SIM_K}% (40%) → TARGET_ENC_K ${TARGET_ENC_K}%`);
+}
 if (TARGET_ENC_K) {
   // Filtra distritos sin votos (ONPE puede traer distritos vacíos durante el conteo)
   const isValidDist = d => Number.isFinite(d.validos_proy) && d.validos_proy > 0 && Number.isFinite(d.pct_keiko);
@@ -605,6 +615,53 @@ function gaussian(mu = 0, sigma = 1) {
   while (u === 0) u = Math.random();
   while (v === 0) v = Math.random();
   return mu + sigma * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+// ===== Soporte Monte Carlo con colas gordas + correlación zonal (B3) =====
+//
+// Problema del MC anterior: shocks zonales gaussianos e INDEPENDIENTES → al promediar
+// 6 zonas la varianza nacional colapsa (ley de grandes números) y subestima la cola.
+// Eso inflaba P(K) a ~82% pese a un margen de 2-5pp. Dos correcciones:
+//   1. Correlación zonal vía Cholesky: los errores de encuesta no son independientes
+//      entre regiones (un sesgo metodológico mueve varias zonas a la vez).
+//   2. Colas gordas vía Student-t (ν=4): los "polling misses" históricos (2016, 2021,
+//      Brexit, Trump) son leptocúrticos — sorpresas grandes más frecuentes que en una normal.
+
+function chi2(nu) {
+  let s = 0;
+  for (let i = 0; i < nu; i++) { const z = gaussian(0, 1); s += z * z; }
+  return s;
+}
+
+function choleskyDecomp(A) {
+  const n = A.length;
+  const L = Array.from({ length: n }, () => new Array(n).fill(0));
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j <= i; j++) {
+      let sum = 0;
+      for (let k = 0; k < j; k++) sum += L[i][k] * L[j][k];
+      if (i === j) {
+        const d = A[i][i] - sum;
+        if (d <= 0) return null;           // no positiva-definida → caller usa fallback independiente
+        L[i][j] = Math.sqrt(d);
+      } else {
+        L[i][j] = (A[i][j] - sum) / L[j][j];
+      }
+    }
+  }
+  return L;
+}
+
+// Orden y matriz de correlación zonal. Base 0.2 (un sesgo nacional mueve todas las zonas
+// un poco); pares con afinidad estructural sobre-ponderados.
+const ZONA_ORDEN_MC = ["LIMA_METRO", "COSTA_NORTE", "COSTA_SUR", "SIERRA_CENTRO", "SIERRA_SUR", "ORIENTE"];
+function matrizCorrelacionZonal() {
+  const n = 6, base = 0.2;
+  const M = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : base)));
+  const set = (a, b, r) => { M[a][b] = r; M[b][a] = r; };
+  set(0, 1, 0.65); // Lima ↔ Costa Norte (costa urbana, dinámica pro-K compartida)
+  set(3, 4, 0.75); // Sierra Centro ↔ Sierra Sur (bloque andino pro-S)
+  return M;
 }
 
 function correrMonteCarlo(encDistritos, nSims = 5000) {
@@ -972,17 +1029,31 @@ if (baseline2021) {
 
 function correrMonteCarlo2(blendDistritos, modelDistMap, encDistMap, nSims = 5000) {
   const results = [];
+  const SIGMA_ZONAL = 0.020, NU_T = 4;
+  const cholL = choleskyDecomp(matrizCorrelacionZonal());  // null si no PD → fallback independiente
   for (let i = 0; i < nSims; i++) {
     const e1 = gaussian(0, 0.015);          // shift global antivoto
     const e2 = gaussian(-0.005, 0.012);     // recta final 2016
     const e3 = gaussian(0.72, 0.05);        // voto extranjero
     const wMod = clampNum(gaussian(0.45, 0.10), 0.20, 0.70);  // peso modelo vs encuestas
     const wEnc = 1 - wMod;
-    const e_zonal = {
-      LIMA_METRO: gaussian(0, 0.020), COSTA_NORTE: gaussian(0, 0.020),
-      COSTA_SUR: gaussian(0, 0.020), SIERRA_CENTRO: gaussian(0, 0.020),
-      SIERRA_SUR: gaussian(0, 0.020), ORIENTE: gaussian(0, 0.020),
-    };
+
+    // Shock zonal CORRELADO con colas gordas (Student-t multivariante, ν=4).
+    // z iid normales → y = L·z (correlacionados) → escalado t compartido sqrt(ν/χ²) = cola gorda conjunta.
+    let e_zonal;
+    if (cholL) {
+      const z = ZONA_ORDEN_MC.map(() => gaussian(0, 1));
+      const y = cholL.map(row => row.reduce((s, v, k) => s + v * z[k], 0));
+      const tScale = Math.sqrt(NU_T / chi2(NU_T));
+      e_zonal = {};
+      ZONA_ORDEN_MC.forEach((zona, idx) => { e_zonal[zona] = y[idx] * SIGMA_ZONAL * tScale; });
+    } else {
+      e_zonal = {
+        LIMA_METRO: gaussian(0, SIGMA_ZONAL), COSTA_NORTE: gaussian(0, SIGMA_ZONAL),
+        COSTA_SUR: gaussian(0, SIGMA_ZONAL), SIERRA_CENTRO: gaussian(0, SIGMA_ZONAL),
+        SIERRA_SUR: gaussian(0, SIGMA_ZONAL), ORIENTE: gaussian(0, SIGMA_ZONAL),
+      };
+    }
 
     let totK = 0, totS = 0;
     for (const d of blendDistritos) {
@@ -1030,8 +1101,10 @@ function correrMonteCarlo2(blendDistritos, modelDistMap, encDistMap, nSims = 500
       shift_antivoto_3sem: { mu: 0, sigma: 0.015 },
       recta_final_2016: { mu: -0.005, sigma: 0.012 },
       voto_extranjero_k: { mu: 0.72, sigma: 0.05 },
-      ruido_zonal: { mu: 0, sigma: 0.020 },
+      ruido_zonal: { mu: 0, sigma: 0.020, distribucion: "Student-t ν=4 (colas gordas)", correlacionado: true },
+      correlacion_zonal: { base: 0.2, lima_costanorte: 0.65, sierracentro_sierrasur: 0.75 },
     },
+    metodologia_incertidumbre: "Shocks zonales correlacionados (Cholesky) con marginales Student-t ν=4 para capturar polling-miss leptocúrtico y sesgo metodológico común entre regiones. Sustituye el ruido gaussiano independiente que subestimaba la cola.",
   };
 }
 
@@ -1040,8 +1113,8 @@ function clampNum(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
 const modelDistMapForMC = new Map();
 modeloPropioDist.forEach(d => modelDistMapForMC.set(d.ubigeo, d));
 
-console.log("Corriendo Monte Carlo 5,000 simulaciones (modelo + encuestas con incertidumbre en blend)...");
-out.monte_carlo = correrMonteCarlo2(mpDist, modelDistMapForMC, encDistMap, 5000);
+console.log("Corriendo Monte Carlo 10,000 simulaciones (shocks zonales correlacionados + colas Student-t)...");
+out.monte_carlo = correrMonteCarlo2(mpDist, modelDistMapForMC, encDistMap, 10000);
 
 // ===== Provincias bisagra (margen <8pp en escenario ENCUESTAS) =====
 out.bisagra = enc.distritos
