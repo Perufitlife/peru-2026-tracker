@@ -852,16 +852,81 @@ function diasFaltantes() {
 
 function renderHeader(oneR, sv) {
   const dias = diasFaltantes();
-  let pctK = '—', pctS = '—', label = 'Cargando…';
+  let pctK = '—', pctS = '—';
   if (sv?.escenarios?.MAS_PROBABLE) {
     const n = sv.escenarios.MAS_PROBABLE.nacional;
     pctK = n.pct_keiko.toFixed(1);
     pctS = n.pct_sanchez.toFixed(1);
-    label = 'Más Probable (modelo + encuestas + Polymarket)';
   }
+  // Probabilidad de ganar (Monte Carlo) — el número que de verdad importa, distinto del % de voto
+  let pGanaK = null, pGanaS = null;
+  if (sv?.monte_carlo) {
+    pGanaK = Math.round(sv.monte_carlo.prob_keiko_gana);
+    pGanaS = Math.round(sv.monte_carlo.prob_sanchez_gana);
+  }
+  // Reparto sobre TOTAL (incluye el limbo) para visibilizar el bloque indeciso
+  const anc = sv?.polls_timeseries?.anclaje_doble?.promedio_ponderado;
+  let kTot = anc ? +anc.k_total.toFixed(1) : null;
+  let sTot = anc ? +anc.s_total.toFixed(1) : null;
+  let limbo = (kTot != null && sTot != null) ? Math.max(0, +(100 - kTot - sTot).toFixed(1)) : null;
+  const tieneTotal = kTot != null;
+  const lider = pGanaK != null ? (pGanaK >= pGanaS ? 'Keiko' : 'Sánchez') : '—';
+  const liderColor = pGanaK != null ? (pGanaK >= pGanaS ? 'var(--keiko)' : 'var(--sanchez)') : '#64748b';
+
   const headerEl = document.getElementById('global-header');
   if (!headerEl) return;
+  let bannerDismissed = false;
+  try { bannerDismissed = localStorage.getItem('onpe_ctx_banner_v2') === 'dismissed'; } catch(e) {}
+  const ctxBanner = bannerDismissed ? '' : `
+    <div id="ctx-banner" style="position:relative;margin-bottom:12px;padding:11px 34px 11px 13px;background:linear-gradient(90deg,rgba(245,158,11,.12),rgba(37,99,235,.08));border:1px solid rgba(245,158,11,.3);border-radius:12px;font-size:.76rem;line-height:1.45;color:var(--text)">
+      <b>🔇 Veda electoral activa (desde 1-jun)</b> — prohibido publicar encuestas nuevas hasta el 7-jun. Lo que ves son los <b>últimos datos legales</b> (29-31 may). El <b>debate del 31-may</b> no tiene encuesta flash que lo mida; según el análisis de prensa lo ganó Keiko por margen estrecho, efecto ~1-3pp en Lima. Modelo actualizado con <b>2 simulacros de cédula</b> (Datum 52.9 / Ipsos 51.4 sobre válido).
+      <button onclick="try{localStorage.setItem('onpe_ctx_banner_v2','dismissed')}catch(e){}; var b=document.getElementById('ctx-banner'); if(b) b.remove();" style="position:absolute;top:8px;right:9px;background:none;border:none;font-size:1.1rem;line-height:1;cursor:pointer;color:var(--text-muted)" aria-label="Cerrar aviso">×</button>
+    </div>`;
+  const probBlock = pGanaK != null ? `
+      <div style="display:flex;align-items:stretch;gap:10px;margin:14px 0 10px;">
+        <div style="flex:1;text-align:center;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25);border-radius:14px;padding:12px 6px;">
+          <div style="font-size:2rem;font-weight:800;line-height:1;color:var(--keiko)">${pGanaK}%</div>
+          <div style="font-size:.66rem;color:var(--text-muted);margin-top:5px;text-transform:uppercase;letter-spacing:.04em">prob. gana<br>Keiko</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px">
+          <div style="font-size:.7rem;font-weight:700;color:#94a3b8">VS</div>
+          <div style="font-size:.6rem;color:var(--text-muted);text-align:center;margin-top:2px">10 000<br>simulaciones</div>
+        </div>
+        <div style="flex:1;text-align:center;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.25);border-radius:14px;padding:12px 6px;">
+          <div style="font-size:2rem;font-weight:800;line-height:1;color:var(--sanchez)">${pGanaS}%</div>
+          <div style="font-size:.66rem;color:var(--text-muted);margin-top:5px;text-transform:uppercase;letter-spacing:.04em">prob. gana<br>Sánchez</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:.78rem;color:var(--text-muted);margin-bottom:10px">
+        Favorito: <b style="color:${liderColor}">${lider}</b>, pero la elección está <b>técnicamente abierta</b> — el bloque indeciso supera la diferencia.
+      </div>` : '';
+
+  const barBlock = tieneTotal ? `
+      <div style="display:flex;height:22px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,.06)">
+        <div style="width:${kTot}%;background:var(--keiko)"></div>
+        <div style="width:${limbo}%;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 5px,#e2e8f0 5px,#e2e8f0 10px)"></div>
+        <div style="width:${sTot}%;background:var(--sanchez)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.72rem;margin-top:6px;flex-wrap:wrap;gap:4px">
+        <span style="color:var(--keiko);font-weight:600">● Keiko ${kTot}%</span>
+        <span style="color:#64748b;font-weight:600">▦ Indecisos + blanco/nulo ${limbo}%</span>
+        <span style="color:var(--sanchez);font-weight:600">Sánchez ${sTot}% ●</span>
+      </div>
+      <div style="text-align:center;font-size:.74rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px dashed rgba(0,0,0,.08)">
+        Solo entre votos <b>válidos</b> (sin blanco/nulo): <b style="color:var(--keiko)">Keiko ${pctK}%</b> · <b style="color:var(--sanchez)">Sánchez ${pctS}%</b>
+      </div>` : `
+      <div class="gh-bar">
+        <div class="gh-bar-k" style="width:${pctK}%"></div>
+        <div class="gh-bar-s" style="width:${pctS}%"></div>
+      </div>
+      <div class="gh-foot">
+        <span class="gh-side k"><span class="gh-dot"></span> Keiko <b>${pctK}%</b></span>
+        <span class="gh-mid">voto válido</span>
+        <span class="gh-side s">Sánchez <b>${pctS}%</b> <span class="gh-dot"></span></span>
+      </div>`;
+
   headerEl.innerHTML = `
+    ${ctxBanner}
     <header class="gh-card">
       <div class="gh-top">
         <div class="gh-brand">
@@ -876,15 +941,8 @@ function renderHeader(oneR, sv) {
           <div class="gh-cd-lbl">días al 7 de junio</div>
         </div>
       </div>
-      <div class="gh-bar">
-        <div class="gh-bar-k" style="width:${pctK}%"></div>
-        <div class="gh-bar-s" style="width:${pctS}%"></div>
-      </div>
-      <div class="gh-foot">
-        <span class="gh-side k"><span class="gh-dot"></span> Keiko <b>${pctK}%</b></span>
-        <span class="gh-mid">${label}</span>
-        <span class="gh-side s">Sánchez <b>${pctS}%</b> <span class="gh-dot"></span></span>
-      </div>
+      ${probBlock}
+      ${barBlock}
     </header>
   `;
 }
@@ -1155,17 +1213,32 @@ function wireHomePresets() {
 function renderHomePollsMini(sv) {
   const el = document.getElementById('pollsMini');
   if (!el) return;
-  const polls = sv.polls_timeseries?.polls_resumen || [];
+  const pollsAll = sv.polls_timeseries?.polls_resumen || [];
   const ancla = sv.polls_timeseries?.anclaje_doble?.promedio_ponderado;
+  const anclaSim = sv.polls_timeseries?.anclaje_simulacros;
   const mc = sv.monte_carlo;
-  const sorted = [...polls].sort((a, b) => new Date(b.fecha_campo[1]) - new Date(a.fecha_campo[1]));
+  // Separar simulacros de cédula (sobre válido) de la intención de voto (sobre total)
+  const intencion = pollsAll.filter(p => p.tipo !== 'simulacro');
+  const sorted = [...intencion].sort((a, b) => new Date(b.fecha_campo[1]) - new Date(a.fecha_campo[1]));
 
   const vk = ancla?.val_k;
   const vs = ancla?.val_s;
   const probK = mc?.prob_keiko_gana;
+
+  // FILA A — Simulacros de cédula: la medición DIRECTA del balotaje (sobre voto válido)
+  const simBlock = (anclaSim && anclaSim.n_simulacros > 0) ? `
+    <div class="ancla-card" style="background:linear-gradient(135deg,rgba(249,115,22,.10),rgba(37,99,235,.06));border:1px solid rgba(249,115,22,.25)">
+      <div class="ancla-lbl">🗳️ Simulacros de cédula (medición directa · sobre voto válido)</div>
+      <div class="ancla-big">Keiko ${anclaSim.promedio_ponderado.val_k.toFixed(1)}% · Sánchez ${anclaSim.promedio_ponderado.val_s.toFixed(1)}%</div>
+      <div class="ancla-sub">
+        ${anclaSim.items.map(s => `${s.pollster} ${s.val_k}%`).join(' · ')} — los únicos que estiman el resultado real del balotaje (excluyen el limbo de indecisos).
+      </div>
+    </div>` : '';
+
   el.innerHTML = `
+    ${simBlock}
     <div class="ancla-card">
-      <div class="ancla-lbl">Anclaje doble (recencia-ponderado · sobre voto válido)</div>
+      <div class="ancla-lbl">Anclaje doble · intención de voto (recencia-ponderado · sobre voto válido)</div>
       <div class="ancla-big">Keiko ${vk != null ? vk.toFixed(2) : '—'}% · Sánchez ${vs != null ? vs.toFixed(2) : '—'}%</div>
       <div class="ancla-sub">
         Δ vs 2021 real: <b>${vk != null ? '+' + (vk - 49.875).toFixed(2) : '—'}pp Keiko</b>
@@ -1175,17 +1248,17 @@ function renderHomePollsMini(sv) {
     ${sorted.length === 0 ? '<div class="card-foot">ℹ️ Sin encuestas cargadas aún.</div>' : `
     <div class="polls-mini">
       <div class="polls-mini-head">
-        <div>Encuesta</div><div>K%</div><div>S%</div><div>K sobre válido</div>
+        <div>Encuesta (intención)</div><div>K%</div><div>S%</div><div>K sobre válido</div>
       </div>
       ${sorted.map(p => {
         const denom = (p.nacional?.k || 0) + (p.nacional?.s || 0);
-        const vk = denom > 0 ? p.nacional.k / denom * 100 : 0;
+        const vkr = denom > 0 ? p.nacional.k / denom * 100 : 0;
         return `
         <div class="polls-mini-row">
           <div class="polls-mini-name">${p.pollster}<span class="polls-mini-date">${p.fecha_campo?.[1] || '—'}</span></div>
           <div class="polls-mini-k">${p.nacional?.k ?? '—'}%</div>
           <div class="polls-mini-s">${p.nacional?.s ?? '—'}%</div>
-          <div class="polls-mini-val">${vk.toFixed(1)}%</div>
+          <div class="polls-mini-val">${vkr.toFixed(1)}%</div>
         </div>`;
       }).join('')}
     </div>`}
@@ -1313,11 +1386,14 @@ function renderMapaView(sv) {
   return `
     <div class="card">
       <div class="card-title">🗺️ Mapa por departamento</div>
-      <div class="card-sub">Naranja = Keiko · Rojo = Sánchez. Intensidad = margen. Hover para detalle.</div>
+      <div class="card-sub">Naranja = Keiko · Rojo = Sánchez. Intensidad = margen. <b>Toca un departamento</b> (móvil) o pasa el cursor para ver el detalle.</div>
       <div class="scenario-picker">${renderScenarioButtons(escK)}</div>
       <div class="map-wrap">
         <svg id="peru-map" viewBox="0 0 600 700" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="map-tooltip" class="map-tooltip" style="display:none"></div>
+      </div>
+      <div id="map-detail-panel" style="margin-top:10px;padding:12px 14px;background:var(--bg-soft,#f8fafc);border:1px solid rgba(0,0,0,.07);border-radius:12px;min-height:54px;font-size:.86rem;color:var(--text-muted)">
+        👆 Toca o pasa el cursor por un departamento para ver Keiko vs Sánchez ahí.
       </div>
       <div class="map-legend">
         <div class="ml-row">
@@ -1447,7 +1523,28 @@ async function initMapaInteractions(sv) {
   });
   svg.innerHTML = svgContent;
 
+  // Panel persistente para móvil/touch (el hover no existe en táctil → mapa antes muerto)
+  const panel = document.getElementById('map-detail-panel');
+  function showDepDetail(el) {
+    const dep = el.dataset.dep;
+    const pK = parseFloat(el.dataset.pctk);
+    const pS = parseFloat(el.dataset.pcts);
+    const win = pK > pS ? 'Keiko' : 'Sánchez';
+    const winColor = pK > pS ? '#F97316' : '#DC2626';
+    const margen = Math.abs(pK - pS).toFixed(1);
+    if (panel) panel.innerHTML = `
+      <div style="font-weight:800;font-size:1rem;margin-bottom:6px;color:var(--text)">${titleCase(dep)}</div>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <span style="color:#F97316;font-weight:700">Keiko ${pK.toFixed(1)}%</span>
+        <span style="color:#DC2626;font-weight:700">Sánchez ${pS.toFixed(1)}%</span>
+        <span style="margin-left:auto;font-size:.8rem;color:var(--text-muted)">Gana <b style="color:${winColor}">${win}</b> por ${margen} pp</span>
+      </div>`;
+    svg.querySelectorAll('.map-dep').forEach(p => { p.style.strokeWidth = '0.6'; p.style.stroke = 'white'; });
+    el.style.strokeWidth = '2.4'; el.style.stroke = '#0f172a';
+  }
+
   svg.querySelectorAll('.map-dep').forEach(el => {
+    el.style.cursor = 'pointer';
     el.addEventListener('mouseenter', e => {
       const dep = e.target.dataset.dep;
       const pK = parseFloat(e.target.dataset.pctk);
@@ -1462,6 +1559,8 @@ async function initMapaInteractions(sv) {
       tt.style.top = (e.clientY - rect.top + 10) + 'px';
     });
     el.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+    // Click/tap: funciona en móvil y desktop, deja el detalle fijo en el panel
+    el.addEventListener('click', () => showDepDetail(el));
   });
 }
 

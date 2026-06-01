@@ -464,6 +464,7 @@ function analizarPolls(pollsPath = "./polls.json") {
     polls_resumen: polls.map(p => ({
       id: p.id,
       pollster: p.pollster,
+      tipo: p.tipo || "nacional",
       fecha_publicacion: p.fecha_publicacion,
       fecha_campo: p.fecha_campo,
       n: p.n,
