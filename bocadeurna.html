@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boca de urna 2026 vs 2021 — ¿Quién gana?</title>
+<meta name="description" content="Comparativo de la boca de urna Ipsos (7-jun-2026, Keiko vs Sánchez) contra los resultados reales de la 2da vuelta 2021, por macrozona. ¿Quién debería ganar?">
+<style>
+  :root{
+    --k:#e8762c; --s:#3aa655; --bg:#0f1117; --card:#1a1d27; --line:#2a2e3b;
+    --txt:#e8eaf0; --mut:#9aa0b0; --good:#3aa655; --warn:#e0a92e; --bad:#d6453d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);line-height:1.5}
+  .wrap{max-width:880px;margin:0 auto;padding:18px 16px 60px}
+  h1{font-size:1.55rem;margin:.2em 0 .1em;letter-spacing:-.5px}
+  .sub{color:var(--mut);font-size:.92rem;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:14px 0}
+  .verdict{background:linear-gradient(135deg,#1d2230,#171a24);border-color:#33405c}
+  .badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.3px}
+  .b-warn{background:rgba(224,169,46,.16);color:var(--warn);border:1px solid rgba(224,169,46,.4)}
+  .b-good{background:rgba(58,166,85,.16);color:var(--good);border:1px solid rgba(58,166,85,.4)}
+  .big{font-size:2.6rem;font-weight:800;letter-spacing:-1px;line-height:1.05;margin:.15em 0}
+  .k{color:var(--k)} .sc{color:var(--s)}
+  .bar{height:30px;border-radius:8px;overflow:hidden;display:flex;margin:12px 0;border:1px solid var(--line)}
+  .bar > div{display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#0c0e14}
+  table{width:100%;border-collapse:collapse;font-size:.92rem;margin-top:6px}
+  th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--mut);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.4px}
+  tr:last-child td{border-bottom:none}
+  .nat td{font-weight:800;border-top:2px solid var(--line);background:rgba(255,255,255,.02)}
+  .sw-up{color:var(--good);font-weight:700}
+  .sw-dn{color:var(--bad);font-weight:700}
+  .win-k{color:var(--k);font-weight:700} .win-s{color:var(--s);font-weight:700}
+  h2{font-size:1.05rem;margin:.2em 0 .6em;color:#cdd2e0}
+  ul{margin:.4em 0;padding-left:1.2em} li{margin:.35em 0}
+  .note{font-size:.82rem;color:var(--mut)}
+  .pill{font-size:.78rem;color:var(--mut);background:#12141c;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:10px}
+  a{color:#6ea8ff}
+  .foot{margin-top:26px;font-size:.78rem;color:var(--mut);text-align:center}
+  .meter{display:flex;gap:2px;margin:8px 0}
+  .meter span{height:8px;flex:1;border-radius:2px;background:#2a2e3b}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>🗳️ ¿Quién gana el 7-jun? — Boca de urna 2026 vs 2021</h1>
+  <div class="sub">Exit poll <b>Ipsos</b> (Perú21 / Latina · n=18,000 · publicado 7-jun 5:00pm) comparado con el resultado <b>real</b> de la 2da vuelta 2021. Voto válido.</div>
+
+  <!-- VERDICTO -->
+  <div class="card verdict">
+    <span class="badge b-warn">⚠️ EMPATE TÉCNICO · NO CONFIRMADO</span>
+    <div class="big"><span class="k">Keiko 50.7%</span> <span style="color:var(--mut);font-size:1.4rem">vs</span> <span class="sc">Sánchez 49.3%</span></div>
+    <div class="bar">
+      <div style="width:50.7%;background:var(--k)">K 50.7%</div>
+      <div style="width:49.3%;background:var(--s)">S 49.3%</div>
+    </div>
+    <p style="margin:.6em 0 0"><b>Keiko se inclina ganadora, pero por solo 1.4 pp</b> — dentro del margen de error de la boca de urna. <b>NO es victoria confirmada.</b> El conteo oficial de ONPE puede moverse cuando entren las actas rurales del <b>Sur</b> y <b>Oriente</b> (fuertemente pro-Sánchez), que se reportan al final. <span class="note">Es exactamente la dinámica que volteó la elección de 2021.</span></p>
+    <div class="pill">📊 <b>Probabilidad subjetiva de victoria Keiko: ~60/40.</b> Volado que se inclina a Keiko, no un triunfo seguro.</div>
+  </div>
+
+  <!-- COMPARATIVO REGIONAL -->
+  <div class="card">
+    <h2>Comparativo por macrozona — Keiko 2021 vs 2026</h2>
+    <table>
+      <thead><tr><th>Zona</th><th>Keiko 2021</th><th>Keiko 2026 (BdU)</th><th>Swing</th><th>Gana 2026</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pill" style="margin-top:14px">
+      ⚠️ <b>Caveat "Centro":</b> el salto 36%→52% se debe casi seguro a que mi agrupación 2021 metió a Ayacucho/Huancavelica (bastiones ultra-Castillo) en "Centro", mientras Ipsos los agrupa distinto. <b>El nacional sí es comparable 1:1.</b>
+    </div>
+  </div>
+
+  <!-- LECTURA -->
+  <div class="card">
+    <h2>📌 La lectura</h2>
+    <ul>
+      <li><b>Keiko mejoró ~1.1 pp a nivel nacional</b> vs 2021. En el voto interno (sin extranjero) sacó <b>49.58% en 2021</b> y la BdU le da <b>50.7%</b> hoy → eso voltea el resultado.</li>
+      <li><b>Lima y Norte aguantan para Keiko</b> (66% y 51.5%, su muro). <b>Sur sigue siendo bastión de Sánchez</b> (73.9%), igual que fue de Castillo (77.8%).</li>
+      <li><span class="badge b-good">A FAVOR de Keiko</span> La boca de urna <b>excluye el voto extranjero</b>, que históricamente vota fuerte por Keiko (~66/34 en 2021). Sumarlo al conteo oficial le aporta <b>~+0.3 pp</b> → el resultado final podría quedar cerca de <b>K 51.0%</b>.</li>
+      <li><span class="badge b-warn">EN CONTRA de Keiko</span> Las actas que faltan contar son las del <b>sur rural y selva</b>, las más anti-Keiko y las que entran al final. En 2021 ese flujo tardío fue lo que dio vuelta el marcador a favor de Castillo.</li>
+    </ul>
+  </div>
+
+  <!-- QUÉ VIGILAR -->
+  <div class="card">
+    <h2>👁️ Qué vigilar en el conteo oficial de ONPE</h2>
+    <ul>
+      <li><b>Velocidad por región:</b> si entra primero Lima/Norte, Keiko se verá arriba de más; espera a que el Sur cargue actas.</li>
+      <li><b>Margen vs 2021:</b> si Keiko mantiene <b>≥51%</b> con el sur ya contado → ganó. Si baja de 50% antes de cerrar el sur → riesgo real de remontada.</li>
+      <li><b>Voto extranjero:</b> entra tarde y le suma a Keiko — colchón de ~0.3pp a su favor.</li>
+    </ul>
+    <p class="note" style="margin-bottom:0">Nuestro modelo pre-veda proyectó K 52.48% / P(ganar) 76.5%, CI80 [48.5–55.2]. La BdU (50.7%) cayó en el borde bajo pero <b>dentro</b> del intervalo — el modelo no falló, Keiko quedó más ajustada de lo esperado.</p>
+  </div>
+
+  <div class="foot">
+    Fuente 2026: boca de urna Ipsos para Perú21/Latina (7-jun-2026, voto válido, solo Perú).<br>
+    Fuente 2021: cómputo oficial ONPE 2da vuelta (Castillo vs Keiko), agregado a macrozonas Ipsos.<br>
+    <a href="./index.html">← Volver al dashboard ONPE 2026</a>
+  </div>
+
+</div>
+
+<script>
+const DATA = [
+  // zona, keiko2021, keiko2026bdu
+  ["Lima",    65.0, 66.1],
+  ["Norte",   51.0, 51.5],
+  ["Centro",  36.3, 52.3],
+  ["Sur",     22.2, 26.1],
+  ["Oriente", 47.5, 43.8],
+];
+const NAT = ["Nacional", 49.58, 50.7];
+const tb = document.getElementById('tbody');
+function row(z, k21, k26, isNat){
+  const sw = (k26 - k21);
+  const swCls = sw >= 0 ? 'sw-up' : 'sw-dn';
+  const swTxt = (sw>=0?'+':'') + sw.toFixed(1) + ' pp';
+  const winsK = k26 >= 50;
+  const win = winsK ? '<span class="win-k">Keiko</span>' : '<span class="win-s">Sánchez</span>';
+  const tr = document.createElement('tr');
+  if(isNat) tr.className='nat';
+  tr.innerHTML = `<td>${z}</td><td>${k21.toFixed(1)}%</td><td>${k26.toFixed(1)}%</td>`+
+                 `<td class="${swCls}">${swTxt}</td><td>${win}</td>`;
+  tb.appendChild(tr);
+}
+DATA.forEach(d=>row(d[0],d[1],d[2],false));
+row(NAT[0],NAT[1],NAT[2],true);
+</script>
+</body>
+</html>

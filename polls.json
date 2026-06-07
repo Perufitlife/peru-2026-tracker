@@ -470,6 +470,34 @@
       "url": "https://www.ipsos.com/es-pe/ultima-encuesta-publicable-segunda-vuelta-encuesta-peru-21-ipsos-mayo-2026",
       "_meta": "SIMULACRO de cédula electoral (k/s sobre voto VÁLIDO). Voto emitido: K40.4/S38.3/blanco10.5/viciado10.8 (n=1204). Ventaja K +2.8pp. Verificado ≥2 fuentes: ipsos.com + infobae + eluniversal + larepublica.",
       "id": "ipsos-sim-2026-05-30"
+    },
+    {
+      "pollster": "IPSOS",
+      "client": "Perú21 / Latina",
+      "fecha_campo": [
+        "2026-06-07",
+        "2026-06-07"
+      ],
+      "fecha_publicacion": "2026-06-07",
+      "n": 18000,
+      "error_pp": 1.0,
+      "tipo": "boca_de_urna",
+      "resultados": {
+        "nacional": {
+          "k": 50.7,
+          "s": 49.3
+        },
+        "macrozonas": {
+          "lima": { "k": 66.1, "s": 33.9 },
+          "norte": { "k": 51.5, "s": 48.5 },
+          "centro": { "k": 52.3, "s": 47.7 },
+          "sur": { "k": 26.1, "s": 73.9 },
+          "oriente": { "k": 43.8, "s": 56.2 }
+        }
+      },
+      "url": "Perú21 / Latina — boca de urna Ipsos, publicado 7-jun-2026 5:00pm",
+      "_meta": "BOCA DE URNA (exit poll) sobre voto VÁLIDO. Universo: ciudadanos que sufragaron EN EL PERÚ (excluye voto extranjero). n=18,000 a la salida de centros de votación. Margen K +1.4pp = empate técnico. NO es conteo oficial: las actas rurales del Sur/Oriente (fuertemente pro-Sánchez) entran al final y pueden mover el nacional (riesgo remontada estilo 2021).",
+      "id": "ipsos-bocaurna-2026-06-07"
     }
   ]
 }
